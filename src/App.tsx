@@ -366,6 +366,7 @@ function FieldCard({
   selected,
   fx,
   onSelect,
+  damagePulse,
 }: {
   unit: FieldUnit;
   isEnemy: boolean;
@@ -374,12 +375,14 @@ function FieldCard({
   selected: boolean;
   fx: BattleFx;
   onSelect?: (id: string) => void;
+  damagePulse?: { key: string; amount: number };
 }) {
   const card = ALL_CARDS.find((entry) => entry.id === unit.cardId);
   if (!card) return null;
   const isSummoning = fx?.type === 'summon' && fx.side === (isEnemy ? 'enemy' : 'player') &&
     (!fx.instanceId || fx.instanceId === unit.instanceId);
   const isAttacking = fx?.type === 'attack' && fx.instanceId === unit.instanceId;
+  const isHit = !!damagePulse;
 
   return (
     <motion.button
@@ -390,15 +393,18 @@ function FieldCard({
           ? { scale: [1, 1.12, 1], y: isEnemy ? [0, 32, 0] : [0, -32, 0], opacity: 1, rotateY: 0 }
           : isSummoning
           ? { scale: [0.35, 1.18, 1], opacity: [0, 1, 1], rotateY: [90, -8, 0] }
-          : { scale: 1, opacity: 1, rotateY: 0, y: 0 }
+          : isHit
+          ? { scale: 1, opacity: 1, rotateY: 0, y: 0, x: [0, -7, 7, -5, 5, -2, 2, 0] }
+          : { scale: 1, opacity: 1, rotateY: 0, y: 0, x: 0 }
       }
-      transition={{ duration: isAttacking ? 0.48 : 0.62, ease: 'easeOut' }}
+      transition={{ duration: isAttacking ? 0.48 : isHit ? 0.4 : 0.62, ease: 'easeOut' }}
       className={
         'field-card ' +
         card.rarity +
         (isEnemy && taunted && !unit.taunt ? ' not-targetable' : '') +
         (unit.taunt ? ' taunt' : '') +
         (unit.stunnedTurns > 0 ? ' stunned' : '') +
+        (isHit ? ' hit-flash' : '') +
         (selected ? ' selected' : '')
       }
       disabled={!selectable}
@@ -433,6 +439,17 @@ function FieldCard({
         {unit.taunt && <em>PROVOCATION</em>}
         {unit.stunnedTurns > 0 && <em>ÉTOURDI</em>}
       </span>
+      {damagePulse && (
+        <motion.span
+          key={damagePulse.key}
+          className="dmg-float"
+          initial={{ opacity: 1, y: 0, scale: 0.8 }}
+          animate={{ opacity: [1, 1, 0], y: -46, scale: [0.8, 1.25, 1] }}
+          transition={{ duration: 0.85, ease: 'easeOut' }}
+        >
+          -{damagePulse.amount}
+        </motion.span>
+      )}
     </motion.button>
   );
 }
@@ -448,6 +465,7 @@ function Zone({
   onSelect,
   support,
   onActivateSupport,
+  damagePulses,
 }: {
   title: string;
   units: FieldUnit[];
@@ -459,6 +477,7 @@ function Zone({
   onSelect?: (id: string) => void;
   support: SupportCard[];
   onActivateSupport?: (instanceId: string) => void;
+  damagePulses: Record<string, { key: string; amount: number }>;
 }) {
   return (
     <div className={'zone-wrap ' + (isEnemy ? 'enemy-zone' : 'player-zone')}>
@@ -476,6 +495,7 @@ function Zone({
               selected={selectedId === unit.instanceId}
               fx={fx}
               onSelect={onSelect}
+              damagePulse={damagePulses[unit.instanceId]}
             />
           ) : (
             <div className="field-slot" key={`slot-${index}`}>◇</div>
@@ -523,6 +543,35 @@ function Combat() {
   const [inspectedHandCard, setInspectedHandCard] = useState<string | null>(null);
   const [effectHint, setEffectHint] = useState<string>('');
   const [inspectedUnit, setInspectedUnit] = useState<string | null>(null);
+  const [unitPulses, setUnitPulses] = useState<Record<string, { key: string; amount: number }>>({});
+  const [heroPulses, setHeroPulses] = useState<{ player?: { key: string; amount: number }; enemy?: { key: string; amount: number } }>({});
+
+  // Compare deux états pour détecter les PV perdus (unités + héros) et déclenche
+  // les nombres flottants + le tremblement de carte correspondants.
+  const pulseFromDiff = (before: GameState, after: GameState) => {
+    const units: Record<string, { key: string; amount: number }> = {};
+    const heroes: { player?: { key: string; amount: number }; enemy?: { key: string; amount: number } } = {};
+    for (const side of ['player', 'enemy'] as const) {
+      const beforeMap = new Map(before[side].field.map((u) => [u.instanceId, u.health]));
+      for (const u of after[side].field) {
+        const prevHp = beforeMap.get(u.instanceId);
+        if (prevHp != null && u.health < prevHp) {
+          units[u.instanceId] = { key: `${u.instanceId}-${Date.now()}-${Math.random()}`, amount: prevHp - u.health };
+        }
+      }
+      if (after[side].life < before[side].life) {
+        heroes[side] = { key: `${side}-${Date.now()}`, amount: before[side].life - after[side].life };
+      }
+    }
+    if (Object.keys(units).length || Object.keys(heroes).length) {
+      setUnitPulses(units);
+      setHeroPulses(heroes);
+      window.setTimeout(() => {
+        setUnitPulses({});
+        setHeroPulses({});
+      }, 900);
+    }
+  };
 
   useEffect(() => {
     const onEvolve = (event: Event) => {
@@ -606,11 +655,13 @@ function Combat() {
   const resolveAttack = (targetId: string | null) => {
     if (!selectedAttacker) return;
     const attacker = selectedAttacker;
+    const before = match;
     setFx({ type: 'attack', side: 'player', instanceId: attacker });
     window.setTimeout(() => {
       const next = declareAttack(match, 'player', attacker, targetId);
       setMatch(next);
       setSelectedAttacker(null);
+      pulseFromDiff(before, next);
       clearFx(180);
     }, 330);
   };
@@ -629,7 +680,10 @@ function Combat() {
 
   const activateEffect = () => {
     if (!inspectedUnit) return;
-    setMatch((current) => activateUnitEffect(current, 'player', inspectedUnit));
+    const before = match;
+    const next = activateUnitEffect(match, 'player', inspectedUnit);
+    setMatch(next);
+    pulseFromDiff(before, next);
   };
 
   const finishTurn = () => {
@@ -637,6 +691,7 @@ function Combat() {
     const before = match;
     const next = endTurn(match);
     setMatch(next);
+    pulseFromDiff(before, next);
     if (detectEvolution(before, next)) return;
     const beforeEnemy = new Set(before.enemy.field.map((unit) => unit.instanceId));
     const summoned = next.enemy.field.find((unit) => !beforeEnemy.has(unit.instanceId));
@@ -657,7 +712,20 @@ function Combat() {
         <strong>L'adversaire</strong>
         <span>Main {match.enemy.hand.length}</span>
         <span>Mana {match.enemy.mana}/{match.enemy.maxMana}</span>
-        <b>PV ♥ {match.enemy.life}/{match.enemy.maxLife}</b>
+        <b className={heroPulses.enemy ? 'hero-hit' : ''}>
+          PV ♥ {match.enemy.life}/{match.enemy.maxLife}
+          {heroPulses.enemy && (
+            <motion.span
+              key={heroPulses.enemy.key}
+              className="dmg-float hero-dmg-float"
+              initial={{ opacity: 1, y: 0 }}
+              animate={{ opacity: [1, 1, 0], y: -30 }}
+              transition={{ duration: 0.85 }}
+            >
+              -{heroPulses.enemy.amount}
+            </motion.span>
+          )}
+        </b>
       </header>
 
       <Zone
@@ -669,6 +737,7 @@ function Combat() {
         fx={fx}
         onSelect={(targetId) => resolveAttack(targetId)}
         support={match.enemy.support}
+        damagePulses={unitPulses}
       />
 
       <div className="turn-strip">
@@ -692,7 +761,13 @@ function Combat() {
         fx={fx}
         onSelect={(id) => { setInspectedUnit(id); onPlayerUnitClick(id); }}
         support={match.player.support}
-        onActivateSupport={(id) => setMatch((current) => activateSupportCard(current, 'player', id))}
+        damagePulses={unitPulses}
+        onActivateSupport={(id) => {
+          const before = match;
+          const next = activateSupportCard(match, 'player', id);
+          setMatch(next);
+          pulseFromDiff(before, next);
+        }}
       />
 
       {inspectedUnit && (
@@ -711,7 +786,20 @@ function Combat() {
       </div>
 
       <footer className="battle-footer">
-        <h3>Toi <span>PV ♥ {match.player.life}/{match.player.maxLife}</span></h3>
+        <h3 className={heroPulses.player ? 'hero-hit' : ''}>
+          Toi <span>PV ♥ {match.player.life}/{match.player.maxLife}</span>
+          {heroPulses.player && (
+            <motion.span
+              key={heroPulses.player.key}
+              className="dmg-float hero-dmg-float"
+              initial={{ opacity: 1, y: 0 }}
+              animate={{ opacity: [1, 1, 0], y: -30 }}
+              transition={{ duration: 0.85 }}
+            >
+              -{heroPulses.player.amount}
+            </motion.span>
+          )}
+        </h3>
         <button className="end-turn" disabled={match.activePlayer !== 'player'} onClick={finishTurn}>
           TERMINER LE TOUR →
         </button>
