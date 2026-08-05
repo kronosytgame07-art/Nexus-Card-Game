@@ -76,7 +76,7 @@ function MusicManager() {
     }
   }, [enabled, inCombat]);
 
-  return <audio ref={audioRef} src="/audio/menu-theme.mp3" loop preload="none" />;
+  return <audio ref={audioRef} src={`${import.meta.env.BASE_URL}audio/menu-theme.mp3`} loop preload="none" />;
 }
 
 function MusicToggle() {
