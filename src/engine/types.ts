@@ -57,6 +57,8 @@ export interface FieldUnit {
   stunnedTurns: number;
   buffs: number;
   taunt: boolean;
+  /** Nombre d’activations manuelles déjà utilisées pendant le tour courant. */
+  effectUsesThisTurn: number;
 }
 
 export type PlayerId = 'player' | 'enemy';
@@ -72,6 +74,8 @@ export interface PlayerState {
   hand: string[];
   field: FieldUnit[];
   graveyard: string[];
+  /** Réserve séparée contenant jusqu’à 20 cartes d’évolution. */
+  evosphere: string[];
   fatigue: number;
 }
 

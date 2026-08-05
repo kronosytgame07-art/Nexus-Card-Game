@@ -12,7 +12,7 @@ import {
   STARTING_LIFE,
 } from './types';
 
-export const MAX_FIELD_UNITS = 6;
+export const MAX_FIELD_UNITS = 3;
 
 function clone(state: GameState): GameState {
   return JSON.parse(JSON.stringify(state));
@@ -34,6 +34,14 @@ function makePlayer(id: PlayerId, faction: Faction, customDeck?: string[], lifeB
   const deck = shuffle(source).slice(0, MAIN_DECK_SIZE);
   const hand = deck.splice(0, STARTING_HAND_SIZE);
   const life = STARTING_LIFE + lifeBonus;
+  const evolutionIds = [...new Set(
+    source
+      .map((id) => getCard(id).evolvesTo)
+      .filter((id): id is string => Boolean(id))
+  )];
+  const evosphere = evolutionIds
+    .flatMap((id) => [id, id, id])
+    .slice(0, 20);
   return {
     id,
     faction,
@@ -45,6 +53,7 @@ function makePlayer(id: PlayerId, faction: Faction, customDeck?: string[], lifeB
     hand,
     field: [],
     graveyard: [],
+    evosphere,
     fatigue: 0,
   };
 }
@@ -242,6 +251,7 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
           stunnedTurns: 0,
           buffs: 0,
           taunt: false,
+          effectUsesThisTurn: 0,
         });
         pushLog(state, `${labelFor(ownerId)} invoque ${pick.name}.`);
       }
@@ -285,14 +295,15 @@ export function playCard(
       stunnedTurns: 0,
       buffs: 0,
       taunt: false,
+          effectUsesThisTurn: 0,
     };
     p.field.push(unit);
     pushLog(state, `${labelFor(playerId)} joue ${def.name}.`);
-    if (def.effect) resolveEffect(state, playerId, def.effect, unit.instanceId);
+    if (def.effect && def.text.toLowerCase().includes('à l’invocation')) resolveEffect(state, playerId, def.effect, unit.instanceId);
   } else {
     pushLog(state, `${labelFor(playerId)} lance ${def.name}.`);
     p.graveyard.push(def.id);
-    if (def.effect) resolveEffect(state, playerId, def.effect);
+    if (def.effect && def.text.toLowerCase().includes('à l’invocation')) resolveEffect(state, playerId, def.effect);
   }
 
   return state;
@@ -311,6 +322,12 @@ export function declareAttack(
 
   const opponent = state[other(playerId)];
   const opponentTaunts = opponent.field.filter((u) => u.taunt);
+  const attackerDef = getCard(attacker.cardId);
+  const canAttackDirectly = attackerDef.text.toLowerCase().includes('attaque directe');
+  if (!targetInstanceId && opponent.field.length > 0 && !canAttackDirectly) {
+    pushLog(state, 'Les créatures adverses te barrent la route.');
+    return state;
+  }
   if (opponentTaunts.length > 0) {
     const validIds = new Set(opponentTaunts.map((u) => u.instanceId));
     if (!targetInstanceId || !validIds.has(targetInstanceId)) return state; // doit cibler une Provocation
@@ -345,33 +362,61 @@ function startTurn(state: GameState, id: PlayerId) {
   drawOne(state, id);
   for (const unit of p.field) {
     unit.canAttack = true;
+    unit.effectUsesThisTurn = 0;
     unit.turnsOnField += 1;
     if (unit.stunnedTurns > 0) {
       unit.stunnedTurns -= 1;
       unit.canAttack = unit.stunnedTurns > 0 ? false : unit.canAttack;
     }
   }
-  applyEvolutions(state, id);
   pushLog(state, `Tour ${state.turn} : c'est à ${labelFor(id).toLowerCase()} de jouer.`);
 }
 
-function applyEvolutions(state: GameState, id: PlayerId) {
-  const p = state[id];
-  for (const unit of p.field) {
-    const def = getCard(unit.cardId);
-    if (def.waitTurns && def.evolvesTo && unit.turnsOnField >= def.waitTurns) {
-      const evo = CARD_DB.get(def.evolvesTo);
-      if (evo) {
-        unit.cardId = evo.id;
-        unit.attack = evo.attack + unit.buffs;
-        unit.maxHealth = evo.health;
-        unit.health = evo.health;
-        unit.turnsOnField = 0;
-        pushLog(state, `${def.name} évolue en ${evo.name} !`);
-        if (evo.effect) resolveEffect(state, id, evo.effect, unit.instanceId);
-      }
-    }
+export function evolveUnit(
+  rawState: GameState,
+  playerId: PlayerId,
+  unitInstanceId: string
+): GameState {
+  const state = clone(rawState);
+  if (state.winner || state.activePlayer !== playerId) return state;
+
+  const player = state[playerId];
+  const unit = findUnit(player, unitInstanceId);
+  if (!unit) return state;
+
+  const base = getCard(unit.cardId);
+  if (!base.waitTurns || !base.evolvesTo || unit.turnsOnField < base.waitTurns) return state;
+
+  const evoIndex = player.evosphere.indexOf(base.evolvesTo);
+  if (evoIndex < 0) {
+    pushLog(state, `${base.name} ne peut pas évoluer : son évolution n’est plus dans l’Évosphère.`);
+    return state;
   }
+
+  const evo = getCard(base.evolvesTo);
+  player.evosphere.splice(evoIndex, 1);
+  player.graveyard.push(base.id);
+
+  unit.cardId = evo.id;
+  unit.attack = evo.attack + unit.buffs;
+  unit.maxHealth = evo.health;
+  unit.health = evo.health;
+  unit.turnsOnField = 0;
+  unit.canAttack = false;
+
+  pushLog(state, `WARNING EVOLUTION — ${base.name} évolue en ${evo.name} !`);
+  if (evo.effect) resolveEffect(state, playerId, evo.effect, unit.instanceId);
+  return state;
+}
+
+function evolveAiUnits(rawState: GameState): GameState {
+  let state = rawState;
+  const eligible = state.enemy.field.filter((unit) => {
+    const card = getCard(unit.cardId);
+    return Boolean(card.waitTurns && card.evolvesTo && unit.turnsOnField >= card.waitTurns);
+  });
+  for (const unit of eligible) state = evolveUnit(state, 'enemy', unit.instanceId);
+  return state;
 }
 
 export function endTurn(rawState: GameState): GameState {
@@ -429,6 +474,7 @@ export function runAiTurn(rawState: GameState): GameState {
   let state = clone(rawState);
   if (state.winner || state.activePlayer !== 'enemy') return state;
   const difficulty = state.aiDifficulty;
+  state = evolveAiUnits(state);
 
   // Phase principale : jouer autant de cartes que possible, la plus chère d'abord.
   let playedSomething = true;
@@ -505,4 +551,23 @@ export function runAiTurn(rawState: GameState): GameState {
   startTurn(next, 'player');
   checkWinner(next);
   return next;
+}
+
+
+export function activateUnitEffect(rawState: GameState, playerId: PlayerId, unitInstanceId: string): GameState {
+  const state = clone(rawState);
+  if (state.winner || state.activePlayer !== playerId) return state;
+  const unit = findUnit(state[playerId], unitInstanceId);
+  if (!unit) return state;
+  const def = getCard(unit.cardId);
+  if (!def.effect || def.text.toLowerCase().includes('à l’invocation')) return state;
+  const maxUses = def.text.toLowerCase().includes('2 fois par tour') ? 2 : 1;
+  if ((unit.effectUsesThisTurn ?? 0) >= maxUses) {
+    pushLog(state, def.name + ' a déjà utilisé toutes ses activations ce tour.');
+    return state;
+  }
+  resolveEffect(state, playerId, def.effect, unit.instanceId);
+  unit.effectUsesThisTurn = (unit.effectUsesThisTurn ?? 0) + 1;
+  pushLog(state, def.name + ' active son effet (' + unit.effectUsesThisTurn + '/' + maxUses + ').');
+  return state;
 }

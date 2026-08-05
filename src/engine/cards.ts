@@ -105,7 +105,7 @@ function buildFaction(faction: Faction, rows: Row[]): CardDef[] {
       effect: { kind: 'buff', value: 1 },
       waitTurns: undefined,
       evolvesFrom: from.id,
-      copies: 2,
+      copies: 3,
       rarity: 'Mythique',
       image: `${import.meta.env.BASE_URL}cards/${id}.png`,
       text: `Évolution de ${from.name}. Cri de guerre : +1 attaque à une unité alliée.`,
