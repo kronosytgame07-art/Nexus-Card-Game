@@ -41,10 +41,14 @@ jobs:
           cp "GPT image-2026-08-05-17-01-23.png" dist/cards/meute.png
           cp "GPT image-2026-08-05-17-32-38.png" dist/cards/meute-rassemblee.png
           cp "GPT image-2026-08-05-17-34-33.png" dist/cards/appel-de-la-lune.png
-          cp "GPT image-2026-08-05-17-36-10.png" dist/cards/derniere-trace.png
+          cp "GPT image-2026-08-05-17-36-10.png" dist/cards/morsure-sauvage.png
           cp "GPT image-2026-08-05-17-38-01.png" dist/cards/instinct-de-survie.png
           cp "GPT image-2026-08-05-17-44-52.png" dist/cards/territoire-sacre.png
           cp "FLUX-2026-08-05-17-56-51.jpeg" dist/cards/emprise-de-la-meute.png
+          cp "ChatGPT Image 5 août 2026, 18_10_16.png" dist/cards/derniere-trace.png
+          cp "ChatGPT Image 5 août 2026, 18_10_05.png" dist/cards/pacte-des-crocs.png
+          cp "ChatGPT Image 5 août 2026, 18_09_58.png" dist/cards/totem-alpha.png
+          cp "ChatGPT Image 5 août 2026, 18_09_51.png" dist/cards/lune-rouge.png
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
