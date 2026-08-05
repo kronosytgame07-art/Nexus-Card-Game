@@ -6,7 +6,7 @@ import { cardsByFaction, getCard } from './engine/cards';
 import { CardDef, Faction, FieldUnit, GameState, SupportCard } from './engine/types';
 import { CHAPTERS, chapterById } from './engine/campaign';
 import { activateSupportCard, activateUnitEffect, declareAttack, endTurn, evolveUnit, newGame, playCard } from './engine/engine';
-import cardBack from './assets/cards/nexus-card-back.png';
+import cardBack from './assets/cards/nexus-card-back.jpg';
 
 const nav = ['Jouer', 'Campagne', 'Collection', 'Decks', 'Profil', 'Classement', 'Boutique', 'Tutoriel', 'Paramètres'];
 const path = (x: string) => (x === 'Jouer' ? '/' : '/' + x.toLowerCase());
