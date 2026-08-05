@@ -25,13 +25,21 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - name: Installer les nouvelles illustrations Meute
+      - name: Installer les illustrations Meute
         run: |
           mkdir -p dist/cards
-          cp "ChatGPT Image 5 août 2026, 16_23_37.png" dist/cards/loup-des-brumes.png
+          cp "ChatGPT Image 5 août 2026, 16_00_27.png" dist/cards/louve-veilleuse.png
           cp "ChatGPT Image 5 août 2026, 16_15_51.png" dist/cards/loup-eclaireur.png
           cp "ChatGPT Image 5 août 2026, 16_07_50.png" dist/cards/jeune-croc.png
-          cp "ChatGPT Image 5 août 2026, 16_00_27.png" dist/cards/louve-veilleuse.png
+          cp "ChatGPT Image 5 août 2026, 16_23_37.png" dist/cards/loup-des-brumes.png
+          cp "ChatGPT Image 5 août 2026, 17_10_51.png" dist/cards/chasseuse-grise.png
+          cp "ChatGPT Image 5 août 2026, 17_01_36.png" dist/cards/loup-de-givre.png
+          cp "ChatGPT Image 5 août 2026, 17_01_28.png" dist/cards/pisteur-alpha.png
+          cp "ChatGPT Image 5 août 2026, 17_02_24.png" dist/cards/loup-sentinelle.png
+          cp "ChatGPT Image 5 août 2026, 17_01_49.png" dist/cards/hurleur-de-nuit.png
+          cp "ChatGPT Image 5 août 2026, 17_02_06.png" dist/cards/croc-de-fer.png
+          cp "GPT image-2026-08-05-17-01-23.png" dist/cards/meute-rassemblee.png
+          cp "GPT image-2026-08-05-17-04-33.png" dist/cards/appel-de-la-lune.png
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
