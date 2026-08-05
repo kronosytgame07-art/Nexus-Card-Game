@@ -29,15 +29,16 @@ function shuffle<T>(arr: T[]): T[] {
 
 const MIN_PLAYABLE_DECK = 20;
 
-function makePlayer(id: PlayerId, faction: Faction, customDeck?: string[]): PlayerState {
+function makePlayer(id: PlayerId, faction: Faction, customDeck?: string[], lifeBonus = 0): PlayerState {
   const source = customDeck && customDeck.length >= MIN_PLAYABLE_DECK ? customDeck : starterDeck(faction);
   const deck = shuffle(source).slice(0, MAIN_DECK_SIZE);
   const hand = deck.splice(0, STARTING_HAND_SIZE);
+  const life = STARTING_LIFE + lifeBonus;
   return {
     id,
     faction,
-    life: STARTING_LIFE,
-    maxLife: STARTING_LIFE,
+    life,
+    maxLife: life,
     mana: 1,
     maxMana: 1,
     deck,
@@ -52,14 +53,15 @@ export function newGame(
   playerFaction: Faction,
   enemyFaction: Faction,
   aiDifficulty: GameState['aiDifficulty'] = 'novice',
-  playerDeck?: string[]
+  playerDeck?: string[],
+  enemyLifeBonus = 0
 ): GameState {
   const state: GameState = {
     turn: 1,
     activePlayer: 'player',
     phase: 'main',
     player: makePlayer('player', playerFaction, playerDeck),
-    enemy: makePlayer('enemy', enemyFaction),
+    enemy: makePlayer('enemy', enemyFaction, undefined, enemyLifeBonus),
     log: ['La partie commence. À toi de jouer.'],
     aiDifficulty,
   };
@@ -390,14 +392,43 @@ export function endTurn(rawState: GameState): GameState {
 }
 
 // --- Intelligence artificielle -------------------------------------------
-// Niveau "novice" : joue ses cartes par ordre décroissant de coût (utilise
-// tout son mana), cible du dégât/étourdissement sur la menace adverse la
-// plus forte, puis attaque le héros sauf Provocation adverse, en évitant
-// les échanges clairement perdants quand une alternative existe.
+// Trois niveaux, du même moteur de décision mais avec des seuils différents :
+//  - novice  : joue tout son mana, fonce au visage sauf échange gratuit.
+//  - veteran : n'accepte que les échanges rentables (garde ses unités plus
+//              chères que celles qu'elle sacrifie), sinon frappe au visage.
+//  - maitre  : en plus, calcule le coup fatal (lethal) et fonce dessus sans
+//              hésiter, et garde une unité en défense si sa vie est basse.
+
+type Trade = 'kill_free' | 'kill_trade' | 'bad';
+
+function evaluateTrade(attacker: FieldUnit, defender: FieldUnit): Trade {
+  const killsDefender = attacker.attack >= defender.health;
+  const attackerSurvives = defender.attack < attacker.health;
+  if (killsDefender && attackerSurvives) return 'kill_free';
+  if (killsDefender) return 'kill_trade';
+  return 'bad';
+}
+
+function bestTradeTarget(attacker: FieldUnit, enemyField: FieldUnit[]): { target?: FieldUnit; trade: Trade } {
+  let best: { target?: FieldUnit; trade: Trade } = { trade: 'bad' };
+  for (const defender of enemyField) {
+    const trade = evaluateTrade(attacker, defender);
+    if (trade === 'kill_free') return { target: defender, trade };
+    if (trade === 'kill_trade' && best.trade !== 'kill_free') {
+      // Un échange à la loyale n'en vaut la peine que si la cible coûte au
+      // moins autant à construire que l'attaquant qu'on va perdre.
+      const attackerCost = getCard(attacker.cardId).cost;
+      const defenderCost = getCard(defender.cardId).cost;
+      if (defenderCost >= attackerCost) best = { target: defender, trade };
+    }
+  }
+  return best;
+}
 
 export function runAiTurn(rawState: GameState): GameState {
   let state = clone(rawState);
   if (state.winner || state.activePlayer !== 'enemy') return state;
+  const difficulty = state.aiDifficulty;
 
   // Phase principale : jouer autant de cartes que possible, la plus chère d'abord.
   let playedSomething = true;
@@ -414,25 +445,55 @@ export function runAiTurn(rawState: GameState): GameState {
     }
   }
 
-  // Phase de combat : chaque unité prête attaque.
+  // Phase de combat.
   const attackers = state.enemy.field.filter((u) => u.canAttack && u.stunnedTurns === 0);
+
+  // "maitre" : si la somme des attaques disponibles peut achever le joueur, on fonce tout au visage.
+  const lethal =
+    difficulty === 'maitre' &&
+    state.player.field.filter((u) => u.taunt).length === 0 &&
+    attackers.reduce((sum, u) => sum + u.attack, 0) >= state.player.life;
+
+  // "maitre" à faible vie : on garde la meilleure unité en défense plutôt que de l'engager.
+  const keepBackId =
+    difficulty === 'maitre' && !lethal && state.enemy.life <= 10 && attackers.length > 1
+      ? [...attackers].sort((a, b) => b.health - a.health)[0]?.instanceId
+      : undefined;
+
   for (const attacker of attackers) {
     const currentAttacker = findUnit(state.enemy, attacker.instanceId);
     if (!currentAttacker || !currentAttacker.canAttack) continue;
+    if (!lethal && currentAttacker.instanceId === keepBackId) continue;
+
     const playerTaunts = state.player.field.filter((u) => u.taunt);
     if (playerTaunts.length > 0) {
       const target = [...playerTaunts].sort((a, b) => a.health - b.health)[0];
       state = declareAttack(state, 'enemy', currentAttacker.instanceId, target.instanceId);
       continue;
     }
-    // Échange favorable si une unité adverse meurt sans faire tomber l'attaquant.
-    const trade = [...state.player.field]
-      .filter((u) => currentAttacker.attack >= u.health && u.attack < currentAttacker.health)
-      .sort((a, b) => b.attack - a.attack)[0];
-    if (trade) {
-      state = declareAttack(state, 'enemy', currentAttacker.instanceId, trade.instanceId);
-    } else {
+
+    if (lethal) {
       state = declareAttack(state, 'enemy', currentAttacker.instanceId, null);
+      if (state.winner) break;
+      continue;
+    }
+
+    if (difficulty === 'novice') {
+      const trade = bestTradeTarget(currentAttacker, state.player.field);
+      state = declareAttack(
+        state,
+        'enemy',
+        currentAttacker.instanceId,
+        trade.trade === 'kill_free' ? trade.target!.instanceId : null
+      );
+    } else {
+      // veteran / maitre : n'accepte que les échanges rentables (gratuits ou de valeur égale).
+      const trade = bestTradeTarget(currentAttacker, state.player.field);
+      if (trade.trade !== 'bad' && trade.target) {
+        state = declareAttack(state, 'enemy', currentAttacker.instanceId, trade.target.instanceId);
+      } else {
+        state = declareAttack(state, 'enemy', currentAttacker.instanceId, null);
+      }
     }
     if (state.winner) break;
   }

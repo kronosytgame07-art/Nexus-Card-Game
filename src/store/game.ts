@@ -11,10 +11,13 @@ interface GameMeta {
   faction: Faction;
   owned: string[];
   deck: string[];
+  campaignChapter: number;
   addCard: (id: string) => void;
   saveDeck: (deck: string[]) => void;
   setFaction: (faction: Faction) => void;
   record: (win: boolean) => void;
+  addGold: (amount: number) => void;
+  completeChapter: (chapterId: number) => void;
   resetProgress: () => void;
 }
 
@@ -34,6 +37,7 @@ export const useGame = create<GameMeta>()(
       faction: 'Meute',
       owned: startingOwnedFor('Meute'),
       deck: starterDeck('Meute'),
+      campaignChapter: 0,
       addCard: (id) => set((s) => ({ owned: [...new Set([...s.owned, id])] })),
       saveDeck: (deck) => set({ deck }),
       setFaction: (faction) =>
@@ -42,10 +46,15 @@ export const useGame = create<GameMeta>()(
         set((s) => {
           if (win) {
             const wins = s.wins + 1;
-            return { wins, gold: s.gold + 35, level: 1 + Math.floor(wins / 5) };
+            return { wins, level: 1 + Math.floor(wins / 5) };
           }
           return { losses: s.losses + 1 };
         }),
+      addGold: (amount) => set((s) => ({ gold: s.gold + amount })),
+      completeChapter: (chapterId) =>
+        set((s) => ({
+          campaignChapter: chapterId >= s.campaignChapter ? chapterId + 1 : s.campaignChapter,
+        })),
       resetProgress: () =>
         set({
           gold: 250,
@@ -55,6 +64,7 @@ export const useGame = create<GameMeta>()(
           faction: 'Meute',
           owned: startingOwnedFor('Meute'),
           deck: starterDeck('Meute'),
+          campaignChapter: 0,
         }),
     }),
     { name: 'nexus-save' }

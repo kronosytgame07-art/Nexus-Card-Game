@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { NavLink, Route, Routes, useNavigate } from 'react-router-dom';
+import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ALL_CARDS, copiesInDeck, maxCopiesAllowed, useGame } from './store/game';
 import { cardsByFaction } from './engine/cards';
 import { CardDef, Faction, FieldUnit, GameState } from './engine/types';
+import { CHAPTERS, chapterById } from './engine/campaign';
 import { declareAttack, endTurn, newGame, playCard } from './engine/engine';
 import cardBack from './assets/cards/nexus-card-back.png';
 
-const nav = ['Jouer', 'Collection', 'Decks', 'Profil', 'Classement', 'Boutique', 'Tutoriel', 'Paramètres'];
+const nav = ['Jouer', 'Campagne', 'Collection', 'Decks', 'Profil', 'Classement', 'Boutique', 'Tutoriel', 'Paramètres'];
 const path = (x: string) => (x === 'Jouer' ? '/' : '/' + x.toLowerCase());
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -86,15 +87,58 @@ function Home() {
           </button>
         ))}
       </div>
-      <button className="primary" onClick={() => go('/combat')}>
-        ⚔ Jouer contre l'IA
-      </button>
+      <div className="home-actions">
+        <button className="primary" onClick={() => go('/campagne')}>
+          ✦ Campagne
+        </button>
+        <button className="secondary" onClick={() => go('/combat')}>
+          ⚔ Duel rapide
+        </button>
+      </div>
       <div className="stats">
         <b>Niveau {s.level}</b>
         <span>
           {s.wins} victoires · {s.losses} défaites
         </span>
         <span>{s.gold} ✦</span>
+      </div>
+    </section>
+  );
+}
+
+function Campaign() {
+  const s = useGame();
+  const go = useNavigate();
+  return (
+    <section>
+      <h2>Campagne</h2>
+      <p className="hint">{s.campaignChapter} / {CHAPTERS.length} chapitres terminés</p>
+      <div className="chapter-list">
+        {CHAPTERS.map((chapter, i) => {
+          const locked = i > s.campaignChapter;
+          const done = i < s.campaignChapter;
+          return (
+            <article key={chapter.id} className={'chapter' + (locked ? ' locked' : '')}>
+              <span className="number">0{i + 1}</span>
+              <div className="chapter-body">
+                <b>{chapter.title}</b>
+                <small>
+                  {done
+                    ? 'Victoire inscrite dans les archives'
+                    : locked
+                    ? 'Scellé par la Reine'
+                    : `Gardien ${chapter.opponentFaction} · IA ${chapter.aiDifficulty}`}
+                </small>
+              </div>
+              {!locked && (
+                <button onClick={() => go('/combat', { state: { chapterId: chapter.id } })}>
+                  {done ? 'Rejouer' : 'Jouer'}
+                </button>
+              )}
+              {locked && <span>◌</span>}
+            </article>
+          );
+        })}
       </div>
     </section>
   );
@@ -208,19 +252,33 @@ function Zone({
 
 function Combat() {
   const s = useGame();
-  const [match, setMatch] = useState<GameState>(() => newGame(s.faction, s.faction === 'Meute' ? 'Chevalier' : 'Meute', 'novice', s.deck));
+  const location = useLocation();
+  const go = useNavigate();
+  const chapterId = (location.state as { chapterId?: number } | null)?.chapterId;
+  const chapter = chapterId !== undefined ? chapterById(chapterId) : undefined;
+  const opponentFaction = chapter ? chapter.opponentFaction : s.faction === 'Meute' ? 'Chevalier' : 'Meute';
+  const aiDifficulty = chapter ? chapter.aiDifficulty : 'novice';
+  const lifeBonus = chapter ? chapter.enemyLifeBonus : 0;
+  const reward = chapter ? chapter.reward : 35;
+
+  const startMatch = () => newGame(s.faction, opponentFaction, aiDifficulty, s.deck, lifeBonus);
+  const [match, setMatch] = useState<GameState>(startMatch);
   const [selectedAttacker, setSelectedAttacker] = useState<string | null>(null);
   const [reported, setReported] = useState(false);
 
   if (match.winner && !reported) {
     s.record(match.winner === 'player');
+    if (match.winner === 'player') {
+      s.addGold(reward);
+      if (chapter) s.completeChapter(chapter.id);
+    }
     setReported(true);
   }
 
   const restart = () => {
     setReported(false);
     setSelectedAttacker(null);
-    setMatch(newGame(s.faction, s.faction === 'Meute' ? 'Chevalier' : 'Meute', 'novice', s.deck));
+    setMatch(startMatch());
   };
 
   const enemyHasTaunt = match.enemy.field.some((u) => u.taunt);
@@ -256,6 +314,7 @@ function Combat() {
 
   return (
     <section className="battle">
+      {chapter && <p className="eyebrow">Chapitre {chapter.id + 1} · {chapter.title}</p>}
       <h2>
         L'adversaire <span>♥ {match.enemy.life}/{match.enemy.maxLife}</span>
       </h2>
@@ -318,11 +377,18 @@ function Combat() {
       {match.winner && (
         <div className="match-result">
           <p className={match.winner === 'player' ? 'win' : 'loss'}>
-            {match.winner === 'player' ? 'Victoire ! +35 ✦' : 'Défaite — retente ta chance.'}
+            {match.winner === 'player' ? `Victoire ! +${reward} ✦` : 'Défaite — retente ta chance.'}
           </p>
-          <button className="primary" onClick={restart}>
-            Nouveau duel
-          </button>
+          <div className="match-result-actions">
+            <button className="primary" onClick={restart}>
+              {chapter ? 'Rejouer ce chapitre' : 'Nouveau duel'}
+            </button>
+            {chapter && (
+              <button className="secondary" onClick={() => go('/campagne')}>
+                Retour à la campagne
+              </button>
+            )}
+          </div>
         </div>
       )}
     </section>
@@ -362,6 +428,7 @@ export default function App() {
     <Shell>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/campagne" element={<Campaign />} />
         <Route path="/collection" element={<Collection />} />
         <Route path="/decks" element={<Decks />} />
         <Route path="/profil" element={<Profile />} />

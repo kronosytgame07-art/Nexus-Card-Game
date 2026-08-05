@@ -13,3 +13,13 @@
 .attack-face:disabled{opacity:.4;cursor:not-allowed}
 .match-result{margin-top:18px;padding:16px;border-radius:12px;background:#ffffff0d;text-align:center}
 @media(max-width:700px){#root{display:block}aside{width:100%;height:auto;flex-flow:row wrap;padding:14px}aside h1{width:100%;margin:0}main{padding:28px 18px}.home{padding:45px 0}.home h2,h2{font-size:38px}.builder{grid-template-columns:1fr}.grid{grid-template-columns:repeat(2,1fr)}}
+.home-actions{display:flex;gap:12px;margin:25px 0;flex-wrap:wrap}
+.secondary{padding:14px 20px;background:transparent;border:1px solid #56dab8;color:#7ff0d0;border-radius:8px;font-weight:700;cursor:pointer}
+.match-result-actions{display:flex;gap:10px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+.chapter-list{display:grid;gap:10px;margin-top:26px}
+.chapter{display:flex;align-items:center;gap:15px;padding:15px;border:1px solid #ffffff16;border-radius:11px;background:#ffffff08}
+.chapter .number{color:#e9c878;font:22px "Playfair Display"}
+.chapter .chapter-body{flex:1}
+.chapter small{color:#b1c3bc}
+.chapter button{border:0;background:#56dab8;color:#06201c;border-radius:7px;padding:8px 12px;font-weight:bold;cursor:pointer}
+.chapter.locked{opacity:.45}
