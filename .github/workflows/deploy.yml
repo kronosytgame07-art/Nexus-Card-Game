@@ -25,6 +25,13 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - name: Installer les nouvelles illustrations Meute
+        run: |
+          mkdir -p dist/cards
+          cp "ChatGPT Image 5 août 2026, 16_23_37.png" dist/cards/loup-des-brumes.png
+          cp "ChatGPT Image 5 août 2026, 16_15_51.png" dist/cards/loup-eclaireur.png
+          cp "ChatGPT Image 5 août 2026, 16_07_50.png" dist/cards/jeune-croc.png
+          cp "ChatGPT Image 5 août 2026, 16_00_27.png" dist/cards/louve-veilleuse.png
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
