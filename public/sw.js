@@ -1,5 +1,5 @@
-const CACHE = 'nexus-arena-v3';
-const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
+const CACHE = 'nexus-arena-v4';
+const SHELL = ['./manifest.webmanifest', './icon.svg'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)));
@@ -8,9 +8,11 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))))
+      .then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
@@ -18,33 +20,36 @@ self.addEventListener('fetch', (event) => {
 
   if (request.method !== 'GET') return;
 
-  // Les éléments audio/vidéo utilisent des requêtes HTTP Range. Elles renvoient
-  // une réponse partielle 206 que l'API Cache n'autorise pas à stocker.
-  // On les laisse donc passer directement vers le réseau.
+  // Audio et vidéo demandent souvent des morceaux du fichier via HTTP Range.
+  // Une réponse 206 ne doit jamais être placée dans Cache Storage.
   if (request.headers.has('range')) {
     event.respondWith(fetch(request));
     return;
   }
 
+  // Toujours chercher la dernière version du document principal sur le réseau.
+  // Cela évite qu'une ancienne build GitHub Pages reste affichée indéfiniment.
+  if (request.mode === 'navigate' || request.destination === 'document') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => response)
+        .catch(() => caches.match('./index.html').then((cached) => cached || Response.error()))
+    );
+    return;
+  }
+
+  // Les assets versionnés de Vite peuvent rester en cache. En cas d'absence,
+  // on les télécharge puis on conserve uniquement les réponses complètes 200.
   event.respondWith(
     caches.match(request).then(async (cached) => {
       if (cached) return cached;
 
-      try {
-        const response = await fetch(request);
-
-        // Ne mettre en cache que des réponses complètes et valides. Cela exclut
-        // notamment les 206, les erreurs et les réponses opaques non vérifiables.
-        if (response.ok && response.status === 200 && response.type !== 'opaque') {
-          const copy = response.clone();
-          event.waitUntil(caches.open(CACHE).then((cache) => cache.put(request, copy)));
-        }
-
-        return response;
-      } catch (error) {
-        if (cached) return cached;
-        throw error;
+      const response = await fetch(request);
+      if (response.ok && response.status === 200 && response.type !== 'opaque') {
+        const copy = response.clone();
+        event.waitUntil(caches.open(CACHE).then((cache) => cache.put(request, copy)));
       }
+      return response;
     })
   );
 });
