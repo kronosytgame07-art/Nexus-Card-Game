@@ -48,10 +48,35 @@ main{flex:1;min-width:0;min-height:0;padding:55px;overflow-y:auto;-webkit-overfl
   .home-hero{padding:12px 4%;min-height:0}
   h2{font-size:24px}
   .home-showcase{min-height:0}
+  .home-topbar{margin-bottom:8px}
+  .home-logo-mark{width:32px;height:32px;font-size:15px}
+  .home-logo b{font-size:12px}
+  .home-logo small{font-size:7px}
+  .install-button{padding:5px 10px;font-size:8px}
+  .eyebrow{font-size:8px}
+  .home-copy>p{display:none}
+  .faction-pick.compact{margin:8px 0 0}
+  .faction-button{padding:6px 12px;font-size:11px}
+  .menu-cards{gap:6px;margin-top:12px}
+  .menu-card{padding:8px 10px;gap:8px}
+  .menu-card-icon{width:26px;height:26px;font-size:12px}
+  .menu-card-body b{font-size:12px}
+  .menu-card-body small{font-size:7px}
+  .menu-card-body em{font-size:9px}
+  .menu-card-arrow{font-size:13px}
+  .stats{padding:8px;gap:12px;margin-top:10px}
+  .stats b{font-size:12px}
+  .stats span{font-size:10px}
   .grid{grid-template-columns:repeat(4,1fr);gap:8px}
   .card{min-height:150px}
   .hud-buttons{top:6px;right:6px;gap:6px}
   .fullscreen-toggle,.music-toggle{width:30px;height:30px;font-size:13px}
+  .chapter{padding:8px 10px;gap:8px}
+  .chapter .number{font-size:15px}
+  .chapter-body b{font-size:13px}
+  .chapter small{font-size:9px}
+  .options-grid{gap:8px;margin-top:12px}
+  .options-card{padding:10px}
 }
 @media(orientation:portrait) and (pointer:coarse){
   .portrait-gate{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:#050c0dfa;color:#edf5ef;text-align:center;padding:30px}
