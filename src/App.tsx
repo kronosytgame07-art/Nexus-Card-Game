@@ -95,7 +95,16 @@ const CardView = ({
   >
     <i>{card.faction}</i>
     <b>{card.name}</b>
-    <strong className="card-art" style={{ backgroundImage: `url(${cardBack})` }} />
+    <img
+      className="card-art"
+      src={card.image}
+      alt={card.name}
+      loading="lazy"
+      onError={(e) => {
+        e.currentTarget.onerror = null;
+        e.currentTarget.src = cardBack;
+      }}
+    />
     <p>{card.text}</p>
     <footer>
       <span>{card.cost} ◆</span>

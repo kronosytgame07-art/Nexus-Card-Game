@@ -83,7 +83,7 @@ function buildFaction(faction: Faction, rows: Row[]): CardDef[] {
     evolvesTo: health > 0 ? `evo-${id}` : undefined,
     copies: 3,
     rarity: rarityForCost(cost),
-    image: `./assets/cards/${id}.png`,
+    image: `/cards/${id}.png`,
     text: describeEffect(effect),
   }));
 
@@ -107,7 +107,7 @@ function buildFaction(faction: Faction, rows: Row[]): CardDef[] {
       evolvesFrom: from.id,
       copies: 2,
       rarity: 'Mythique',
-      image: `./assets/cards/${id}.png`,
+      image: `/cards/${id}.png`,
       text: `Évolution de ${from.name}. Cri de guerre : +1 attaque à une unité alliée.`,
     };
   });
