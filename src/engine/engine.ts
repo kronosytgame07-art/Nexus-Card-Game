@@ -1,0 +1,447 @@
+import { CARD_DB, getCard, starterDeck } from './cards';
+import {
+  EffectDef,
+  Faction,
+  FieldUnit,
+  GameState,
+  MAIN_DECK_SIZE,
+  MAX_MANA,
+  PlayerId,
+  PlayerState,
+  STARTING_HAND_SIZE,
+  STARTING_LIFE,
+} from './types';
+
+export const MAX_FIELD_UNITS = 6;
+
+function clone(state: GameState): GameState {
+  return JSON.parse(JSON.stringify(state));
+}
+
+function shuffle<T>(arr: T[]): T[] {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+const MIN_PLAYABLE_DECK = 20;
+
+function makePlayer(id: PlayerId, faction: Faction, customDeck?: string[]): PlayerState {
+  const source = customDeck && customDeck.length >= MIN_PLAYABLE_DECK ? customDeck : starterDeck(faction);
+  const deck = shuffle(source).slice(0, MAIN_DECK_SIZE);
+  const hand = deck.splice(0, STARTING_HAND_SIZE);
+  return {
+    id,
+    faction,
+    life: STARTING_LIFE,
+    maxLife: STARTING_LIFE,
+    mana: 1,
+    maxMana: 1,
+    deck,
+    hand,
+    field: [],
+    graveyard: [],
+    fatigue: 0,
+  };
+}
+
+export function newGame(
+  playerFaction: Faction,
+  enemyFaction: Faction,
+  aiDifficulty: GameState['aiDifficulty'] = 'novice',
+  playerDeck?: string[]
+): GameState {
+  const state: GameState = {
+    turn: 1,
+    activePlayer: 'player',
+    phase: 'main',
+    player: makePlayer('player', playerFaction, playerDeck),
+    enemy: makePlayer('enemy', enemyFaction),
+    log: ['La partie commence. À toi de jouer.'],
+    aiDifficulty,
+  };
+  return state;
+}
+
+export { MIN_PLAYABLE_DECK };
+
+function other(id: PlayerId): PlayerId {
+  return id === 'player' ? 'enemy' : 'player';
+}
+
+function pushLog(state: GameState, message: string) {
+  state.log.push(message);
+  if (state.log.length > 30) state.log.shift();
+}
+
+function drawOne(state: GameState, id: PlayerId) {
+  const p = state[id];
+  if (p.deck.length === 0) {
+    p.fatigue += 1;
+    p.life -= p.fatigue;
+    pushLog(state, `${labelFor(id)} n'a plus de cartes : ${p.fatigue} dégâts de fatigue.`);
+    return;
+  }
+  const card = p.deck.shift()!;
+  if (p.hand.length >= 10) {
+    p.graveyard.push(card);
+    pushLog(state, `${labelFor(id)} a la main pleine, une carte est brûlée.`);
+    return;
+  }
+  p.hand.push(card);
+}
+
+function labelFor(id: PlayerId): string {
+  return id === 'player' ? 'Toi' : "L'adversaire";
+}
+
+let idCounter = 0;
+function instanceId(): string {
+  idCounter += 1;
+  return `u${Date.now()}-${idCounter}-${Math.floor(Math.random() * 100000)}`;
+}
+
+function findUnit(p: PlayerState, id: string): FieldUnit | undefined {
+  return p.field.find((u) => u.instanceId === id);
+}
+
+function removeDead(state: GameState, id: PlayerId) {
+  const p = state[id];
+  const dead = p.field.filter((u) => u.health <= 0);
+  for (const u of dead) {
+    p.graveyard.push(u.cardId);
+    pushLog(state, `${getCard(u.cardId).name} tombe au combat.`);
+  }
+  p.field = p.field.filter((u) => u.health > 0);
+}
+
+function checkWinner(state: GameState) {
+  if (state.player.life <= 0 && !state.winner) state.winner = 'enemy';
+  if (state.enemy.life <= 0 && !state.winner) state.winner = 'player';
+}
+
+/** Choisit une cible pertinente pour un effet, selon des heuristiques simples et déterministes. */
+function autoTarget(state: GameState, ownerId: PlayerId, effect: EffectDef, sourceUnitId?: string) {
+  const owner = state[ownerId];
+  const opponent = state[other(ownerId)];
+
+  switch (effect.kind) {
+    case 'protect': {
+      // Si la source est déjà une unité sur le plateau, elle devient elle-même Provocation.
+      if (sourceUnitId && findUnit(owner, sourceUnitId)) {
+        return sourceUnitId;
+      }
+      // Sinon (carte sort), la Provocation est accordée à l'unité alliée avec le plus de PV.
+      const strongest = [...owner.field].sort((a, b) => b.health - a.health)[0];
+      return strongest?.instanceId;
+    }
+    case 'buff': {
+      const pool = sourceUnitId ? owner.field.filter((u) => u.instanceId !== sourceUnitId) : owner.field;
+      const source = sourceUnitId ? [findUnit(owner, sourceUnitId)].filter(Boolean) as FieldUnit[] : [];
+      const candidates = pool.length > 0 ? pool : source;
+      const target = [...candidates].sort((a, b) => b.attack - a.attack)[0];
+      return target?.instanceId;
+    }
+    case 'stun': {
+      const target = [...opponent.field]
+        .filter((u) => u.stunnedTurns === 0)
+        .sort((a, b) => b.attack - a.attack)[0];
+      return target?.instanceId;
+    }
+    case 'damage': {
+      const target = [...opponent.field].sort((a, b) => b.health - a.health)[0];
+      return target?.instanceId;
+    }
+    default:
+      return undefined;
+  }
+}
+
+function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, sourceUnitId?: string) {
+  const owner = state[ownerId];
+  const opponent = state[other(ownerId)];
+
+  switch (effect.kind) {
+    case 'draw': {
+      for (let i = 0; i < (effect.value ?? 1); i++) drawOne(state, ownerId);
+      pushLog(state, `${labelFor(ownerId)} pioche ${effect.value ?? 1} carte(s).`);
+      break;
+    }
+    case 'search': {
+      const wanted = effect.target;
+      const idx = owner.deck.findIndex((id) => !wanted || getCard(id).faction === wanted);
+      if (idx >= 0 && owner.hand.length < 10) {
+        const [found] = owner.deck.splice(idx, 1);
+        owner.hand.push(found);
+        pushLog(state, `${labelFor(ownerId)} trouve ${getCard(found).name} dans son deck.`);
+      }
+      break;
+    }
+    case 'protect': {
+      const targetId = autoTarget(state, ownerId, effect, sourceUnitId);
+      const unit = targetId && findUnit(owner, targetId);
+      if (unit) {
+        unit.taunt = true;
+        pushLog(state, `${getCard(unit.cardId).name} gagne Provocation.`);
+      }
+      break;
+    }
+    case 'buff': {
+      const targetId = autoTarget(state, ownerId, effect, sourceUnitId);
+      const unit = targetId && findUnit(owner, targetId);
+      if (unit) {
+        unit.attack += effect.value ?? 1;
+        unit.buffs += effect.value ?? 1;
+        pushLog(state, `${getCard(unit.cardId).name} gagne +${effect.value ?? 1} attaque.`);
+      }
+      break;
+    }
+    case 'stun': {
+      const targetId = autoTarget(state, ownerId, effect, sourceUnitId);
+      const unit = targetId && findUnit(opponent, targetId);
+      if (unit) {
+        unit.stunnedTurns += effect.value ?? 1;
+        unit.canAttack = false;
+        pushLog(state, `${getCard(unit.cardId).name} est étourdi.`);
+      }
+      break;
+    }
+    case 'damage': {
+      const targetId = autoTarget(state, ownerId, effect, sourceUnitId);
+      const unit = targetId && findUnit(opponent, targetId);
+      const amount = effect.value ?? 0;
+      if (unit) {
+        unit.health -= amount;
+        pushLog(state, `${getCard(unit.cardId).name} subit ${amount} dégâts.`);
+      } else {
+        opponent.life -= amount;
+        pushLog(state, `${labelFor(other(ownerId))} subit ${amount} dégâts directs.`);
+      }
+      break;
+    }
+    case 'summon': {
+      if (owner.field.length >= MAX_FIELD_UNITS) break;
+      const pool = [...CARD_DB.values()].filter(
+        (c) => c.level === 1 && c.type === 'unit' && (!effect.target || c.faction === effect.target)
+      );
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+      if (pick) {
+        owner.field.push({
+          instanceId: instanceId(),
+          cardId: pick.id,
+          attack: pick.attack,
+          health: pick.health,
+          maxHealth: pick.health,
+          turnsOnField: 0,
+          canAttack: false,
+          stunnedTurns: 0,
+          buffs: 0,
+          taunt: false,
+        });
+        pushLog(state, `${labelFor(ownerId)} invoque ${pick.name}.`);
+      }
+      break;
+    }
+  }
+  removeDead(state, other(ownerId));
+  removeDead(state, ownerId);
+  checkWinner(state);
+}
+
+export function playCard(
+  rawState: GameState,
+  playerId: PlayerId,
+  cardId: string
+): GameState {
+  const state = clone(rawState);
+  if (state.winner || state.activePlayer !== playerId) return state;
+  const p = state[playerId];
+  const handIdx = p.hand.indexOf(cardId);
+  if (handIdx < 0) return state;
+  const def = getCard(cardId);
+  if (def.cost > p.mana) return state;
+  if (def.type === 'unit' && p.field.length >= MAX_FIELD_UNITS) {
+    pushLog(state, 'Le plateau est plein, impossible de jouer cette unité.');
+    return state;
+  }
+
+  p.hand.splice(handIdx, 1);
+  p.mana -= def.cost;
+
+  if (def.type === 'unit') {
+    const unit: FieldUnit = {
+      instanceId: instanceId(),
+      cardId: def.id,
+      attack: def.attack,
+      health: def.health,
+      maxHealth: def.health,
+      turnsOnField: 0,
+      canAttack: false,
+      stunnedTurns: 0,
+      buffs: 0,
+      taunt: false,
+    };
+    p.field.push(unit);
+    pushLog(state, `${labelFor(playerId)} joue ${def.name}.`);
+    if (def.effect) resolveEffect(state, playerId, def.effect, unit.instanceId);
+  } else {
+    pushLog(state, `${labelFor(playerId)} lance ${def.name}.`);
+    p.graveyard.push(def.id);
+    if (def.effect) resolveEffect(state, playerId, def.effect);
+  }
+
+  return state;
+}
+
+export function declareAttack(
+  rawState: GameState,
+  playerId: PlayerId,
+  attackerInstanceId: string,
+  targetInstanceId: string | null
+): GameState {
+  const state = clone(rawState);
+  if (state.winner || state.activePlayer !== playerId) return state;
+  const attacker = findUnit(state[playerId], attackerInstanceId);
+  if (!attacker || !attacker.canAttack || attacker.stunnedTurns > 0) return state;
+
+  const opponent = state[other(playerId)];
+  const opponentTaunts = opponent.field.filter((u) => u.taunt);
+  if (opponentTaunts.length > 0) {
+    const validIds = new Set(opponentTaunts.map((u) => u.instanceId));
+    if (!targetInstanceId || !validIds.has(targetInstanceId)) return state; // doit cibler une Provocation
+  }
+
+  attacker.canAttack = false;
+
+  if (!targetInstanceId) {
+    opponent.life -= attacker.attack;
+    pushLog(state, `${getCard(attacker.cardId).name} frappe directement : ${attacker.attack} dégâts.`);
+  } else {
+    const target = findUnit(opponent, targetInstanceId);
+    if (!target) return state;
+    target.health -= attacker.attack;
+    attacker.health -= target.attack;
+    pushLog(
+      state,
+      `${getCard(attacker.cardId).name} (${attacker.attack}) affronte ${getCard(target.cardId).name} (${target.attack}).`
+    );
+  }
+
+  removeDead(state, 'player');
+  removeDead(state, 'enemy');
+  checkWinner(state);
+  return state;
+}
+
+function startTurn(state: GameState, id: PlayerId) {
+  const p = state[id];
+  p.maxMana = Math.min(MAX_MANA, p.maxMana + 1);
+  p.mana = p.maxMana;
+  drawOne(state, id);
+  for (const unit of p.field) {
+    unit.canAttack = true;
+    unit.turnsOnField += 1;
+    if (unit.stunnedTurns > 0) {
+      unit.stunnedTurns -= 1;
+      unit.canAttack = unit.stunnedTurns > 0 ? false : unit.canAttack;
+    }
+  }
+  applyEvolutions(state, id);
+  pushLog(state, `Tour ${state.turn} : c'est à ${labelFor(id).toLowerCase()} de jouer.`);
+}
+
+function applyEvolutions(state: GameState, id: PlayerId) {
+  const p = state[id];
+  for (const unit of p.field) {
+    const def = getCard(unit.cardId);
+    if (def.waitTurns && def.evolvesTo && unit.turnsOnField >= def.waitTurns) {
+      const evo = CARD_DB.get(def.evolvesTo);
+      if (evo) {
+        unit.cardId = evo.id;
+        unit.attack = evo.attack + unit.buffs;
+        unit.maxHealth = evo.health;
+        unit.health = evo.health;
+        unit.turnsOnField = 0;
+        pushLog(state, `${def.name} évolue en ${evo.name} !`);
+        if (evo.effect) resolveEffect(state, id, evo.effect, unit.instanceId);
+      }
+    }
+  }
+}
+
+export function endTurn(rawState: GameState): GameState {
+  let state = clone(rawState);
+  if (state.winner) return state;
+  const finishing = state.activePlayer;
+  const next = other(finishing);
+  state.activePlayer = next;
+  state.phase = 'main';
+  if (next === 'player') state.turn += 1;
+  startTurn(state, next);
+  checkWinner(state);
+
+  if (!state.winner && next === 'enemy') {
+    state = runAiTurn(state);
+  }
+  return state;
+}
+
+// --- Intelligence artificielle -------------------------------------------
+// Niveau "novice" : joue ses cartes par ordre décroissant de coût (utilise
+// tout son mana), cible du dégât/étourdissement sur la menace adverse la
+// plus forte, puis attaque le héros sauf Provocation adverse, en évitant
+// les échanges clairement perdants quand une alternative existe.
+
+export function runAiTurn(rawState: GameState): GameState {
+  let state = clone(rawState);
+  if (state.winner || state.activePlayer !== 'enemy') return state;
+
+  // Phase principale : jouer autant de cartes que possible, la plus chère d'abord.
+  let playedSomething = true;
+  while (playedSomething) {
+    playedSomething = false;
+    const p = state.enemy;
+    const playable = p.hand
+      .map((id) => getCard(id))
+      .filter((c) => c.cost <= p.mana && (c.type !== 'unit' || p.field.length < MAX_FIELD_UNITS))
+      .sort((a, b) => b.cost - a.cost);
+    if (playable[0]) {
+      state = playCard(state, 'enemy', playable[0].id);
+      playedSomething = true;
+    }
+  }
+
+  // Phase de combat : chaque unité prête attaque.
+  const attackers = state.enemy.field.filter((u) => u.canAttack && u.stunnedTurns === 0);
+  for (const attacker of attackers) {
+    const currentAttacker = findUnit(state.enemy, attacker.instanceId);
+    if (!currentAttacker || !currentAttacker.canAttack) continue;
+    const playerTaunts = state.player.field.filter((u) => u.taunt);
+    if (playerTaunts.length > 0) {
+      const target = [...playerTaunts].sort((a, b) => a.health - b.health)[0];
+      state = declareAttack(state, 'enemy', currentAttacker.instanceId, target.instanceId);
+      continue;
+    }
+    // Échange favorable si une unité adverse meurt sans faire tomber l'attaquant.
+    const trade = [...state.player.field]
+      .filter((u) => currentAttacker.attack >= u.health && u.attack < currentAttacker.health)
+      .sort((a, b) => b.attack - a.attack)[0];
+    if (trade) {
+      state = declareAttack(state, 'enemy', currentAttacker.instanceId, trade.instanceId);
+    } else {
+      state = declareAttack(state, 'enemy', currentAttacker.instanceId, null);
+    }
+    if (state.winner) break;
+  }
+
+  pushLog(state, "L'adversaire termine son tour.");
+  const next = clone(state);
+  next.activePlayer = 'player';
+  next.phase = 'main';
+  startTurn(next, 'player');
+  checkWinner(next);
+  return next;
+}

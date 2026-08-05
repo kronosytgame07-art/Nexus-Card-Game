@@ -1,20 +1,375 @@
-import{useState}from'react';import{NavLink,Route,Routes,useNavigate}from'react-router-dom';import{motion}from'framer-motion';import{cards,Card}from'./data/cards';import{useGame}from'./store/game';
-import cardBack from'./assets/cards/nexus-card-back.png';
-const nav=['Jouer','Collection','Decks','Profil','Classement','Boutique','Tutoriel','Paramètres'];const path=(x:string)=>x==='Jouer'?'/':'/'+x.toLowerCase();
-function Shell({children}:{children:React.ReactNode}){return <><aside><h1>✦ NEXUS <small>CARD ARENA</small></h1>{nav.map(x=><NavLink key={x} to={path(x)} end={x==='Jouer'}>{x}</NavLink>)}</aside><main>{children}</main></>}
-const CardView=({card,onClick}:{card:Card,onClick?:()=>void})=>{
-  const imgSrc=card.image||cardBack;
-  return <motion.button whileHover={{y:-8,rotate:1}} className={'card '+card.rarity} onClick={onClick}>
+import { useState } from 'react';
+import { NavLink, Route, Routes, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ALL_CARDS, copiesInDeck, maxCopiesAllowed, useGame } from './store/game';
+import { cardsByFaction } from './engine/cards';
+import { CardDef, Faction, FieldUnit, GameState } from './engine/types';
+import { declareAttack, endTurn, newGame, playCard } from './engine/engine';
+import cardBack from './assets/cards/nexus-card-back.png';
+
+const nav = ['Jouer', 'Collection', 'Decks', 'Profil', 'Classement', 'Boutique', 'Tutoriel', 'Paramètres'];
+const path = (x: string) => (x === 'Jouer' ? '/' : '/' + x.toLowerCase());
+
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <aside>
+        <h1>
+          ✦ NEXUS <small>CARD ARENA</small>
+        </h1>
+        {nav.map((x) => (
+          <NavLink key={x} to={path(x)} end={x === 'Jouer'}>
+            {x}
+          </NavLink>
+        ))}
+      </aside>
+      <main>{children}</main>
+    </>
+  );
+}
+
+const CardView = ({
+  card,
+  onClick,
+  disabled,
+  badge,
+}: {
+  card: CardDef;
+  onClick?: () => void;
+  disabled?: boolean;
+  badge?: string;
+}) => (
+  <motion.button
+    whileHover={disabled ? undefined : { y: -8, rotate: 1 }}
+    className={'card ' + card.rarity}
+    onClick={onClick}
+    disabled={disabled}
+  >
     <i>{card.faction}</i>
     <b>{card.name}</b>
-    <strong className="card-art" style={{backgroundImage:`url(${imgSrc})`}}/>
+    <strong className="card-art" style={{ backgroundImage: `url(${cardBack})` }} />
     <p>{card.text}</p>
-    <footer><span>{card.cost} ◆</span><span>⚔ {card.attack}　♥ {card.health}</span></footer>
+    <footer>
+      <span>{card.cost} ◆</span>
+      {card.type === 'unit' ? (
+        <span>
+          ⚔ {card.attack}　♥ {card.health}
+        </span>
+      ) : (
+        <span>Sort</span>
+      )}
+    </footer>
+    {badge && <em className="card-badge">{badge}</em>}
   </motion.button>
-};
-function Home(){const go=useNavigate();const s=useGame();return <section className="home"><p className="eyebrow">LE SERMENT ET LA MEUTE</p><h2>Entre dans<br/><em>l'Évosphère</em></h2><p>Construis ton héritage et affronte les gardiens de Nexus.</p><button className="primary" onClick={()=>go('/combat')}>⚔ Jouer contre l'IA</button><div className="stats"><b>Niveau {s.level}</b><span>{s.wins} victoires · {s.losses} défaites</span><span>{s.gold} ✦</span></div></section>}
-function Collection(){const[query,setQuery]=useState('');const owned=useGame(s=>s.owned);return <section><h2>Collection</h2><input placeholder="Rechercher une carte…" value={query} onChange={e=>setQuery(e.target.value)}/><div className="grid">{cards.filter(c=>c.name.toLowerCase().includes(query.toLowerCase())).map(c=><CardView key={c.id} card={c}/>)}</div><p className="hint">{owned.length}/{cards.length} cartes possédées</p></section>}
-function Decks(){const s=useGame();const add=(id:string)=>s.deck.length<40&&s.saveDeck([...s.deck,id]);return <section><h2>Constructeur de decks</h2><p className="hint">{s.deck.length}/40 cartes · maximum 3 exemplaires</p><div className="builder"><div><h3>Deck Chronos</h3>{s.deck.map((id,i)=><button className="deck-row" key={i} onClick={()=>s.saveDeck(s.deck.filter((_,n)=>n!==i))}>{cards.find(c=>c.id===id)?.name} <span>×</span></button>)}</div><div className="grid">{cards.map(c=><CardView key={c.id} card={c} onClick={()=>add(c.id)}/>)}</div></div></section>}
-function Zone({title,count,icon}:{title:string;count:number;icon:string}){return <div className="zone-wrap"><b>{title}</b><div className={'board slots-'+count}>{Array.from({length:count},(_,i)=><div key={i}>{icon}</div>)}</div></div>};function Combat(){const[hp,setHp]=useState([30,30]);const[mana,setMana]=useState(3);const[hand,setHand]=useState(cards.slice(0,4));const s=useGame();const play=(c:Card)=>{if(c.cost>mana)return;const enemy=hp[1]-c.attack;if(enemy<=0){setHp([hp[0],0]);s.record(true)}else{setHp([Math.max(0,hp[0]-(2+Math.floor(Math.random()*4))),enemy]);setMana(mana-c.cost)};setHand(hand.filter(x=>x.id!==c.id))};return <section className="battle"><h2>La Sentinelle <span>♥ {hp[1]}/30</span></h2><div className="battle-meta"><span>Évosphères · Extra deck</span><span>Fosse · Cimetière</span></div><Zone title="Zones de créatures" count={3} icon="♜"/><Zone title="Enchantements & sortilèges" count={5} icon="✧"/><p>Mana {mana}/3 · Jouez une carte puis l'IA riposte.</p><div className="hand">{hand.map(c=><CardView key={c.id} card={c} onClick={()=>play(c)}/>)}</div><h3>CHRONOS <span>♥ {hp[0]}/30</span></h3><div className="battle-meta"><span>Fosse · Cimetière</span><span>Évosphères · Extra deck</span></div><Zone title="Enchantements & sortilèges" count={5} icon="✧"/><Zone title="Zones de créatures" count={3} icon="♜"/>{hp[0]===0&&<p className="loss">Défaite — relancez un combat.</p>}{hp[1]===0&&<p className="win">Victoire ! Récompense obtenue.</p>}</section>}
-function Profile(){const s=useGame();return <section><h2>Profil de Chronos</h2><div className="profile"><b>✦</b><div><h3>Chronos</h3><p>Niveau {s.level} · {s.wins} victoires · {s.losses} défaites</p><progress value={s.wins%10} max="10"/></div></div></section>};function Simple({title}:{title:string}){return <section><h2>{title}</h2><p className="hint">Cette section est prête à être enrichie.</p></section>}
-export default function App(){return <Shell><Routes><Route path="/" element={<Home/>}/><Route path="/collection" element={<Collection/>}/><Route path="/decks" element={<Decks/>}/><Route path="/profil" element={<Profile/>}/><Route path="/combat" element={<Combat/>}/>{['classement','boutique','tutoriel','paramètres'].map(x=><Route key={x} path={'/'+x} element={<Simple title={x[0].toUpperCase()+x.slice(1)}/>}/>)}</Routes></Shell>}
+);
+
+function Home() {
+  const go = useNavigate();
+  const s = useGame();
+  return (
+    <section className="home">
+      <p className="eyebrow">LE SERMENT ET LA MEUTE</p>
+      <h2>
+        Entre dans
+        <br />
+        <em>l'Évosphère</em>
+      </h2>
+      <p>Construis ton héritage et affronte les gardiens de Nexus.</p>
+      <div className="faction-pick">
+        {(['Meute', 'Chevalier'] as Faction[]).map((f) => (
+          <button
+            key={f}
+            className={'faction-button' + (s.faction === f ? ' active' : '')}
+            onClick={() => s.setFaction(f)}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
+      <button className="primary" onClick={() => go('/combat')}>
+        ⚔ Jouer contre l'IA
+      </button>
+      <div className="stats">
+        <b>Niveau {s.level}</b>
+        <span>
+          {s.wins} victoires · {s.losses} défaites
+        </span>
+        <span>{s.gold} ✦</span>
+      </div>
+    </section>
+  );
+}
+
+function Collection() {
+  const [query, setQuery] = useState('');
+  const owned = useGame((s) => s.owned);
+  const filtered = ALL_CARDS.filter((c) => c.name.toLowerCase().includes(query.toLowerCase()));
+  return (
+    <section>
+      <h2>Collection</h2>
+      <input placeholder="Rechercher une carte…" value={query} onChange={(e) => setQuery(e.target.value)} />
+      <div className="grid">
+        {filtered.map((c) => (
+          <CardView key={c.id} card={c} badge={owned.includes(c.id) ? undefined : 'Non possédée'} />
+        ))}
+      </div>
+      <p className="hint">
+        {owned.length}/{ALL_CARDS.filter((c) => c.level === 1).length} cartes de base possédées
+      </p>
+    </section>
+  );
+}
+
+function Decks() {
+  const s = useGame();
+  const pool = cardsByFaction(s.faction).filter((c) => c.level === 1);
+  const add = (id: string) => {
+    if (copiesInDeck(s.deck, id) < maxCopiesAllowed(id)) s.saveDeck([...s.deck, id]);
+  };
+  const removeAt = (i: number) => s.saveDeck(s.deck.filter((_, n) => n !== i));
+  return (
+    <section>
+      <h2>Constructeur de decks</h2>
+      <p className="hint">{s.deck.length}/40 cartes · faction {s.faction} · minimum 20 pour jouer</p>
+      <div className="builder">
+        <div>
+          <h3>Deck {s.faction}</h3>
+          {s.deck.map((id, i) => {
+            const c = pool.find((card) => card.id === id);
+            return (
+              <button className="deck-row" key={i} onClick={() => removeAt(i)}>
+                {c?.name ?? id} <span>×</span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="grid">
+          {pool.map((c) => (
+            <CardView
+              key={c.id}
+              card={c}
+              badge={`${copiesInDeck(s.deck, c.id)}/${maxCopiesAllowed(c.id)}`}
+              disabled={copiesInDeck(s.deck, c.id) >= maxCopiesAllowed(c.id)}
+              onClick={() => add(c.id)}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Zone({
+  title,
+  units,
+  isEnemy,
+  taunted,
+  selectable,
+  selectedId,
+  onSelect,
+}: {
+  title: string;
+  units: FieldUnit[];
+  isEnemy: boolean;
+  taunted: boolean;
+  selectable: boolean;
+  selectedId?: string | null;
+  onSelect?: (id: string) => void;
+}) {
+  return (
+    <div className="zone-wrap">
+      <b>{title}</b>
+      <div className="board slots-6">
+        {units.length === 0 && Array.from({ length: 1 }, (_, i) => <div key={i}>—</div>)}
+        {units.map((u) => (
+          <button
+            key={u.instanceId}
+            className={
+              'field-unit' +
+              (isEnemy && taunted && !u.taunt ? ' not-targetable' : '') +
+              (u.taunt ? ' taunt' : '') +
+              (u.stunnedTurns > 0 ? ' stunned' : '') +
+              (selectedId === u.instanceId ? ' selected' : '')
+            }
+            disabled={!selectable}
+            onClick={() => onSelect?.(u.instanceId)}
+          >
+            <span className="fu-stats">
+              ⚔ {u.attack} ♥ {u.health}
+            </span>
+            {u.taunt && <span className="fu-tag">Provocation</span>}
+            {u.stunnedTurns > 0 && <span className="fu-tag">Étourdi</span>}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Combat() {
+  const s = useGame();
+  const [match, setMatch] = useState<GameState>(() => newGame(s.faction, s.faction === 'Meute' ? 'Chevalier' : 'Meute', 'novice', s.deck));
+  const [selectedAttacker, setSelectedAttacker] = useState<string | null>(null);
+  const [reported, setReported] = useState(false);
+
+  if (match.winner && !reported) {
+    s.record(match.winner === 'player');
+    setReported(true);
+  }
+
+  const restart = () => {
+    setReported(false);
+    setSelectedAttacker(null);
+    setMatch(newGame(s.faction, s.faction === 'Meute' ? 'Chevalier' : 'Meute', 'novice', s.deck));
+  };
+
+  const enemyHasTaunt = match.enemy.field.some((u) => u.taunt);
+
+  const onPlayerUnitClick = (id: string) => {
+    const unit = match.player.field.find((u) => u.instanceId === id);
+    if (!unit || !unit.canAttack || unit.stunnedTurns > 0) return;
+    setSelectedAttacker(id === selectedAttacker ? null : id);
+  };
+
+  const onEnemyUnitClick = (targetId: string) => {
+    if (!selectedAttacker) return;
+    setMatch(declareAttack(match, 'player', selectedAttacker, targetId));
+    setSelectedAttacker(null);
+  };
+
+  const attackFace = () => {
+    if (!selectedAttacker || enemyHasTaunt) return;
+    setMatch(declareAttack(match, 'player', selectedAttacker, null));
+    setSelectedAttacker(null);
+  };
+
+  const play = (cardId: string) => {
+    setMatch(playCard(match, 'player', cardId));
+  };
+
+  const finishTurn = () => {
+    setSelectedAttacker(null);
+    setMatch(endTurn(match));
+  };
+
+  const hand = match.player.hand.map((id) => ALL_CARDS.find((c) => c.id === id)!).filter(Boolean);
+
+  return (
+    <section className="battle">
+      <h2>
+        L'adversaire <span>♥ {match.enemy.life}/{match.enemy.maxLife}</span>
+      </h2>
+      <div className="battle-meta">
+        <span>Main adverse : {match.enemy.hand.length} cartes</span>
+        <span>Mana {match.enemy.mana}/{match.enemy.maxMana}</span>
+      </div>
+      <Zone
+        title="Créatures adverses"
+        units={match.enemy.field}
+        isEnemy
+        taunted={enemyHasTaunt}
+        selectable={!!selectedAttacker}
+        onSelect={onEnemyUnitClick}
+      />
+
+      <div className="turn-strip">
+        <span>Tour {match.turn}</span>
+        <span>{match.activePlayer === 'player' ? 'Ton tour' : "Tour de l'adversaire"}</span>
+        <button className="attack-face" disabled={!selectedAttacker || enemyHasTaunt} onClick={attackFace}>
+          Attaquer le héros
+        </button>
+      </div>
+
+      <p className="battle-log">{match.log[match.log.length - 1]}</p>
+
+      <Zone
+        title="Tes créatures"
+        units={match.player.field}
+        isEnemy={false}
+        taunted={false}
+        selectable={match.activePlayer === 'player'}
+        selectedId={selectedAttacker}
+        onSelect={onPlayerUnitClick}
+      />
+
+      <p>
+        Mana {match.player.mana}/{match.player.maxMana} · joue une carte puis clique une de tes unités prêtes
+        pour attaquer.
+      </p>
+      <div className="hand">
+        {hand.map((c, i) => (
+          <CardView
+            key={`${c.id}-${i}`}
+            card={c}
+            disabled={match.activePlayer !== 'player' || c.cost > match.player.mana}
+            onClick={() => play(c.id)}
+          />
+        ))}
+      </div>
+
+      <h3>
+        Toi <span>♥ {match.player.life}/{match.player.maxLife}</span>
+      </h3>
+
+      <button className="end-turn" disabled={match.activePlayer !== 'player'} onClick={finishTurn}>
+        Terminer le tour →
+      </button>
+
+      {match.winner && (
+        <div className="match-result">
+          <p className={match.winner === 'player' ? 'win' : 'loss'}>
+            {match.winner === 'player' ? 'Victoire ! +35 ✦' : 'Défaite — retente ta chance.'}
+          </p>
+          <button className="primary" onClick={restart}>
+            Nouveau duel
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function Profile() {
+  const s = useGame();
+  return (
+    <section>
+      <h2>Profil de Chronos</h2>
+      <div className="profile">
+        <b>✦</b>
+        <div>
+          <h3>Chronos</h3>
+          <p>
+            Niveau {s.level} · {s.wins} victoires · {s.losses} défaites
+          </p>
+          <progress value={s.wins % 5} max="5" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Simple({ title }: { title: string }) {
+  return (
+    <section>
+      <h2>{title}</h2>
+      <p className="hint">Cette section arrive dans une prochaine passe de développement.</p>
+    </section>
+  );
+}
+
+export default function App() {
+  return (
+    <Shell>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/collection" element={<Collection />} />
+        <Route path="/decks" element={<Decks />} />
+        <Route path="/profil" element={<Profile />} />
+        <Route path="/combat" element={<Combat />} />
+        {['classement', 'boutique', 'tutoriel', 'paramètres'].map((x) => (
+          <Route key={x} path={'/' + x} element={<Simple title={x[0].toUpperCase() + x.slice(1)} />} />
+        ))}
+      </Routes>
+    </Shell>
+  );
+}
