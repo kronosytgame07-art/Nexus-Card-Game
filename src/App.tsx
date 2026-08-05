@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ALL_CARDS, copiesInDeck, maxCopiesAllowed, useGame } from './store/game';
@@ -56,10 +56,48 @@ function PortraitGate() {
   );
 }
 
+function MusicManager() {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const location = useLocation();
+  const enabled = useGame((s) => s.musicEnabled);
+  const inCombat = location.pathname === '/combat';
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (enabled && !inCombat) {
+      audio.volume = 0.45;
+      audio.play().catch(() => {
+        // Bloqué par la politique d'autoplay du navigateur tant qu'aucune interaction
+        // n'a eu lieu — le bouton musique relancera la lecture au prochain clic.
+      });
+    } else {
+      audio.pause();
+    }
+  }, [enabled, inCombat]);
+
+  return <audio ref={audioRef} src="/audio/menu-theme.mp3" loop preload="none" />;
+}
+
+function MusicToggle() {
+  const enabled = useGame((s) => s.musicEnabled);
+  const setMusicEnabled = useGame((s) => s.setMusicEnabled);
+  return (
+    <button
+      className="music-toggle"
+      onClick={() => setMusicEnabled(!enabled)}
+      title={enabled ? 'Couper la musique' : 'Activer la musique du menu'}
+    >
+      {enabled ? '🔊' : '🔈'}
+    </button>
+  );
+}
+
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <PortraitGate />
+      <MusicManager />
       <aside>
         <h1>
           ✦ NEXUS <small>CARD ARENA</small>
@@ -71,7 +109,10 @@ function Shell({ children }: { children: React.ReactNode }) {
         ))}
       </aside>
       <main>{children}</main>
-      <FullscreenButton />
+      <div className="hud-buttons">
+        <MusicToggle />
+        <FullscreenButton />
+      </div>
     </>
   );
 }

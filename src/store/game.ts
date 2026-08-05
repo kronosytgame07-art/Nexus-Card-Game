@@ -12,12 +12,14 @@ interface GameMeta {
   owned: string[];
   deck: string[];
   campaignChapter: number;
+  musicEnabled: boolean;
   addCard: (id: string) => void;
   saveDeck: (deck: string[]) => void;
   setFaction: (faction: Faction) => void;
   record: (win: boolean) => void;
   addGold: (amount: number) => void;
   completeChapter: (chapterId: number) => void;
+  setMusicEnabled: (enabled: boolean) => void;
   resetProgress: () => void;
 }
 
@@ -38,6 +40,7 @@ export const useGame = create<GameMeta>()(
       owned: startingOwnedFor('Meute'),
       deck: starterDeck('Meute'),
       campaignChapter: 0,
+      musicEnabled: false,
       addCard: (id) => set((s) => ({ owned: [...new Set([...s.owned, id])] })),
       saveDeck: (deck) => set({ deck }),
       setFaction: (faction) =>
@@ -55,6 +58,7 @@ export const useGame = create<GameMeta>()(
         set((s) => ({
           campaignChapter: chapterId >= s.campaignChapter ? chapterId + 1 : s.campaignChapter,
         })),
+      setMusicEnabled: (enabled) => set({ musicEnabled: enabled }),
       resetProgress: () =>
         set({
           gold: 250,
