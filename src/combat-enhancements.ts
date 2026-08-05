@@ -25,10 +25,13 @@ function showInspector(card: HTMLElement) {
   const evolutionName = card.dataset.evolutionName || 'sa forme évoluée';
   const instanceId = card.dataset.instanceId;
 
-  const panel = document.createElement('aside');
+  // Utilise un div, pas un aside : le CSS du combat masque le menu latéral via
+  // body:has(.battle) aside, ce qui rendait l'inspecteur invisible pendant la partie.
+  const panel = document.createElement('div');
   panel.id = INSPECTOR_ID;
   panel.className = 'card-inspector';
   panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-modal', 'false');
   panel.setAttribute('aria-label', `Aperçu de ${name}`);
   panel.innerHTML = `
     <button class="card-inspector-close" aria-label="Fermer">×</button>
@@ -91,6 +94,11 @@ function bindBattleLog(log: Element) {
 }
 
 function scanBattle() {
+  const battle = document.querySelector('.battle');
+  if (!battle) {
+    closeInspector();
+    return;
+  }
   document.querySelectorAll('.battle-log').forEach(bindBattleLog);
 }
 
