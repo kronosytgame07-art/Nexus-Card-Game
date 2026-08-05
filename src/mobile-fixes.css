@@ -98,6 +98,17 @@ textarea,
     min-height: 0;
     flex: 1 1 auto;
     padding: 2px max(6px, env(safe-area-inset-right)) max(2px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  main:has(.home),
+  main:has(.home-hero),
+  main:has(.battle),
+  main:has(.combat-screen),
+  main:has(.combat-arena),
+  main:has(.arena-shell) {
     overflow: hidden;
   }
 
