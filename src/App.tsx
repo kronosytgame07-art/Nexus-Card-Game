@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ALL_CARDS, copiesInDeck, maxCopiesAllowed, UNLOCK_SECOND_FACTION_AT, useGame } from './store/game';
+import { ALL_CARDS, copiesInDeck, Language, maxCopiesAllowed, UNLOCK_SECOND_FACTION_AT, useGame } from './store/game';
 import { cardsByFaction, getCard } from './engine/cards';
 import { CardDef, Faction, FieldUnit, GameState, SupportCard } from './engine/types';
 import { CHAPTERS, chapterById } from './engine/campaign';
@@ -88,11 +88,6 @@ const COMBAT_TRACKS = [
   'audio/combat/duel-3-agressive.mp3',
 ];
 
-// Référence partagée en dehors de React : le bouton musique doit pouvoir appeler
-// .play() de façon SYNCHRONE dans son gestionnaire de clic (pas dans un useEffect
-// déclenché après coup), sinon Safari iOS et la plupart des navigateurs mobiles
-// bloquent silencieusement la lecture car l'appel n'est plus considéré comme
-// déclenché directement par un geste utilisateur.
 const sharedAudioRef: { current: HTMLAudioElement | null } = { current: null };
 
 function MusicManager() {
@@ -102,9 +97,6 @@ function MusicManager() {
   const wasInCombat = useRef(false);
   const [track, setTrack] = useState(MENU_TRACK);
 
-  // Change de morceau uniquement à la transition menu -> combat (ou l'inverse),
-  // jamais à chaque re-render, et tire une piste de duel au hasard à chaque entrée
-  // en combat pour varier d'un duel à l'autre.
   useEffect(() => {
     if (inCombat && !wasInCombat.current) {
       setTrack(COMBAT_TRACKS[Math.floor(Math.random() * COMBAT_TRACKS.length)]);
@@ -114,8 +106,6 @@ function MusicManager() {
     wasInCombat.current = inCombat;
   }, [inCombat]);
 
-  // Change de piste (menu <-> combat) : ici pas de contrainte de geste utilisateur
-  // puisque la lecture est déjà en cours, on peut relancer depuis un effet.
   useEffect(() => {
     const audio = sharedAudioRef.current;
     if (!audio) return;
@@ -124,7 +114,6 @@ function MusicManager() {
       audio.load();
       audio.play().catch(() => {});
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [track]);
 
   useEffect(() => {
@@ -150,8 +139,6 @@ function MusicToggle() {
   const onClick = () => {
     const next = !enabled;
     setMusicEnabled(next);
-    // Appel direct et synchrone dans le clic : c'est ce qui manquait pour que
-    // les navigateurs mobiles autorisent la lecture.
     const audio = sharedAudioRef.current;
     if (audio) {
       if (next) {
@@ -630,8 +617,6 @@ function Combat() {
   const [unitPulses, setUnitPulses] = useState<Record<string, { key: string; amount: number }>>({});
   const [heroPulses, setHeroPulses] = useState<{ player?: { key: string; amount: number }; enemy?: { key: string; amount: number } }>({});
 
-  // Compare deux états pour détecter les PV perdus (unités + héros) et déclenche
-  // les nombres flottants + le tremblement de carte correspondants.
   const pulseFromDiff = (before: GameState, after: GameState) => {
     const units: Record<string, { key: string; amount: number }> = {};
     const heroes: { player?: { key: string; amount: number }; enemy?: { key: string; amount: number } } = {};
@@ -653,279 +638,310 @@ function Combat() {
       window.setTimeout(() => {
         setUnitPulses({});
         setHeroPulses({});
-      }, 900);
+      }, 950);
     }
   };
+
+  const [fx, setFx] = useState<BattleFx>(null);
+  const [pileOpen, setPileOpen] = useState<null | 'deck' | 'grave' | 'evo'>(null);
+  const fxTimer = useRef<number | null>(null);
+
+  const triggerFx = (nextFx: BattleFx, duration = 700) => {
+    if (fxTimer.current) window.clearTimeout(fxTimer.current);
+    setFx(nextFx);
+    fxTimer.current = window.setTimeout(() => setFx(null), duration);
+  };
+
+  useEffect(() => () => {
+    if (fxTimer.current) window.clearTimeout(fxTimer.current);
+  }, []);
 
   useEffect(() => {
-    const onEvolve = (event: Event) => {
-      const instanceId = (event as CustomEvent<string>).detail;
-      if (!instanceId) return;
-      setMatch((current) => evolveUnit(current, 'player', instanceId));
-    };
-    window.addEventListener('nexus:evolve', onEvolve);
-    return () => window.removeEventListener('nexus:evolve', onEvolve);
-  }, []);
-  const [fx, setFx] = useState<BattleFx>(null);
-
-  const clearFx = (delay = 850) => window.setTimeout(() => setFx(null), delay);
-
-  const detectEvolution = (before: GameState, after: GameState) => {
-    for (const side of ['player', 'enemy'] as const) {
-      const oldByInstance = new Map(before[side].field.map((unit) => [unit.instanceId, unit.cardId]));
-      const evolved = after[side].field.find((unit) => {
-        const previousCard = oldByInstance.get(unit.instanceId);
-        return previousCard && previousCard !== unit.cardId && unit.cardId.startsWith('evo-');
-      });
-      if (evolved) {
-        const card = ALL_CARDS.find((entry) => entry.id === evolved.cardId);
-        setFx({ type: 'evolution', side, cardName: card?.name ?? 'Évolution' });
-        clearFx(2200);
-        return true;
-      }
-    }
-    return false;
-  };
-
-  if (match.winner && !reported) {
-    s.record(match.winner === 'player');
-    if (match.winner === 'player') {
+    if (!match.winner || reported) return;
+    const won = match.winner === 'player';
+    s.record(won);
+    if (won) {
       s.addGold(reward);
       if (chapter) s.completeChapter(chapter.id);
     }
     setReported(true);
-  }
+  }, [match.winner, reported, reward, chapter, s]);
 
-  useEffect(() => {
-    const onPlayCard = (event: Event) => {
-      const cardId = (event as CustomEvent<string>).detail;
-      if (!cardId) return;
-      setMatch((current) => playCard(current, 'player', cardId));
-      setInspectedHandCard(null);
-      setEffectHint('');
-    };
-    window.addEventListener('nexus:play-card', onPlayCard);
-    return () => window.removeEventListener('nexus:play-card', onPlayCard);
-  }, []);
+  const play = (id: string) => {
+    if (match.currentTurn !== 'player' || match.winner) return;
+    const card = ALL_CARDS.find((entry) => entry.id === id);
+    const before = match;
+    const next = playCard(match, id);
+    setMatch(next);
+    pulseFromDiff(before, next);
+    if (card?.type === 'unit' && next !== match) {
+      const newest = next.player.field[next.player.field.length - 1];
+      triggerFx({ type: 'summon', side: 'player', instanceId: newest?.instanceId }, 720);
+    }
+  };
 
-  useEffect(() => {
-    if (match.activePlayer !== 'player' || match.winner) return;
-    const affordable = match.player.hand
-      .map((id) => ALL_CARDS.find((card) => card.id === id))
-      .filter((card): card is CardDef => Boolean(card && card.cost <= match.player.mana));
-    const lethal = affordable.find((card) => card.effect?.kind === 'damage' && match.enemy.field.some((unit) => unit.health <= (card.effect?.value ?? 0)));
-    const protect = affordable.find((card) => card.effect?.kind === 'protect' && match.player.field.some((unit) => unit.health <= Math.ceil(unit.maxHealth / 2)));
-    const draw = affordable.find((card) => (card.effect?.kind === 'draw' || card.effect?.kind === 'search') && match.player.hand.length <= 2);
-    const summon = affordable.find((card) => card.effect?.kind === 'summon' && match.player.field.length < 3);
-    const recommended = lethal || protect || draw || summon;
-    setEffectHint(recommended ? `C'est le moment d'activer ${recommended.name}.` : '');
-  }, [match]);
+  const selectAttacker = (id: string) => {
+    if (match.currentTurn !== 'player' || match.winner) return;
+    const unit = match.player.field.find((entry) => entry.instanceId === id);
+    if (!unit || unit.hasAttacked || unit.stunnedTurns > 0) return;
+    setSelectedAttacker((current) => (current === id ? null : id));
+  };
+
+  const attackUnit = (targetId: string) => {
+    if (!selectedAttacker) return;
+    const before = match;
+    triggerFx({ type: 'attack', side: 'player', instanceId: selectedAttacker }, 520);
+    const next = declareAttack(match, selectedAttacker, targetId);
+    setMatch(next);
+    pulseFromDiff(before, next);
+    setSelectedAttacker(null);
+  };
+
+  const attackHero = () => {
+    if (!selectedAttacker) return;
+    const before = match;
+    triggerFx({ type: 'attack', side: 'player', instanceId: selectedAttacker }, 520);
+    const next = declareAttack(match, selectedAttacker);
+    setMatch(next);
+    pulseFromDiff(before, next);
+    setSelectedAttacker(null);
+  };
+
+  const evolve = (instanceId: string) => {
+    const beforeUnit = match.player.field.find((entry) => entry.instanceId === instanceId);
+    if (!beforeUnit) return;
+    const beforeCard = ALL_CARDS.find((entry) => entry.id === beforeUnit.cardId);
+    const evolvedCard = beforeCard?.evolvesTo ? ALL_CARDS.find((entry) => entry.id === beforeCard.evolvesTo) : undefined;
+    const next = evolveUnit(match, instanceId);
+    if (next === match) return;
+    setMatch(next);
+    triggerFx({ type: 'evolution', side: 'player', cardName: evolvedCard?.name ?? 'Évolution' }, 1000);
+  };
+
+  const activateEffect = (instanceId: string) => {
+    const before = match;
+    const unit = before.player.field.find((entry) => entry.instanceId === instanceId);
+    if (!unit) return;
+    const card = ALL_CARDS.find((entry) => entry.id === unit.cardId);
+    const next = activateUnitEffect(before, instanceId);
+    if (next === before) {
+      setEffectHint('Cet effet ne peut pas être activé maintenant.');
+      window.setTimeout(() => setEffectHint(''), 2000);
+      return;
+    }
+    setMatch(next);
+    pulseFromDiff(before, next);
+    setEffectHint(card ? `Effet de ${card.name} activé !` : 'Effet activé !');
+    window.setTimeout(() => setEffectHint(''), 2000);
+  };
+
+  const activateSupport = (instanceId: string) => {
+    const before = match;
+    const item = before.player.support.find((entry) => entry.instanceId === instanceId);
+    if (!item) return;
+    const card = getCard(item.cardId);
+    const next = activateSupportCard(before, 'player', instanceId);
+    if (next === before) {
+      setEffectHint(`${card.name} ne peut pas être activé maintenant.`);
+      window.setTimeout(() => setEffectHint(''), 2200);
+      return;
+    }
+    setMatch(next);
+    pulseFromDiff(before, next);
+    setEffectHint(`${card.name} activé !`);
+    window.setTimeout(() => setEffectHint(''), 2000);
+  };
+
+  const nextTurn = () => {
+    if (match.currentTurn !== 'player' || match.winner) return;
+    setSelectedAttacker(null);
+    const before = match;
+    triggerFx(null);
+    const afterPlayerEnd = endTurn(match);
+    setMatch(afterPlayerEnd);
+    pulseFromDiff(before, afterPlayerEnd);
+    window.setTimeout(() => {
+      setMatch((current) => {
+        if (current.winner || current.currentTurn === 'player') return current;
+        const beforeAi = current;
+        const afterAi = endTurn(current);
+        pulseFromDiff(beforeAi, afterAi);
+        return afterAi;
+      });
+    }, 550);
+  };
 
   const restart = () => {
+    setMatch(startMatch());
     setReported(false);
     setSelectedAttacker(null);
-    setFx(null);
-    setMatch(startMatch());
+    setInspectedHandCard(null);
+    setEffectHint('');
+    setInspectedUnit(null);
+    setUnitPulses({});
+    setHeroPulses({});
   };
 
   const enemyHasTaunt = match.enemy.field.some((unit) => unit.taunt);
+  const activePlayerUnit = inspectedUnit ? match.player.field.find((unit) => unit.instanceId === inspectedUnit) : undefined;
 
-  const onPlayerUnitClick = (id: string) => {
-    const unit = match.player.field.find((entry) => entry.instanceId === id);
-    if (!unit || !unit.canAttack || unit.stunnedTurns > 0) return;
-    setSelectedAttacker(id === selectedAttacker ? null : id);
-  };
-
-  const resolveAttack = (targetId: string | null) => {
-    if (!selectedAttacker) return;
-    const attacker = selectedAttacker;
-    const before = match;
-    setFx({ type: 'attack', side: 'player', instanceId: attacker });
-    window.setTimeout(() => {
-      const next = declareAttack(match, 'player', attacker, targetId);
-      setMatch(next);
-      setSelectedAttacker(null);
-      pulseFromDiff(before, next);
-      clearFx(180);
-    }, 330);
-  };
-
-  const play = (cardId: string) => {
-    const card = ALL_CARDS.find((entry) => entry.id === cardId);
-    const beforeIds = new Set(match.player.field.map((unit) => unit.instanceId));
-    const next = playCard(match, 'player', cardId);
-    setMatch(next);
-    if (card?.type === 'unit') {
-      const summoned = next.player.field.find((unit) => !beforeIds.has(unit.instanceId));
-      setFx({ type: 'summon', side: 'player', instanceId: summoned?.instanceId });
-      clearFx();
-    }
-  };
-
-  const activateEffect = () => {
-    if (!inspectedUnit) return;
-    const before = match;
-    const next = activateUnitEffect(match, 'player', inspectedUnit);
-    setMatch(next);
-    pulseFromDiff(before, next);
-  };
-
-  const finishTurn = () => {
-    setSelectedAttacker(null);
-    const before = match;
-    const next = endTurn(match);
-    setMatch(next);
-    pulseFromDiff(before, next);
-    if (detectEvolution(before, next)) return;
-    const beforeEnemy = new Set(before.enemy.field.map((unit) => unit.instanceId));
-    const summoned = next.enemy.field.find((unit) => !beforeEnemy.has(unit.instanceId));
-    if (summoned) {
-      setFx({ type: 'summon', side: 'enemy', instanceId: summoned.instanceId });
-      clearFx();
-    }
-  };
-
-  const hand = match.player.hand.map((id) => ALL_CARDS.find((card) => card.id === id)!).filter(Boolean);
+  const pileCards = pileOpen === 'deck'
+    ? match.player.deck.map((id) => getCard(id))
+    : pileOpen === 'grave'
+    ? match.player.grave.map((id) => getCard(id))
+    : pileOpen === 'evo'
+    ? match.player.evoDeck.map((id) => getCard(id))
+    : [];
 
   return (
     <section className="battle">
-      {chapter && <p className="eyebrow">Chapitre {chapter.id + 1} · {chapter.title}</p>}
-      {chapter && <div className="boss-quote">{chapter.opponentFaction === 'Chevalier' ? 'Jeanne d’Arc : Que la lumière guide ma lame !' : 'Chef de la Meute : Tu es entré sur notre territoire.'}</div>}
-
-      <header className="enemy-hud">
-        <strong>L'adversaire</strong>
-        <div className="enemy-hand-row" aria-label={`Main de l'adversaire : ${match.enemy.hand.length} cartes`}>
-          {Array.from({ length: match.enemy.hand.length }, (_, i) => (
-            <span key={i} className="enemy-hand-card" style={{ backgroundImage: `url(${CARD_BACK_URL})` }} />
-          ))}
-        </div>
-        <span>Mana {match.enemy.mana}/{match.enemy.maxMana}</span>
-        <b className={heroPulses.enemy ? 'hero-hit' : ''}>
-          PV ♥ {match.enemy.life}/{match.enemy.maxLife}
-          {heroPulses.enemy && (
-            <motion.span
-              key={heroPulses.enemy.key}
-              className="dmg-float hero-dmg-float"
-              initial={{ opacity: 1, y: 0 }}
-              animate={{ opacity: [1, 1, 0], y: -30 }}
-              transition={{ duration: 0.85 }}
-            >
-              -{heroPulses.enemy.amount}
-            </motion.span>
-          )}
-        </b>
-      </header>
-
-      <Zone
-        title="CRÉATURES ADVERSES"
-        units={match.enemy.field}
-        isEnemy
-        taunted={enemyHasTaunt}
-        selectable={!!selectedAttacker}
-        fx={fx}
-        onSelect={(targetId) => resolveAttack(targetId)}
-        support={match.enemy.support}
-        damagePulses={unitPulses}
-      />
-
-      <div className="turn-strip">
-        <span>TOUR {match.turn}</span>
-        <span>{match.activePlayer === 'player' ? 'À TOI DE JOUER' : "TOUR DE L'ADVERSAIRE"}</span>
-        <span className="mana-readout">MANA {match.player.mana}/{match.player.maxMana}</span>
-        <button className="attack-face" disabled={!selectedAttacker || enemyHasTaunt} onClick={() => resolveAttack(null)}>
-          ATTAQUER LE HÉROS
-        </button>
+      <div className="battle-meta">
+        <b>{chapter ? `Chapitre ${chapter.id + 1} — ${chapter.title}` : 'Duel rapide'}</b>
+        <span>IA {aiDifficulty}</span>
       </div>
 
-      <p className="battle-log">{match.log[match.log.length - 1]}</p>
+      <div className="battle-top">
+        <div className="combatant enemy-combatant">
+          <span className="avatar">✦</span>
+          <div>
+            <b>{chapter ? chapter.title : 'Rival Nexus'}</b>
+            <small>{opponentFaction}</small>
+          </div>
+          <span className="life">♥ {match.enemy.life}</span>
+          <span className="mana">◆ {match.enemy.mana}/{match.enemy.maxMana}</span>
+          {heroPulses.enemy && <span className="hero-dmg">-{heroPulses.enemy.amount}</span>}
+        </div>
+      </div>
 
-      <Zone
-        title="TES CRÉATURES"
-        units={match.player.field}
-        isEnemy={false}
-        taunted={false}
-        selectable={match.activePlayer === 'player'}
-        selectedId={selectedAttacker}
-        fx={fx}
-        onSelect={(id) => { setInspectedUnit(id); onPlayerUnitClick(id); }}
-        support={match.player.support}
-        damagePulses={unitPulses}
-        onActivateSupport={(id) => {
-          const before = match;
-          const next = activateSupportCard(match, 'player', id);
-          setMatch(next);
-          pulseFromDiff(before, next);
-        }}
-      />
+      <div className="battle-main">
+        <div className="pile-rail left">
+          <button className="card-pile grave" onClick={() => setPileOpen('grave')}>
+            <span className="pile-stack" />
+            <span className="pile-icon">☠</span>
+            <b>FOSSE</b>
+            <em>{match.player.grave.length}</em>
+          </button>
+        </div>
 
-      {inspectedUnit && (
-        <button className="activate-effect" onClick={activateEffect}>Activer l’effet</button>
-      )}
+        <div className="battle-center">
+          <Zone
+            title="ADVERSAIRE"
+            units={match.enemy.field}
+            isEnemy
+            taunted={enemyHasTaunt}
+            selectable={!!selectedAttacker}
+            selectedId={null}
+            fx={fx}
+            onSelect={attackUnit}
+            support={match.enemy.support}
+            damagePulses={unitPulses}
+          />
+
+          <div className="turn-strip">
+            <b>{match.currentTurn === 'player' ? 'À TOI DE JOUER' : "TOUR DE L'ADVERSAIRE"}</b>
+            <span>Tour {match.turn}</span>
+            {selectedAttacker && (
+              <button className="attack-face" disabled={enemyHasTaunt} onClick={attackHero}>
+                Attaquer directement
+              </button>
+            )}
+          </div>
+
+          <Zone
+            title="TON TERRAIN"
+            units={match.player.field}
+            isEnemy={false}
+            taunted={false}
+            selectable={match.currentTurn === 'player'}
+            selectedId={selectedAttacker}
+            fx={fx}
+            onSelect={selectAttacker}
+            support={match.player.support}
+            onActivateSupport={activateSupport}
+            damagePulses={unitPulses}
+          />
+        </div>
+
+        <div className="pile-rail right">
+          <button className="card-pile evo" onClick={() => setPileOpen('evo')}>
+            <span className="pile-stack" />
+            <span className="pile-icon">✦</span>
+            <b>ÉVOSPHÈRE</b>
+            <em>{match.player.evoDeck.length}</em>
+          </button>
+          <button className="card-pile deck" onClick={() => setPileOpen('deck')}>
+            <span className="pile-stack" />
+            <span className="pile-icon">▣</span>
+            <b>DECK</b>
+            <em>{match.player.deck.length}</em>
+          </button>
+        </div>
+      </div>
 
       <div className="hand">
-        {hand.map((card, index) => (
-          <CardView
-            key={`${card.id}-${index}`}
-            card={card}
-            disabled={match.activePlayer !== 'player' || card.cost > match.player.mana}
-            onClick={() => play(card.id)}
-          />
-        ))}
+        {match.player.hand.map((id, index) => {
+          const card = getCard(id);
+          return (
+            <div key={`${id}-${index}`} className="hand-card-wrap">
+              <CardView card={card} disabled={match.currentTurn !== 'player' || !!match.winner} onClick={() => play(id)} />
+              <button className="inspect-card" onClick={() => setInspectedHandCard(id)} aria-label={`Inspecter ${card.name}`}>⌕</button>
+            </div>
+          );
+        })}
       </div>
 
-      <footer className="battle-footer">
-        <h3 className={heroPulses.player ? 'hero-hit' : ''}>
-          Toi <span>PV ♥ {match.player.life}/{match.player.maxLife}</span>
-          {heroPulses.player && (
-            <motion.span
-              key={heroPulses.player.key}
-              className="dmg-float hero-dmg-float"
-              initial={{ opacity: 1, y: 0 }}
-              animate={{ opacity: [1, 1, 0], y: -30 }}
-              transition={{ duration: 0.85 }}
-            >
-              -{heroPulses.player.amount}
-            </motion.span>
-          )}
-        </h3>
-        <button className="end-turn" disabled={match.activePlayer !== 'player'} onClick={finishTurn}>
-          TERMINER LE TOUR →
+      <div className="battle-footer">
+        <span className="life-readout">PV ♥ {match.player.life}</span>
+        <span className="mana-readout">◆ {match.player.mana}/{match.player.maxMana}</span>
+        <button className="end-turn" onClick={nextTurn} disabled={match.currentTurn !== 'player' || !!match.winner}>
+          TERMINER LE TOUR
         </button>
-      </footer>
+        {heroPulses.player && <span className="hero-dmg player">-{heroPulses.player.amount}</span>}
+      </div>
 
-      {fx?.type === 'summon' && <div className={'summon-shockwave ' + fx.side} />}
-      {fx?.type === 'attack' && <div className="attack-flash" />}
       {fx?.type === 'evolution' && (
-        <motion.div
-          className={'evolution-warning ' + fx.side}
-          initial={{ opacity: 0, scale: 1.45 }}
-          animate={{ opacity: [0, 1, 1, 0], scale: [1.45, 1, 1, 1.08] }}
-          transition={{ duration: 2.1, times: [0, 0.18, 0.82, 1] }}
-        >
-          <small>⚠ NEXUS ALERT ⚠</small>
-          <strong>WARNING</strong>
-          <b>EVOLUTION</b>
-          <span>{fx.cardName}</span>
-        </motion.div>
+        <div className="evolution-flash">
+          <span>ÉVOLUTION</span>
+          <b>{fx.cardName}</b>
+        </div>
       )}
 
-      <div className="battle-side-piles" aria-label="Piles de cartes">
-        <button className="card-pile evosphere-pile" type="button" title="Évosphère : 20 cartes maximum, 3 exemplaires par évolution">
-          <span className="pile-cards" aria-hidden="true" style={{ backgroundImage: `url(${CARD_BACK_URL})` }} />
-          <b>{match.player.evosphere.length}/20</b>
-          <small>ÉVOSPHÈRE</small>
-        </button>
-        <button className="card-pile graveyard-pile" type="button" title="Fosse : cartes utilisées ou détruites">
-          <span className="pile-cards" aria-hidden="true" style={{ backgroundImage: `url(${CARD_BACK_URL})` }} />
-          <b>{match.player.graveyard.length}</b>
-          <small>FOSSE</small>
-        </button>
-        <button className="card-pile deck-pile" type="button" title="Cartes restantes dans le deck">
-          <span className="pile-cards" aria-hidden="true" style={{ backgroundImage: `url(${CARD_BACK_URL})` }} />
-          <b>{match.player.deck.length}</b>
-          <small>DECK</small>
-        </button>
-      </div>
+      {pileOpen && (
+        <div className="pile-modal" role="dialog" aria-modal="true" onClick={() => setPileOpen(null)}>
+          <div className="pile-modal-content" onClick={(e) => e.stopPropagation()}>
+            <header>
+              <h3>{pileOpen === 'deck' ? 'Deck' : pileOpen === 'grave' ? 'Fosse' : 'Évosphère'}</h3>
+              <button onClick={() => setPileOpen(null)}>×</button>
+            </header>
+            <div className="pile-grid">
+              {pileCards.length ? pileCards.map((card, i) => <CardView key={`${card.id}-${i}`} card={card} />) : <p className="hint">Aucune carte.</p>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activePlayerUnit && (() => {
+        const def = getCard(activePlayerUnit.cardId);
+        const canEvolve = !!def.evolvesTo && !!def.waitTurns && activePlayerUnit.turnsOnField >= def.waitTurns;
+        const maxUses = def.effect && !def.text.toLowerCase().includes('à l’invocation') ? (def.text.toLowerCase().includes('2 fois par tour') ? 2 : 1) : 0;
+        return (
+          <div className="unit-actions">
+            <b>{def.name}</b>
+            <p>{def.text}</p>
+            {maxUses > 0 && (
+              <button className="secondary" onClick={() => activateEffect(activePlayerUnit.instanceId)}>
+                Activer l'effet ({activePlayerUnit.effectUsesThisTurn ?? 0}/{maxUses})
+              </button>
+            )}
+            {canEvolve && (
+              <button className="primary" onClick={() => evolve(activePlayerUnit.instanceId)}>
+                ÉVOLUER
+              </button>
+            )}
+            <button className="secondary" onClick={() => setInspectedUnit(null)}>Fermer</button>
+          </div>
+        );
+      })()}
 
       {inspectedHandCard && (() => {
         const card = ALL_CARDS.find((entry) => entry.id === inspectedHandCard);
@@ -987,6 +1003,15 @@ function Profile() {
   );
 }
 
+const LANGUAGE_OPTIONS: Array<{ code: Language; label: string; flag: string }> = [
+  { code: 'fr', label: 'Français', flag: '🇫🇷' },
+  { code: 'en', label: 'English', flag: '🇬🇧' },
+  { code: 'es', label: 'Español', flag: '🇪🇸' },
+  { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
+  { code: 'it', label: 'Italiano', flag: '🇮🇹' },
+  { code: 'pt', label: 'Português', flag: '🇵🇹' },
+];
+
 function Options() {
   const s = useGame();
   const { active: fullscreenActive, toggle: toggleFullscreen } = useFullscreen();
@@ -1041,7 +1066,21 @@ function Options() {
         </article>
         <article className="options-card">
           <b>Langue</b>
-          <p className="hint">Nexus Arena est actuellement disponible uniquement en français.</p>
+          <p className="hint">Choisis la langue de l'interface. Le choix est sauvegardé automatiquement.</p>
+          <div className="language-grid" role="group" aria-label="Choix de la langue">
+            {LANGUAGE_OPTIONS.map((option) => (
+              <button
+                key={option.code}
+                type="button"
+                className={'language-button' + (s.language === option.code ? ' active' : '')}
+                aria-pressed={s.language === option.code}
+                onClick={() => s.setLanguage(option.code)}
+              >
+                <span aria-hidden="true">{option.flag}</span>
+                <b>{option.label}</b>
+              </button>
+            ))}
+          </div>
         </article>
         <article className="options-card danger">
           <b>Réinitialiser la progression</b>
@@ -1101,6 +1140,11 @@ function FactionOnboarding() {
 export default function App() {
   const factionChosen = useGame((s) => s.factionChosen);
   const hasLegacyDeck = useGame((s) => s.deck.length > 0);
+  const language = useGame((s) => s.language);
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
 
   if (!factionChosen && !hasLegacyDeck) {
     return <FactionOnboarding />;
