@@ -1,0 +1,17 @@
+{
+  "name": "Nexus Card Arena",
+  "short_name": "Nexus Arena",
+  "description": "Duel de cartes stratégique dark fantasy — Meute contre Chevalier.",
+  "start_url": "/",
+  "scope": "/",
+  "id": "/",
+  "display": "standalone",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#071314",
+  "theme_color": "#071314",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

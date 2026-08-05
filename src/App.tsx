@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ALL_CARDS, copiesInDeck, maxCopiesAllowed, useGame } from './store/game';
@@ -11,9 +11,55 @@ import cardBack from './assets/cards/nexus-card-back.png';
 const nav = ['Jouer', 'Campagne', 'Collection', 'Decks', 'Profil', 'Classement', 'Boutique', 'Tutoriel', 'Paramètres'];
 const path = (x: string) => (x === 'Jouer' ? '/' : '/' + x.toLowerCase());
 
+function useFullscreen() {
+  const [active, setActive] = useState(!!document.fullscreenElement);
+  useEffect(() => {
+    const onChange = () => setActive(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
+  const toggle = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+        const orientation = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
+        if (orientation?.lock) await orientation.lock('landscape').catch(() => {});
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch {
+      // Le plein écran / verrouillage d'orientation ne sont pas dispo partout (iOS Safari
+      // notamment) : le jeu reste jouable normalement sans, on échoue silencieusement.
+    }
+  };
+  return { active, toggle };
+}
+
+function FullscreenButton() {
+  const { active, toggle } = useFullscreen();
+  return (
+    <button className="fullscreen-toggle" onClick={toggle} title={active ? 'Quitter le plein écran' : 'Plein écran'}>
+      {active ? '⤡' : '⛶'}
+    </button>
+  );
+}
+
+function PortraitGate() {
+  return (
+    <div className="portrait-gate" aria-hidden="true">
+      <div>
+        <span className="rotate-icon">⟳</span>
+        <p>Tourne ton appareil</p>
+        <small>Nexus Arena se joue en mode paysage.</small>
+      </div>
+    </div>
+  );
+}
+
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <>
+      <PortraitGate />
       <aside>
         <h1>
           ✦ NEXUS <small>CARD ARENA</small>
@@ -25,6 +71,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         ))}
       </aside>
       <main>{children}</main>
+      <FullscreenButton />
     </>
   );
 }
@@ -334,6 +381,7 @@ function Combat() {
       <div className="turn-strip">
         <span>Tour {match.turn}</span>
         <span>{match.activePlayer === 'player' ? 'Ton tour' : "Tour de l'adversaire"}</span>
+        <span className="mana-readout">Mana {match.player.mana}/{match.player.maxMana}</span>
         <button className="attack-face" disabled={!selectedAttacker || enemyHasTaunt} onClick={attackFace}>
           Attaquer le héros
         </button>
@@ -351,10 +399,6 @@ function Combat() {
         onSelect={onPlayerUnitClick}
       />
 
-      <p>
-        Mana {match.player.mana}/{match.player.maxMana} · joue une carte puis clique une de tes unités prêtes
-        pour attaquer.
-      </p>
       <div className="hand">
         {hand.map((c, i) => (
           <CardView
@@ -366,13 +410,14 @@ function Combat() {
         ))}
       </div>
 
-      <h3>
-        Toi <span>♥ {match.player.life}/{match.player.maxLife}</span>
-      </h3>
-
-      <button className="end-turn" disabled={match.activePlayer !== 'player'} onClick={finishTurn}>
-        Terminer le tour →
-      </button>
+      <div className="battle-footer">
+        <h3>
+          Toi <span>♥ {match.player.life}/{match.player.maxLife}</span>
+        </h3>
+        <button className="end-turn" disabled={match.activePlayer !== 'player'} onClick={finishTurn}>
+          Terminer le tour →
+        </button>
+      </div>
 
       {match.winner && (
         <div className="match-result">
