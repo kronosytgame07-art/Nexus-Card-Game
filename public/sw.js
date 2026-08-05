@@ -1,4 +1,4 @@
-const CACHE = 'nexus-arena-v2';
+const CACHE = 'nexus-arena-v3';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
 
 self.addEventListener('install', (event) => {
@@ -14,18 +14,37 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
+  const request = event.request;
+
+  if (request.method !== 'GET') return;
+
+  // Les éléments audio/vidéo utilisent des requêtes HTTP Range. Elles renvoient
+  // une réponse partielle 206 que l'API Cache n'autorise pas à stocker.
+  // On les laisse donc passer directement vers le réseau.
+  if (request.headers.has('range')) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request).then(
-      (cached) =>
-        cached ||
-        fetch(event.request)
-          .then((response) => {
-            const copy = response.clone();
-            caches.open(CACHE).then((cache) => cache.put(event.request, copy));
-            return response;
-          })
-          .catch(() => cached)
-    )
+    caches.match(request).then(async (cached) => {
+      if (cached) return cached;
+
+      try {
+        const response = await fetch(request);
+
+        // Ne mettre en cache que des réponses complètes et valides. Cela exclut
+        // notamment les 206, les erreurs et les réponses opaques non vérifiables.
+        if (response.ok && response.status === 200 && response.type !== 'opaque') {
+          const copy = response.clone();
+          event.waitUntil(caches.open(CACHE).then((cache) => cache.put(request, copy)));
+        }
+
+        return response;
+      } catch (error) {
+        if (cached) return cached;
+        throw error;
+      }
+    })
   );
 });
