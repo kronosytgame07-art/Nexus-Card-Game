@@ -9,24 +9,43 @@ function textOf(root: Element, selector: string): string {
   return root.querySelector(selector)?.textContent?.trim() ?? '';
 }
 
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char] ?? char));
+}
+
 function showInspector(card: HTMLElement) {
   closeInspector();
 
   const name = textOf(card, 'b') || textOf(card, '.field-card-name') || 'Carte';
-  const faction = textOf(card, 'i') || textOf(card, '.field-card-faction');
-  const rules = textOf(card, 'p') || textOf(card, '.field-card-text') || 'Aucun effet spécial.';
+  const faction = card.dataset.cardFaction || textOf(card, 'i') || textOf(card, '.field-card-faction');
+  const rules = card.dataset.cardText || textOf(card, 'p') || textOf(card, '.field-card-text') || 'Aucun effet spécial.';
   const footer = textOf(card, 'footer') || textOf(card, '.fu-stats') ||
     `${textOf(card, '.field-card-atk')}  ${textOf(card, '.field-card-hp')}`;
   const tags = Array.from(card.querySelectorAll('.fu-tag, .field-card-tags em'))
     .map((x) => x.textContent?.trim())
-    .filter(Boolean);
+    .filter(Boolean) as string[];
   const image = card.querySelector('img') as HTMLImageElement | null;
   const evolvable = card.dataset.evolvable === 'true';
-  const evolutionName = card.dataset.evolutionName || 'sa forme évoluée';
+  const evolutionName = card.dataset.evolutionName || '';
   const instanceId = card.dataset.instanceId;
+  const waitTurns = Number(card.dataset.waitTurns || 0);
+  const turnsOnField = Number(card.dataset.turnsOnField || 0);
+  const cost = card.dataset.cardCost;
+  const rarity = card.dataset.cardRarity;
+  const effectUses = Number(card.dataset.effectUses || 0);
+  const effectMax = Number(card.dataset.effectMax || 0);
+  const hasEffect = card.dataset.hasEffect === 'true' || rules !== 'Aucun effet spécial.';
 
-  // Utilise un div, pas un aside : le CSS du combat masque le menu latéral via
-  // body:has(.battle) aside, ce qui rendait l'inspecteur invisible pendant la partie.
+  const evolutionInfo = evolutionName
+    ? `<div class="card-inspector-evolution"><b>ÉVOLUTION</b><span>${escapeHtml(evolutionName)}</span><small>${evolvable ? 'Prête maintenant' : `Disponible après ${waitTurns} tours sur le terrain · progression ${Math.min(turnsOnField, waitTurns)}/${waitTurns}`}</small></div>`
+    : '<div class="card-inspector-evolution muted"><b>ÉVOLUTION</b><span>Aucune évolution</span></div>';
+
+  const activationInfo = effectMax > 0
+    ? `<div class="card-inspector-usage"><b>ACTIVATION</b><span>${effectUses}/${effectMax} utilisée(s) ce tour</span></div>`
+    : hasEffect
+      ? '<div class="card-inspector-usage"><b>DÉCLENCHEMENT</b><span>Automatique selon la condition de la carte</span></div>'
+      : '';
+
   const panel = document.createElement('div');
   panel.id = INSPECTOR_ID;
   panel.className = 'card-inspector';
@@ -36,14 +55,16 @@ function showInspector(card: HTMLElement) {
   panel.innerHTML = `
     <button class="card-inspector-close" aria-label="Fermer">×</button>
     <div class="card-inspector-frame">
-      ${image ? `<img src="${image.currentSrc || image.src}" alt="${name}">` : '<div class="card-inspector-placeholder">✦</div>'}
+      ${image ? `<img src="${image.currentSrc || image.src}" alt="${escapeHtml(name)}">` : '<div class="card-inspector-placeholder">✦</div>'}
       <div class="card-inspector-body">
-        <small>${faction}</small>
-        <h3>${name}</h3>
+        <small>${escapeHtml(faction)}${rarity ? ` · ${escapeHtml(rarity)}` : ''}${cost ? ` · Coût ${escapeHtml(cost)}` : ''}</small>
+        <h3>${escapeHtml(name)}</h3>
         <div class="card-inspector-stats">${footer}</div>
-        <p>${rules}</p>
-        ${tags.length ? `<div class="card-inspector-tags">${tags.map((tag) => `<span>${tag}</span>`).join('')}</div>` : ''}
-        ${evolvable && instanceId ? `<button class="evolve-action" type="button">ÉVOLUER EN ${evolutionName.toUpperCase()}</button>` : ''}
+        <div class="card-inspector-rules"><b>EFFET</b><p>${escapeHtml(rules)}</p></div>
+        ${activationInfo}
+        ${evolutionInfo}
+        ${tags.length ? `<div class="card-inspector-tags">${tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}</div>` : ''}
+        ${evolvable && instanceId ? `<button class="evolve-action" type="button">ÉVOLUER EN ${escapeHtml(evolutionName.toUpperCase())}</button>` : ''}
       </div>
     </div>
   `;
