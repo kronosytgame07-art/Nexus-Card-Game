@@ -6,6 +6,8 @@ import { Faction } from '../engine/types';
 /** Nombre de chapitres de campagne à remporter pour débloquer la seconde faction. */
 export const UNLOCK_SECOND_FACTION_AT = 3;
 
+export type Language = 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt';
+
 interface GameMeta {
   gold: number;
   wins: number;
@@ -16,6 +18,7 @@ interface GameMeta {
   deck: string[];
   campaignChapter: number;
   musicEnabled: boolean;
+  language: Language;
   factionChosen: boolean;
   unlockedFactions: Faction[];
   addCard: (id: string) => void;
@@ -26,6 +29,7 @@ interface GameMeta {
   addGold: (amount: number) => void;
   completeChapter: (chapterId: number) => void;
   setMusicEnabled: (enabled: boolean) => void;
+  setLanguage: (language: Language) => void;
   resetProgress: () => void;
 }
 
@@ -47,6 +51,7 @@ export const useGame = create<GameMeta>()(
       deck: [],
       campaignChapter: 0,
       musicEnabled: false,
+      language: 'fr',
       factionChosen: false,
       unlockedFactions: [],
       addCard: (id) => set((s) => ({ owned: [...new Set([...s.owned, id])] })),
@@ -84,6 +89,7 @@ export const useGame = create<GameMeta>()(
           return { campaignChapter };
         }),
       setMusicEnabled: (enabled) => set({ musicEnabled: enabled }),
+      setLanguage: (language) => set({ language }),
       resetProgress: () =>
         set({
           gold: 250,
