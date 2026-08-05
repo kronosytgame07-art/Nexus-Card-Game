@@ -39,6 +39,12 @@ jobs:
           cp "GPT image-2026-08-05-17-04-33.png" dist/cards/hurleur-de-nuit.png
           cp "GPT image-2026-08-05-17-18-25.png" dist/cards/croc-de-fer.png
           cp "GPT image-2026-08-05-17-01-23.png" dist/cards/meute.png
+          cp "GPT image-2026-08-05-17-32-38.png" dist/cards/meute-rassemblee.png
+          cp "GPT image-2026-08-05-17-34-33.png" dist/cards/appel-de-la-lune.png
+          cp "GPT image-2026-08-05-17-36-10.png" dist/cards/derniere-trace.png
+          cp "GPT image-2026-08-05-17-38-01.png" dist/cards/instinct-de-survie.png
+          cp "GPT image-2026-08-05-17-44-52.png" dist/cards/territoire-sacre.png
+          cp "FLUX-2026-08-05-17-56-51.jpeg" dist/cards/emprise-de-la-meute.png
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
