@@ -11,6 +11,30 @@ import cardBack from './assets/cards/nexus-card-back.png';
 const nav = ['Jouer', 'Campagne', 'Collection', 'Decks', 'Profil', 'Classement', 'Boutique', 'Tutoriel', 'Paramètres'];
 const path = (x: string) => (x === 'Jouer' ? '/' : '/' + x.toLowerCase());
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+function useInstallPrompt() {
+  const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
+  useEffect(() => {
+    const handler = (event: Event) => {
+      event.preventDefault();
+      setDeferred(event as BeforeInstallPromptEvent);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+  const install = async () => {
+    if (!deferred) return;
+    await deferred.prompt();
+    await deferred.userChoice;
+    setDeferred(null);
+  };
+  return { available: !!deferred, install };
+}
+
 function useFullscreen() {
   const [active, setActive] = useState(!!document.fullscreenElement);
   useEffect(() => {
@@ -215,34 +239,89 @@ const CardView = ({
 function Home() {
   const go = useNavigate();
   const s = useGame();
+  const { available: canInstall, install } = useInstallPrompt();
+  const opponentFaction: Faction = s.faction === 'Meute' ? 'Chevalier' : 'Meute';
+  const wolfArt = `${import.meta.env.BASE_URL}cards/evo-loup-de-givre.png`;
+
   return (
-    <section className="home">
-      <p className="eyebrow">LE SERMENT ET LA MEUTE</p>
-      <h2>
-        Entre dans
-        <br />
-        <em>l'Évosphère</em>
-      </h2>
-      <p>Construis ton héritage et affronte les gardiens de Nexus.</p>
-      <div className="faction-pick">
-        {(['Meute', 'Chevalier'] as Faction[]).map((f) => (
-          <button
-            key={f}
-            className={'faction-button' + (s.faction === f ? ' active' : '')}
-            onClick={() => s.setFaction(f)}
-          >
-            {f}
+    <section className="home-hero">
+      <header className="home-topbar">
+        <div className="home-logo">
+          <span className="home-logo-mark">✦</span>
+          <div>
+            <b>NEXUS</b>
+            <small>CARD ARENA</small>
+          </div>
+        </div>
+        {canInstall && (
+          <button className="install-button" onClick={install}>
+            ↓ Installer
           </button>
-        ))}
+        )}
+      </header>
+
+      <div className="home-showcase">
+        <div className="home-art home-art-left" aria-hidden="true">
+          <span>⚜</span>
+          <small>Chevalier — illustrations à venir</small>
+        </div>
+        <div className="home-copy">
+          <p className="eyebrow">LE SERMENT ET LA MEUTE</p>
+          <h2>
+            Entre dans
+            <br />
+            <em>l'Évosphère</em>
+          </h2>
+          <p>Construis ton héritage, affronte les gardiens de Nexus et découvre ce que la Reine a effacé.</p>
+          <div className="faction-pick compact">
+            {(['Meute', 'Chevalier'] as Faction[]).map((f) => (
+              <button
+                key={f}
+                className={'faction-button' + (s.faction === f ? ' active' : '')}
+                onClick={() => s.setFaction(f)}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div
+          className="home-art home-art-right"
+          style={{ backgroundImage: `url(${wolfArt})` }}
+          aria-hidden="true"
+        />
       </div>
-      <div className="home-actions">
-        <button className="primary" onClick={() => go('/campagne')}>
-          ✦ Campagne
+
+      <div className="menu-cards">
+        <button className="menu-card" onClick={() => go('/campagne')}>
+          <span className="menu-card-icon gold">✦</span>
+          <span className="menu-card-body">
+            <small>HISTOIRE</small>
+            <b>Mode Campagne</b>
+            <em>{s.campaignChapter}/{CHAPTERS.length} chapitres terminés</em>
+          </span>
+          <span className="menu-card-arrow">→</span>
         </button>
-        <button className="secondary" onClick={() => go('/combat')}>
-          ⚔ Duel rapide
+        <button className="menu-card" onClick={() => go('/combat')}>
+          <span className="menu-card-icon teal">⚔</span>
+          <span className="menu-card-body">
+            <small>ENTRAÎNEMENT</small>
+            <b>Duel rapide</b>
+            <em>Main mélangée · contre {opponentFaction}</em>
+          </span>
+          <span className="menu-card-arrow">→</span>
+        </button>
+        <button className="menu-card" onClick={() => go('/paramètres')}>
+          <span className="menu-card-icon violet">⚙</span>
+          <span className="menu-card-body">
+            <small>NEXUS</small>
+            <b>Options</b>
+            <em>Graphismes · Langue · Audio</em>
+          </span>
+          <span className="menu-card-arrow">→</span>
         </button>
       </div>
+
       <div className="stats">
         <b>Niveau {s.level}</b>
         <span>
@@ -899,6 +978,69 @@ function Profile() {
   );
 }
 
+function Options() {
+  const s = useGame();
+  const { active: fullscreenActive, toggle: toggleFullscreen } = useFullscreen();
+  const [confirmReset, setConfirmReset] = useState(false);
+
+  const doReset = () => {
+    if (!confirmReset) {
+      setConfirmReset(true);
+      return;
+    }
+    s.resetProgress();
+    setConfirmReset(false);
+  };
+
+  return (
+    <section>
+      <h2>Options</h2>
+      <div className="options-grid">
+        <article className="options-card">
+          <b>Audio</b>
+          <p className="hint">Musique de menu et de duel.</p>
+          <button className="secondary" onClick={() => s.setMusicEnabled(!s.musicEnabled)}>
+            {s.musicEnabled ? '🔊 Musique activée' : '🔈 Musique coupée'}
+          </button>
+        </article>
+        <article className="options-card">
+          <b>Affichage</b>
+          <p className="hint">Plein écran, verrouillage paysage sur mobile.</p>
+          <button className="secondary" onClick={toggleFullscreen}>
+            {fullscreenActive ? '⤡ Quitter le plein écran' : '⛶ Plein écran'}
+          </button>
+        </article>
+        <article className="options-card">
+          <b>Faction</b>
+          <p className="hint">Détermine ton deck de départ et l'IA du duel rapide.</p>
+          <div className="faction-pick compact">
+            {(['Meute', 'Chevalier'] as Faction[]).map((f) => (
+              <button
+                key={f}
+                className={'faction-button' + (s.faction === f ? ' active' : '')}
+                onClick={() => s.setFaction(f)}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+        </article>
+        <article className="options-card">
+          <b>Langue</b>
+          <p className="hint">Nexus Arena est actuellement disponible uniquement en français.</p>
+        </article>
+        <article className="options-card danger">
+          <b>Réinitialiser la progression</b>
+          <p className="hint">Remet à zéro l'or, le niveau, la campagne et le deck. Irréversible.</p>
+          <button className="secondary danger" onClick={doReset}>
+            {confirmReset ? 'Confirmer la réinitialisation ?' : 'Réinitialiser'}
+          </button>
+        </article>
+      </div>
+    </section>
+  );
+}
+
 function Simple({ title }: { title: string }) {
   return (
     <section>
@@ -918,7 +1060,8 @@ export default function App() {
         <Route path="/decks" element={<Decks />} />
         <Route path="/profil" element={<Profile />} />
         <Route path="/combat" element={<Combat />} />
-        {['classement', 'boutique', 'tutoriel', 'paramètres'].map((x) => (
+        <Route path="/paramètres" element={<Options />} />
+        {['classement', 'boutique', 'tutoriel'].map((x) => (
           <Route key={x} path={'/' + x} element={<Simple title={x[0].toUpperCase() + x.slice(1)} />} />
         ))}
       </Routes>
