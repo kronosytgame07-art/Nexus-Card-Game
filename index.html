@@ -1,29 +1,41 @@
 <!doctype html>
 <html lang="fr">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-    <meta name="theme-color" content="#071816" />
-    <meta name="description" content="Nexus — jeu de cartes tactique." />
-    <title>Nexus — Jeu de cartes tactique</title>
-    <link rel="preload" as="image" href="https://nexus-card-arena.chummy-loon-8098.chatgpt.site/cards/nexus-card-back.webp" />
-    <link rel="preload" as="image" href="https://nexus-card-arena.chummy-loon-8098.chatgpt.site/cards/paladin-kingdom.webp" />
-    <link rel="preload" as="image" href="https://nexus-card-arena.chummy-loon-8098.chatgpt.site/cards/wolf-alpha.webp" />
-    <link rel="stylesheet" href="https://nexus-card-arena.chummy-loon-8098.chatgpt.site/assets/index-BNq2eG4W.css" />
-  </head>
-  <body>
-    <main class="menu-shell graphics-high">
-      <div class="menu-glow"></div>
-      <header class="menu-header">
-        <div class="menu-logo"><img src="https://nexus-card-arena.chummy-loon-8098.chatgpt.site/cards/nexus-card-back.webp" alt="" /><span><strong>NEXUS</strong><small>CARD ARENA</small></span></div>
-      </header>
-      <section class="menu-hero">
-        <div class="hero-fighter hero-knight"><img src="https://nexus-card-arena.chummy-loon-8098.chatgpt.site/cards/paladin-kingdom.webp" alt="Paladin du Royaume" /></div>
-        <div class="hero-fighter hero-wolf"><img src="https://nexus-card-arena.chummy-loon-8098.chatgpt.site/cards/wolf-alpha.webp" alt="Loup Alpha" /></div>
-        <div class="menu-title-block"><small>LE SERMENT ET LA MEUTE</small><h1>Entre dans<br />l'Évosphère</h1><p>Construis ton héritage, affronte les gardiens de Nexus et découvre ce que la Reine a effacé.</p></div>
-      </section>
-    </main>
-    <script>self.__VINEXT_RSC_PARAMS__={};self.__VINEXT_RSC_NAV__={"pathname":"/","searchParams":[]}</script>
-    <script type="module">import("https://nexus-card-arena.chummy-loon-8098.chatgpt.site/assets/index-DO4e4OeP.js")</script>
-  </body>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08191a">
+  <title>Nexus — Card Arena</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="app" class="app-shell">
+    <section id="homeScreen" class="screen home-screen">
+      <header class="topbar"><a class="brand" href="#" aria-label="Nexus accueil"><span class="brand-mark">N</span><span><b>NEXUS</b><small>CARD ARENA</small></span></a><button id="soundButton" class="icon-button" aria-label="Activer le son">♬</button></header>
+      <div class="aurora"></div>
+      <section class="hero"><p class="eyebrow">LE SERMENT ET LA MEUTE</p><h1>Entre dans<br><em>l’Évosphère</em></h1><p>Construis ton héritage, affronte les gardiens de Nexus et découvre ce que la Reine a effacé.</p></section>
+      <nav class="mode-list" aria-label="Menu principal">
+        <button class="mode-card" data-action="campaign"><span class="mode-icon">✦</span><span><small>HISTOIRE</small><b>Mode Campagne</b><em id="campaignStatus">0 / 7 chapitres terminés</em></span><strong>→</strong></button>
+        <button class="mode-card" data-action="duel"><span class="mode-icon">⚔</span><span><small>ENTRAÎNEMENT</small><b>Duel rapide</b><em>Main mélangée · IA adaptative</em></span><strong>→</strong></button>
+        <button class="mode-card" data-action="collection"><span class="mode-icon">◇</span><span><small>ARCHIVES</small><b>Collection Nexus</b><em>Cartes, légendes et factions</em></span><strong>→</strong></button>
+      </nav>
+      <footer><span>ALPHA JOUABLE</span><span id="winsLabel">0 victoires</span><span>Progression sauvegardée</span></footer>
+    </section>
+
+    <section id="campaignScreen" class="screen panel-screen hidden"><button class="back" data-action="home">← Accueil</button><p class="eyebrow">CHRONIQUES DE NEXUS</p><h2>Mode Campagne</h2><p class="muted">Chaque victoire déverrouille le prochain gardien.</p><div id="chapters" class="chapter-list"></div></section>
+    <section id="collectionScreen" class="screen panel-screen hidden"><button class="back" data-action="home">← Accueil</button><p class="eyebrow">ARCHIVES</p><h2>Collection Nexus</h2><div id="collection" class="collection-grid"></div></section>
+
+    <section id="duelScreen" class="screen duel-screen hidden">
+      <header class="duel-header"><button class="back" data-action="home">← Quitter</button><div id="turnLabel" class="turn-label">TON TOUR</div><div class="round-label">MANCHE <span id="roundNumber">1</span></div></header>
+      <section class="opponent zone"><div class="hero-token enemy">S</div><div class="identity"><b>LA SENTINELLE</b><small>Gardienne de Nexus</small></div><div class="health"><span>PV</span><b id="enemyHealth">20</b><i id="enemyHealthBar"></i></div></section>
+      <div id="enemyHand" class="enemy-hand" aria-label="Main adverse"></div>
+      <section id="battleLog" class="battle-log" aria-live="polite">Le duel commence. Choisis une carte.</section>
+      <section class="player zone"><div class="hero-token player-token">C</div><div class="identity"><b>CHRONOS</b><small>Héritier de l’Évosphère</small></div><div class="health"><span>PV</span><b id="playerHealth">20</b><i id="playerHealthBar"></i></div></section>
+      <section class="energy"><span>ÉNERGIE</span><div id="energyPips"></div><b id="energyNumber">3 / 3</b></section>
+      <section id="playerHand" class="hand" aria-label="Votre main"></section>
+      <button id="endTurn" class="end-turn">Terminer le tour <span>→</span></button>
+    </section>
+  </main>
+  <template id="cardTemplate"><button class="card"><span class="card-faction"></span><strong class="card-name"></strong><span class="card-art"></span><span class="card-text"></span><footer><b class="card-cost"></b><span>⚔ <b class="card-power"></b></span></footer></button></template>
+  <script src="game.js"></script>
+</body>
 </html>
