@@ -10,6 +10,7 @@ import cardBack from './assets/cards/nexus-card-back.png';
 
 const nav = ['Jouer', 'Campagne', 'Collection', 'Decks', 'Profil', 'Classement', 'Boutique', 'Tutoriel', 'Paramètres'];
 const path = (x: string) => (x === 'Jouer' ? '/' : '/' + x.toLowerCase());
+const CARD_BACK_URL = `${import.meta.env.BASE_URL}cards/card-back.jpg`;
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -595,12 +596,11 @@ function Zone({
             <button
               key={item.instanceId}
               className="support-card"
+              style={{ backgroundImage: `url(${CARD_BACK_URL})` }}
               disabled={isEnemy || !onActivateSupport}
               title={isEnemy ? 'Sort adverse posé face cachée' : `${def.name} — clique pour tenter de l'activer`}
               onClick={() => onActivateSupport?.(item.instanceId)}
-            >
-              ✦
-            </button>
+            />
           );
         })}
       </div>
@@ -794,7 +794,11 @@ function Combat() {
 
       <header className="enemy-hud">
         <strong>L'adversaire</strong>
-        <span>Main {match.enemy.hand.length}</span>
+        <div className="enemy-hand-row" aria-label={`Main de l'adversaire : ${match.enemy.hand.length} cartes`}>
+          {Array.from({ length: match.enemy.hand.length }, (_, i) => (
+            <span key={i} className="enemy-hand-card" style={{ backgroundImage: `url(${CARD_BACK_URL})` }} />
+          ))}
+        </div>
         <span>Mana {match.enemy.mana}/{match.enemy.maxMana}</span>
         <b className={heroPulses.enemy ? 'hero-hit' : ''}>
           PV ♥ {match.enemy.life}/{match.enemy.maxLife}
@@ -907,17 +911,17 @@ function Combat() {
 
       <div className="battle-side-piles" aria-label="Piles de cartes">
         <button className="card-pile evosphere-pile" type="button" title="Évosphère : 20 cartes maximum, 3 exemplaires par évolution">
-          <span className="pile-cards" aria-hidden="true" />
+          <span className="pile-cards" aria-hidden="true" style={{ backgroundImage: `url(${CARD_BACK_URL})` }} />
           <b>{match.player.evosphere.length}/20</b>
           <small>ÉVOSPHÈRE</small>
         </button>
         <button className="card-pile graveyard-pile" type="button" title="Fosse : cartes utilisées ou détruites">
-          <span className="pile-cards" aria-hidden="true" />
+          <span className="pile-cards" aria-hidden="true" style={{ backgroundImage: `url(${CARD_BACK_URL})` }} />
           <b>{match.player.graveyard.length}</b>
           <small>FOSSE</small>
         </button>
         <button className="card-pile deck-pile" type="button" title="Cartes restantes dans le deck">
-          <span className="pile-cards" aria-hidden="true" />
+          <span className="pile-cards" aria-hidden="true" style={{ backgroundImage: `url(${CARD_BACK_URL})` }} />
           <b>{match.player.deck.length}</b>
           <small>DECK</small>
         </button>
