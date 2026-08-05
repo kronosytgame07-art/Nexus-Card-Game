@@ -38,7 +38,6 @@ jobs:
           cp "ChatGPT Image 5 août 2026, 17_02_24.png" dist/cards/loup-sentinelle.png
           cp "GPT image-2026-08-05-17-04-33.png" dist/cards/hurleur-de-nuit.png
           cp "GPT image-2026-08-05-17-18-25.png" dist/cards/croc-de-fer.png
-          cp "GPT image-2026-08-05-17-01-23.png" dist/cards/meute.png
           cp "GPT image-2026-08-05-17-32-38.png" dist/cards/meute-rassemblee.png
           cp "GPT image-2026-08-05-17-34-33.png" dist/cards/appel-de-la-lune.png
           cp "GPT image-2026-08-05-17-36-10.png" dist/cards/morsure-sauvage.png
@@ -59,7 +58,6 @@ jobs:
           cp "ChatGPT Image 5 août 2026, 18_37_16.png" dist/cards/evo-loup-sentinelle.png
           cp "ChatGPT Image 5 août 2026, 18_37_22.png" dist/cards/evo-hurleur-de-nuit.png
           cp "ChatGPT Image 5 août 2026, 18_37_28.png" dist/cards/evo-croc-de-fer.png
-          cp "ChatGPT Image 5 août 2026, 18_37_35.png" dist/cards/evo-meute.png
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
