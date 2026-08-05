@@ -10,19 +10,41 @@ patch(new URL('../src/engine/types.ts', import.meta.url), (source) => {
   if (source.includes('evosphere: string[]')) return source;
   return source.replace(
     '  graveyard: string[];\n  fatigue: number;',
-    '  graveyard: string[];\n  /** Réserve séparée contenant les cartes d’évolution encore disponibles. */\n  evosphere: string[];\n  fatigue: number;'
+    '  graveyard: string[];\n  /** Réserve séparée contenant jusqu’à 20 cartes d’évolution. */\n  evosphere: string[];\n  fatigue: number;'
+  );
+});
+
+patch(new URL('../src/engine/cards.ts', import.meta.url), (source) => {
+  // Les évolutions suivent la même limite que les cartes normales : 3 exemplaires maximum.
+  return source.replace(
+    "      copies: 2,\n      rarity: 'Mythique',",
+    "      copies: 3,\n      rarity: 'Mythique',"
   );
 });
 
 patch(new URL('../src/engine/engine.ts', import.meta.url), (source) => {
   let next = source.replace('export const MAX_FIELD_UNITS = 6;', 'export const MAX_FIELD_UNITS = 3;');
 
-  if (!next.includes('evosphere: [...CARD_DB.values()]')) {
+  if (!next.includes('const evolutionIds =')) {
     next = next.replace(
-      '    graveyard: [],\n    fatigue: 0,',
-      "    graveyard: [],\n    evosphere: [...CARD_DB.values()]\n      .filter((card) => card.faction === faction && card.level === 2)\n      .map((card) => card.id),\n    fatigue: 0,"
+      '  const life = STARTING_LIFE + lifeBonus;\n  return {',
+      `  const life = STARTING_LIFE + lifeBonus;\n  const evolutionIds = [...new Set(\n    source\n      .map((id) => getCard(id).evolvesTo)\n      .filter((id): id is string => Boolean(id))\n  )];\n  const evosphere = evolutionIds\n    .flatMap((id) => [id, id, id])\n    .slice(0, 20);\n  return {`
     );
   }
+
+  if (!next.includes('    evosphere,')) {
+    next = next.replace(
+      '    graveyard: [],\n    fatigue: 0,',
+      '    graveyard: [],\n    evosphere,\n    fatigue: 0,'
+    );
+  }
+
+  // Compatibilité avec une ancienne version du patch qui ajoutait une seule copie
+  // de toutes les évolutions de la faction, sans tenir compte du deck.
+  next = next.replace(
+    /    evosphere: \[\.\.\.CARD_DB\.values\(\)\][\s\S]*?\.map\(\(card\) => card\.id\),\n/,
+    '    evosphere,\n'
+  );
 
   next = next.replace('  applyEvolutions(state, id);\n', '');
 
@@ -64,8 +86,10 @@ patch(new URL('../src/App.tsx', import.meta.url), (source) => {
   if (!next.includes('className="battle-side-piles"')) {
     next = next.replace(
       '      {match.winner && (',
-      `      <div className="battle-side-piles" aria-label="Piles de cartes">\n        <button className="card-pile evosphere-pile" type="button" title="Évosphère : évolutions disponibles">\n          <span className="pile-cards" aria-hidden="true" />\n          <b>{match.player.evosphere.length}</b>\n          <small>ÉVOSPHÈRE</small>\n        </button>\n        <button className="card-pile graveyard-pile" type="button" title="Fosse : cartes utilisées ou détruites">\n          <span className="pile-cards" aria-hidden="true" />\n          <b>{match.player.graveyard.length}</b>\n          <small>FOSSE</small>\n        </button>\n        <button className="card-pile deck-pile" type="button" title="Cartes restantes dans le deck">\n          <span className="pile-cards" aria-hidden="true" />\n          <b>{match.player.deck.length}</b>\n          <small>DECK</small>\n        </button>\n      </div>\n\n      {match.winner && (`
+      `      <div className="battle-side-piles" aria-label="Piles de cartes">\n        <button className="card-pile evosphere-pile" type="button" title="Évosphère : 20 cartes maximum, 3 exemplaires par évolution">\n          <span className="pile-cards" aria-hidden="true" />\n          <b>{match.player.evosphere.length}/20</b>\n          <small>ÉVOSPHÈRE</small>\n        </button>\n        <button className="card-pile graveyard-pile" type="button" title="Fosse : cartes utilisées ou détruites">\n          <span className="pile-cards" aria-hidden="true" />\n          <b>{match.player.graveyard.length}</b>\n          <small>FOSSE</small>\n        </button>\n        <button className="card-pile deck-pile" type="button" title="Cartes restantes dans le deck">\n          <span className="pile-cards" aria-hidden="true" />\n          <b>{match.player.deck.length}</b>\n          <small>DECK</small>\n        </button>\n      </div>\n\n      {match.winner && (`
     );
+  } else {
+    next = next.replace('<b>{match.player.evosphere.length}</b>', '<b>{match.player.evosphere.length}/20</b>');
   }
 
   return next;
