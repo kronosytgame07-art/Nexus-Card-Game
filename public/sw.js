@@ -1,4 +1,4 @@
-const CACHE = 'nexus-arena-v9';
+const CACHE = 'nexus-arena-v10';
 const SHELL = ['./manifest.webmanifest', './icon.svg'];
 
 self.addEventListener('install', (event) => {
