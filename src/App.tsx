@@ -241,10 +241,10 @@ function Home() {
   const s = useGame();
   const { available: canInstall, install } = useInstallPrompt();
   const opponentFaction: Faction = s.faction === 'Meute' ? 'Chevalier' : 'Meute';
-  const wolfArt = `${import.meta.env.BASE_URL}cards/evo-loup-de-givre.png`;
+  const heroBg = `${import.meta.env.BASE_URL}backgrounds/home-hero.jpg`;
 
   return (
-    <section className="home-hero">
+    <section className="home-hero" style={{ backgroundImage: `url(${heroBg})` }}>
       <header className="home-topbar">
         <div className="home-logo">
           <span className="home-logo-mark">✦</span>
@@ -261,10 +261,6 @@ function Home() {
       </header>
 
       <div className="home-showcase">
-        <div className="home-art home-art-left" aria-hidden="true">
-          <span>⚜</span>
-          <small>Chevalier — illustrations à venir</small>
-        </div>
         <div className="home-copy">
           <p className="eyebrow">LE SERMENT ET LA MEUTE</p>
           <h2>
@@ -285,11 +281,6 @@ function Home() {
             ))}
           </div>
         </div>
-        <div
-          className="home-art home-art-right"
-          style={{ backgroundImage: `url(${wolfArt})` }}
-          aria-hidden="true"
-        />
       </div>
 
       <div className="menu-cards">
