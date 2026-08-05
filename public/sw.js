@@ -1,4 +1,4 @@
-const CACHE = 'nexus-arena-v5';
+const CACHE = 'nexus-arena-v6';
 const SHELL = ['./manifest.webmanifest', './icon.svg'];
 
 self.addEventListener('install', (event) => {
@@ -17,7 +17,6 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const request = event.request;
-
   if (request.method !== 'GET') return;
 
   if (request.headers.has('range')) {
@@ -26,18 +25,13 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (request.mode === 'navigate' || request.destination === 'document') {
-    event.respondWith(
-      fetch(request)
-        .then((response) => response)
-        .catch(() => caches.match('./index.html').then((cached) => cached || Response.error()))
-    );
+    event.respondWith(fetch(request).catch(() => caches.match('./index.html').then((cached) => cached || Response.error())));
     return;
   }
 
   event.respondWith(
     caches.match(request).then(async (cached) => {
       if (cached) return cached;
-
       const response = await fetch(request);
       if (response.ok && response.status === 200 && response.type !== 'opaque') {
         const copy = response.clone();
