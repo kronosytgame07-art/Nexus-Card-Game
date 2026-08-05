@@ -26,34 +26,49 @@ if (!engine.includes('export function activateUnitEffect')) {
 
 const appPath = new URL('../src/App.tsx', import.meta.url);
 let app = readFileSync(appPath, 'utf8');
-if (!app.includes('activateUnitEffect')) {
-  app = app.replace(
-    "import { declareAttack, endTurn, newGame, playCard } from './engine/engine';",
-    "import { activateUnitEffect, declareAttack, endTurn, newGame, playCard } from './engine/engine';"
-  );
 
+// Le précédent garde-fou cherchait le nom dans tout App.tsx. Comme l'appel pouvait
+// déjà avoir été injecté par un patch antérieur, l'import était parfois oublié.
+if (!app.match(/import\s*\{[^}]*\bactivateUnitEffect\b[^}]*\}\s*from\s*['"]\.\/engine\/engine['"]/)) {
+  app = app.replace(
+    /import \{ ([^}]*) \} from '\.\/engine\/engine';/,
+    (_match, imports) => {
+      const names = imports.split(',').map((name) => name.trim()).filter(Boolean);
+      if (!names.includes('activateUnitEffect')) names.unshift('activateUnitEffect');
+      return `import { ${names.join(', ')} } from './engine/engine';`;
+    }
+  );
+}
+
+if (!app.includes('const [inspectedUnit, setInspectedUnit]')) {
   app = app.replace(
     "  const [reported, setReported] = useState(false);",
     "  const [reported, setReported] = useState(false);\n  const [inspectedUnit, setInspectedUnit] = useState<string | null>(null);"
   );
+}
 
+if (!app.includes("setMatch(activateUnitEffect(match, 'player', inspectedUnit))")) {
   app = app.replace(
     "  const finishTurn = () => {",
     "  const activateEffect = () => {\n    if (!inspectedUnit) return;\n    setMatch(activateUnitEffect(match, 'player', inspectedUnit));\n  };\n\n  const finishTurn = () => {"
   );
+}
 
+if (!app.includes('className="activate-effect"')) {
   app = app.replace(
     "        onSelect={onPlayerUnitClick}\n      />",
     "        onSelect={(id) => { setInspectedUnit(id); onPlayerUnitClick(id); }}\n      />\n\n      {inspectedUnit && (\n        <button className=\"activate-effect\" onClick={activateEffect}>Activer l’effet</button>\n      )}"
   );
+}
 
+if (!app.includes('className="boss-quote"')) {
   app = app.replace(
     "      {chapter && <p className=\"eyebrow\">Chapitre {chapter.id + 1} · {chapter.title}</p>}",
     "      {chapter && <p className=\"eyebrow\">Chapitre {chapter.id + 1} · {chapter.title}</p>}\n      {chapter && <div className=\"boss-quote\">{chapter.opponentFaction === 'Chevalier' ? 'Jeanne d’Arc : Que la lumière guide ma lame !' : 'Chef de la Meute : Tu es entré sur notre territoire.'}</div>}"
   );
-
-  writeFileSync(appPath, app);
 }
+
+writeFileSync(appPath, app);
 
 const cssPath = new URL('../src/arena.css', import.meta.url);
 let css = readFileSync(cssPath, 'utf8');
