@@ -56,17 +56,39 @@ function PortraitGate() {
   );
 }
 
+const MENU_TRACK = 'audio/menu-theme.mp3';
+const COMBAT_TRACKS = [
+  'audio/combat/duel-1-dark-intense.mp3',
+  'audio/combat/duel-2-epique-choeurs.mp3',
+  'audio/combat/duel-3-agressive.mp3',
+];
+
 function MusicManager() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const location = useLocation();
   const enabled = useGame((s) => s.musicEnabled);
   const inCombat = location.pathname === '/combat';
+  const wasInCombat = useRef(false);
+  const [track, setTrack] = useState(MENU_TRACK);
+
+  // Change de morceau uniquement à la transition menu -> combat (ou l'inverse),
+  // jamais à chaque re-render, et tire une piste de duel au hasard à chaque entrée
+  // en combat pour varier d'un duel à l'autre.
+  useEffect(() => {
+    if (inCombat && !wasInCombat.current) {
+      setTrack(COMBAT_TRACKS[Math.floor(Math.random() * COMBAT_TRACKS.length)]);
+    } else if (!inCombat && wasInCombat.current) {
+      setTrack(MENU_TRACK);
+    }
+    wasInCombat.current = inCombat;
+  }, [inCombat]);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    if (enabled && !inCombat) {
-      audio.volume = 0.45;
+    audio.volume = inCombat ? 0.4 : 0.45;
+    if (enabled) {
+      audio.load();
       audio.play().catch(() => {
         // Bloqué par la politique d'autoplay du navigateur tant qu'aucune interaction
         // n'a eu lieu — le bouton musique relancera la lecture au prochain clic.
@@ -74,9 +96,10 @@ function MusicManager() {
     } else {
       audio.pause();
     }
-  }, [enabled, inCombat]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, track]);
 
-  return <audio ref={audioRef} src={`${import.meta.env.BASE_URL}audio/menu-theme.mp3`} loop preload="none" />;
+  return <audio ref={audioRef} src={`${import.meta.env.BASE_URL}${track}`} loop preload="none" />;
 }
 
 function MusicToggle() {
