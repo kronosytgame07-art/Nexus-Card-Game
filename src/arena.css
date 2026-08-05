@@ -1,225 +1,266 @@
-/* Arène de duel Nexus — chargée après styles.css */
-body:has(.battle){background:#03090b;overflow:hidden}
-body:has(.battle) #root{display:block;background:#03090b}
+/* Arène de duel Nexus — layout compact plein écran */
+body:has(.battle){margin:0;background:#020708;overflow:hidden}
+body:has(.battle) #root{display:block;width:100%;height:100dvh;overflow:hidden;background:#020708}
 body:has(.battle) aside{display:none}
-body:has(.battle) main{padding:0;overflow:hidden;width:100%;height:100dvh}
-body:has(.battle) .hud-buttons{top:14px;right:18px}
+body:has(.battle) main{width:100%;height:100dvh;padding:0;overflow:hidden}
+body:has(.battle) .hud-buttons{top:12px;right:14px;z-index:30}
 
 .battle{
-  --enemy:#e54258;
-  --enemy-soft:rgba(229,66,88,.24);
-  --ally:#39dfb1;
-  --ally-soft:rgba(57,223,177,.22);
-  --gold:#e6bd63;
+  --enemy:#f04b63;
+  --enemy-dim:rgba(240,75,99,.28);
+  --ally:#42e2b4;
+  --ally-dim:rgba(66,226,180,.24);
+  --gold:#f0c96c;
   position:relative;
+  width:100%;
   height:100dvh;
-  min-height:620px;
-  padding:18px 4.5% 14px;
-  gap:7px;
+  min-height:540px;
+  display:grid;
+  grid-template-rows:58px minmax(104px,17vh) minmax(64px,10vh) 42px minmax(104px,17vh) minmax(64px,10vh) minmax(185px,1fr);
+  gap:0;
+  padding:0 3.5%;
   overflow:hidden;
   isolation:isolate;
   background:
-    linear-gradient(180deg,rgba(103,12,25,.62) 0 39.8%,rgba(3,9,11,.96) 40% 41%,rgba(0,73,62,.62) 41.2% 100%),
-    repeating-linear-gradient(135deg,transparent 0 54px,rgba(255,255,255,.025) 55px 57px,transparent 58px 108px),
-    radial-gradient(circle at 50% 38%,rgba(229,66,88,.16),transparent 35%),
-    radial-gradient(circle at 50% 70%,rgba(57,223,177,.16),transparent 38%),
-    #03090b;
+    linear-gradient(180deg,rgba(106,12,27,.82) 0 39.7%,#030708 39.8% 40.5%,rgba(0,79,66,.84) 40.6% 100%),
+    repeating-linear-gradient(135deg,transparent 0 62px,rgba(255,255,255,.018) 63px 65px,transparent 66px 126px),
+    #020708;
 }
 .battle::before{
   content:"";
   position:absolute;
   inset:0;
   z-index:-1;
-  opacity:.58;
-  background:
-    linear-gradient(130deg,transparent 23%,rgba(229,66,88,.20) 23.2% 23.5%,transparent 23.7%),
-    linear-gradient(230deg,transparent 23%,rgba(229,66,88,.16) 23.2% 23.5%,transparent 23.7%),
-    linear-gradient(45deg,transparent 68%,rgba(57,223,177,.14) 68.2% 68.5%,transparent 68.7%),
-    linear-gradient(315deg,transparent 68%,rgba(57,223,177,.14) 68.2% 68.5%,transparent 68.7%);
   pointer-events:none;
+  background:
+    radial-gradient(ellipse at 50% 20%,rgba(240,75,99,.16),transparent 43%),
+    radial-gradient(ellipse at 50% 72%,rgba(66,226,180,.17),transparent 45%),
+    linear-gradient(125deg,transparent 29%,rgba(255,255,255,.05) 29.2%,transparent 29.5%),
+    linear-gradient(235deg,transparent 29%,rgba(255,255,255,.04) 29.2%,transparent 29.5%);
 }
-.battle>.eyebrow{position:absolute;top:15px;left:50%;transform:translateX(-50%);margin:0;color:#f1cf7b;z-index:2}
+
+.battle>.eyebrow{position:absolute;top:10px;left:50%;transform:translateX(-50%);margin:0;color:var(--gold);font-size:9px;z-index:5}
 .battle>h2{
-  order:-10;
-  min-height:56px;
-  margin:0 -1% 2px;
-  padding:9px 130px 10px 58px;
-  border-bottom:1px solid rgba(229,66,88,.42);
-  background:linear-gradient(90deg,rgba(13,12,16,.96),rgba(13,12,16,.70),transparent);
-  font:700 20px "Space Grotesk";
+  grid-row:1;
+  margin:0;
+  padding:10px 150px 8px 55px;
+  display:flex;
+  align-items:center;
+  border-bottom:1px solid rgba(240,75,99,.45);
+  background:linear-gradient(90deg,rgba(5,8,11,.95),rgba(5,8,11,.58),transparent 70%);
+  font:700 18px "Space Grotesk";
 }
 .battle>h2::before{
   content:"S";
   position:absolute;
-  left:4.5%;top:14px;
-  width:42px;height:42px;
+  top:10px;left:3.5%;
+  width:36px;height:36px;
   display:grid;place-items:center;
   border:1px solid var(--enemy);
   border-radius:50%;
-  color:#ffd7df;
-  background:#3a1019;
+  background:#40111b;
+  color:white;
 }
-.battle>h2 span{font:700 15px "DM Mono";color:#fff;letter-spacing:1px}
-.battle>h2 span::before{content:"PV  ";font-size:10px;color:#b7c2c0}
+.battle>h2 span{margin-left:auto;font:700 14px "DM Mono"}
+.battle>h2 span::before{content:"PV ";font-size:9px;color:#adb9b6}
 .battle-meta{
-  order:-9;
-  margin-top:-31px;
-  padding-right:18%;
-  justify-content:flex-end;
-  gap:26px;
-  color:#df7888;
-  pointer-events:none;
-}
-
-.battle .zone-wrap{position:relative;width:min(760px,65vw);margin-inline:auto;text-align:center}
-.battle .zone-wrap>b{margin:0 0 5px;color:#d7dfdc;font-size:9px;text-transform:uppercase}
-.battle .zone-wrap:nth-of-type(1){order:-8;color:var(--enemy)}
-.battle .zone-wrap:nth-of-type(2){order:-2;color:var(--ally)}
-.battle .zone-wrap:nth-of-type(1)>b{color:#ff8495}
-.battle .zone-wrap:nth-of-type(2)>b{color:#75f1d1}
-
-.battle .board{
-  grid-template-columns:repeat(3,minmax(92px,130px));
-  justify-content:center;
-  gap:16px;
-  min-height:112px;
-}
-.battle .board::before,.battle .board::after,.battle .board>div:only-child{
-  height:108px;
-  border:1px dashed currentColor;
-  border-radius:10px;
-  opacity:.58;
-  background:linear-gradient(145deg,rgba(255,255,255,.018),rgba(255,255,255,.005));
-  box-shadow:inset 0 0 24px rgba(0,0,0,.25);
-}
-.battle .board::before,.battle .board::after{content:"◇";display:grid;place-items:center;font-size:22px}
-.battle .board>div:only-child{font-size:0;display:grid;place-items:center}
-.battle .board>div:only-child::after{content:"◇";font-size:22px}
-.battle .field-unit{height:108px;min-width:92px;border-color:currentColor;background:rgba(5,17,18,.88);box-shadow:0 0 18px rgba(0,0,0,.35)}
-
-/* Ligne de cinq soutiens sous chaque ligne de créatures */
-.battle .zone-wrap::after{
-  content:"SOUTIENS 0/5";
-  display:block;
-  width:min(690px,62vw);
-  height:92px;
-  margin:8px auto 0;
-  padding-top:96px;
-  color:currentColor;
-  font:8px "DM Mono";
-  letter-spacing:1.6px;
-  background:
-    linear-gradient(currentColor,currentColor) 0 0/1px 82px no-repeat,
-    linear-gradient(currentColor,currentColor) 25% 0/1px 82px no-repeat,
-    linear-gradient(currentColor,currentColor) 50% 0/1px 82px no-repeat,
-    linear-gradient(currentColor,currentColor) 75% 0/1px 82px no-repeat,
-    linear-gradient(currentColor,currentColor) 100% 0/1px 82px no-repeat,
-    repeating-linear-gradient(90deg,currentColor 0 6px,transparent 6px 10px) 0 0/100% 1px no-repeat,
-    repeating-linear-gradient(90deg,currentColor 0 6px,transparent 6px 10px) 0 82px/100% 1px no-repeat;
-  opacity:.42;
-  box-sizing:border-box;
-}
-
-.turn-strip{
-  order:-5;
-  width:min(850px,75vw);
-  min-height:34px;
-  margin:0 auto;
-  padding:5px 13px;
-  border-top:1px solid rgba(230,189,99,.42);
-  border-bottom:1px solid rgba(57,223,177,.34);
-  border-radius:24px;
-  background:rgba(3,12,13,.88);
-  justify-content:center;
-  gap:22px;
-  color:#f0cf7b;
-  z-index:2;
-}
-.turn-strip span:first-child{font-weight:700;color:#ffe092}
-.turn-strip span:nth-child(2){color:#7ff0d0}
-.mana-readout{margin-left:auto}
-.attack-face{margin-left:4px}
-.battle-log{order:-4;text-align:center;color:#b8c9c5;height:14px}
-
-.hand{
-  order:3;
   position:absolute;
-  left:50%;bottom:62px;
-  transform:translateX(-50%);
-  width:min(760px,68vw);
-  justify-content:center;
-  overflow:visible;
+  top:22px;right:9%;
+  display:flex;
+  gap:22px;
+  font:9px "DM Mono";
+  color:#ef8d9d;
   z-index:4;
 }
-.hand .card{
-  width:132px;
-  min-width:132px;
-  min-height:178px;
-  height:178px;
-  padding:8px;
-  border-radius:9px;
-  box-shadow:0 9px 26px rgba(0,0,0,.46);
+
+.battle .zone-wrap{
+  width:min(720px,62vw);
+  margin:auto;
+  text-align:center;
+  min-height:0;
 }
-.hand .card b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hand .card-art{height:83px;margin:4px 0}
+.battle .zone-wrap:nth-of-type(1){grid-row:2;color:var(--enemy)}
+.battle .zone-wrap:nth-of-type(2){grid-row:5;color:var(--ally)}
+.battle .zone-wrap>b{
+  display:block;
+  margin:0 0 5px;
+  font:8px "DM Mono";
+  letter-spacing:1.4px;
+  text-transform:uppercase;
+  color:currentColor;
+}
+.battle .board{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(86px,122px));
+  justify-content:center;
+  gap:14px;
+  min-height:0;
+}
+.battle .board::before,.battle .board::after,.battle .board>div:only-child,
+.battle .field-unit{
+  height:clamp(86px,13vh,122px);
+  border:1px dashed currentColor;
+  border-radius:10px;
+  background:rgba(5,12,14,.56);
+  box-shadow:inset 0 0 24px rgba(0,0,0,.26),0 5px 18px rgba(0,0,0,.22);
+}
+.battle .board::before,.battle .board::after{content:"◇";display:grid;place-items:center;font-size:20px;opacity:.65}
+.battle .board>div:only-child{font-size:0;display:grid;place-items:center;opacity:.65}
+.battle .board>div:only-child::after{content:"◇";font-size:20px}
+.battle .field-unit{border-style:solid;color:#edf7f4;background:rgba(6,20,21,.94)}
+
+/* Soutiens compacts, immédiatement derrière les créatures */
+.battle .zone-wrap::after{
+  content:"SOUTIENS 0/5";
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%);
+  width:min(640px,58vw);
+  height:clamp(54px,8vh,76px);
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  padding-bottom:3px;
+  color:currentColor;
+  font:7px "DM Mono";
+  letter-spacing:1.3px;
+  opacity:.48;
+  background:
+    linear-gradient(currentColor,currentColor) 0 0/1px 100% no-repeat,
+    linear-gradient(currentColor,currentColor) 25% 0/1px 100% no-repeat,
+    linear-gradient(currentColor,currentColor) 50% 0/1px 100% no-repeat,
+    linear-gradient(currentColor,currentColor) 75% 0/1px 100% no-repeat,
+    linear-gradient(currentColor,currentColor) 100% 0/1px 100% no-repeat,
+    repeating-linear-gradient(90deg,currentColor 0 6px,transparent 6px 10px) 0 0/100% 1px no-repeat,
+    repeating-linear-gradient(90deg,currentColor 0 6px,transparent 6px 10px) 0 100%/100% 1px no-repeat;
+}
+.battle .zone-wrap:nth-of-type(1)::after{top:calc(58px + min(17vh,122px));}
+.battle .zone-wrap:nth-of-type(2)::after{top:calc(58px + min(17vh,122px) + min(10vh,76px) + 42px + min(17vh,122px));}
+
+.turn-strip{
+  grid-row:4;
+  align-self:center;
+  justify-self:center;
+  width:min(760px,72vw);
+  min-height:32px;
+  margin:0;
+  padding:5px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:20px;
+  border:1px solid rgba(240,201,108,.32);
+  border-radius:20px;
+  background:rgba(3,10,12,.92);
+  font:9px "DM Mono";
+  color:var(--gold);
+  z-index:8;
+}
+.turn-strip span:nth-child(2){color:#80f0d2}
+.mana-readout{margin-left:auto;color:#80f0d2}
+.attack-face{padding:5px 10px;font-size:10px}
+.battle-log{
+  position:absolute;
+  top:calc(58px + min(17vh,122px) + min(10vh,76px) + 22px);
+  left:50%;transform:translateX(-50%);
+  width:min(700px,65vw);
+  margin:0;
+  text-align:center;
+  font:8px "DM Mono";
+  color:#c4d0cd;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  z-index:7;
+}
+
+.hand{
+  grid-row:7;
+  align-self:end;
+  justify-self:center;
+  width:min(820px,76vw);
+  height:calc(100% - 50px);
+  min-height:130px;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  gap:10px;
+  padding:0 0 8px;
+  overflow:visible;
+  z-index:10;
+}
+.hand .card{
+  width:clamp(98px,8vw,132px);
+  min-width:clamp(98px,8vw,132px);
+  height:clamp(138px,20vh,184px);
+  min-height:clamp(138px,20vh,184px);
+  padding:7px;
+  border-radius:9px;
+  box-shadow:0 10px 28px rgba(0,0,0,.52);
+}
+.hand .card b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hand .card-art{height:clamp(58px,9vh,88px);margin:4px 0}
 .hand .card p{display:none}
-.hand .card footer{font-size:10px;bottom:7px;left:8px;right:8px}
-.hand .card:hover{z-index:8}
+.hand .card footer{font-size:9px;left:7px;right:7px;bottom:6px}
+.hand .card:hover{z-index:12}
 
 .battle-footer{
-  order:4;
   position:absolute;
-  left:4.5%;right:4.5%;bottom:10px;
-  height:48px;
-  padding:6px 310px 6px 58px;
-  border-top:1px solid rgba(57,223,177,.32);
-  background:linear-gradient(90deg,rgba(2,18,17,.98),rgba(2,18,17,.70),transparent);
+  left:3.5%;right:3.5%;bottom:0;
+  height:50px;
+  display:flex;
+  align-items:center;
+  padding:7px 285px 7px 52px;
+  border-top:1px solid rgba(66,226,180,.38);
+  background:linear-gradient(90deg,rgba(2,17,16,.98),rgba(2,17,16,.72),transparent 75%);
+  z-index:14;
 }
-.battle-footer h3{width:100%;font-size:18px}
+.battle-footer h3{width:100%;margin:0;font-size:17px}
 .battle-footer h3::before{
   content:"K";
   position:absolute;
-  left:0;bottom:2px;
-  width:42px;height:42px;
+  left:0;bottom:6px;
+  width:36px;height:36px;
   display:grid;place-items:center;
   border:1px solid var(--ally);
   border-radius:50%;
-  color:#d7fff4;background:#07352d;
+  background:#083b31;
+  color:white;
 }
-.battle-footer h3 span{margin-left:auto;font:700 15px "DM Mono"}
-.battle-footer h3 span::before{content:"PV  ";font-size:10px;color:#b7c2c0}
+.battle-footer h3 span{margin-left:auto;font:700 14px "DM Mono"}
+.battle-footer h3 span::before{content:"PV ";font-size:9px;color:#adb9b6}
 .end-turn{
   position:absolute;
-  right:0;bottom:1px;
-  width:260px;height:44px;
-  border-color:#75f1d1;
-  border-radius:10px;
-  background:linear-gradient(90deg,#229d7e,#43dfb1);
-  color:#02231c;
+  right:0;bottom:6px;
+  width:250px;height:38px;
+  border:1px solid #7df2d3;
+  border-radius:9px;
+  background:linear-gradient(90deg,#209f7d,#47e0b5);
+  color:#02251d;
   text-transform:uppercase;
-  letter-spacing:.4px;
+  font-size:11px;
 }
+.match-result{position:fixed;z-index:50}
 
-.match-result{position:fixed}
-
-@media(max-width:1100px){
-  .battle{padding-inline:2.5%}
+@media(max-width:1200px){
+  .battle{padding-inline:2%}
+  .battle>h2::before{left:2%}
   .battle .zone-wrap{width:72vw}
-  .battle .zone-wrap::after{width:68vw}
-  .hand{width:76vw}
-  .hand .card{width:112px;min-width:112px}
-  .battle-footer{left:2.5%;right:2.5%}
+  .battle .zone-wrap::after{width:66vw}
+  .hand{width:84vw}
+  .battle-footer{left:2%;right:2%}
 }
-@media(orientation:landscape) and (max-height:760px){
-  .battle{min-height:0;padding-top:8px;gap:3px}
-  .battle>h2{min-height:44px;padding-top:5px;padding-bottom:5px}
-  .battle>h2::before{top:7px;width:34px;height:34px}
-  .battle .board{min-height:76px}
-  .battle .board::before,.battle .board::after,.battle .board>div:only-child,.battle .field-unit{height:72px}
-  .battle .zone-wrap::after{height:54px;padding-top:58px;background-size:1px 48px,1px 48px,1px 48px,1px 48px,1px 48px,100% 1px,100% 1px;background-position:0 0,25% 0,50% 0,75% 0,100% 0,0 0,0 48px}
-  .hand{bottom:54px}
-  .hand .card{height:142px;min-height:142px;width:104px;min-width:104px}
-  .hand .card-art{height:60px}
+@media(orientation:landscape) and (max-height:700px){
+  .battle{grid-template-rows:46px minmax(78px,16vh) minmax(45px,8vh) 34px minmax(78px,16vh) minmax(45px,8vh) minmax(145px,1fr)}
+  .battle>h2{padding-top:6px;padding-bottom:6px}
+  .battle>h2::before{top:6px;width:32px;height:32px}
+  .battle .board::before,.battle .board::after,.battle .board>div:only-child,.battle .field-unit{height:clamp(70px,12vh,92px)}
+  .battle .zone-wrap::after{height:clamp(42px,7vh,56px)}
+  .battle .zone-wrap:nth-of-type(1)::after{top:calc(46px + min(16vh,92px));}
+  .battle .zone-wrap:nth-of-type(2)::after{top:calc(46px + min(16vh,92px) + min(8vh,56px) + 34px + min(16vh,92px));}
+  .battle-log{top:calc(46px + min(16vh,92px) + min(8vh,56px) + 16px)}
+  .hand .card{height:clamp(120px,22vh,150px);min-height:clamp(120px,22vh,150px)}
+  .hand .card-art{height:52px}
   .battle-footer{height:42px}
-  .end-turn{height:38px}
+  .end-turn{height:32px;bottom:5px}
 }
