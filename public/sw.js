@@ -1,4 +1,4 @@
-const CACHE = 'nexus-arena-v4';
+const CACHE = 'nexus-arena-v5';
 const SHELL = ['./manifest.webmanifest', './icon.svg'];
 
 self.addEventListener('install', (event) => {
@@ -20,15 +20,11 @@ self.addEventListener('fetch', (event) => {
 
   if (request.method !== 'GET') return;
 
-  // Audio et vidéo demandent souvent des morceaux du fichier via HTTP Range.
-  // Une réponse 206 ne doit jamais être placée dans Cache Storage.
   if (request.headers.has('range')) {
     event.respondWith(fetch(request));
     return;
   }
 
-  // Toujours chercher la dernière version du document principal sur le réseau.
-  // Cela évite qu'une ancienne build GitHub Pages reste affichée indéfiniment.
   if (request.mode === 'navigate' || request.destination === 'document') {
     event.respondWith(
       fetch(request)
@@ -38,8 +34,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Les assets versionnés de Vite peuvent rester en cache. En cas d'absence,
-  // on les télécharge puis on conserve uniquement les réponses complètes 200.
   event.respondWith(
     caches.match(request).then(async (cached) => {
       if (cached) return cached;
