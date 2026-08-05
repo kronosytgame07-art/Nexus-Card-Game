@@ -5,6 +5,7 @@ import App from './App';
 import './styles.css';
 import './arena.css';
 import './combat-enhancements.css';
+import './card-piles.css';
 import './combat-enhancements';
 
 createRoot(document.getElementById('root')!).render(
