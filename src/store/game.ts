@@ -3,6 +3,9 @@ import { persist } from 'zustand/middleware';
 import { CARDS, cardsByFaction, getCard, starterDeck } from '../engine/cards';
 import { Faction } from '../engine/types';
 
+/** Nombre de chapitres de campagne à remporter pour débloquer la seconde faction. */
+export const UNLOCK_SECOND_FACTION_AT = 3;
+
 interface GameMeta {
   gold: number;
   wins: number;
@@ -13,8 +16,11 @@ interface GameMeta {
   deck: string[];
   campaignChapter: number;
   musicEnabled: boolean;
+  factionChosen: boolean;
+  unlockedFactions: Faction[];
   addCard: (id: string) => void;
   saveDeck: (deck: string[]) => void;
+  chooseStartingFaction: (faction: Faction) => void;
   setFaction: (faction: Faction) => void;
   record: (win: boolean) => void;
   addGold: (amount: number) => void;
@@ -37,14 +43,24 @@ export const useGame = create<GameMeta>()(
       losses: 0,
       level: 1,
       faction: 'Meute',
-      owned: startingOwnedFor('Meute'),
-      deck: starterDeck('Meute'),
+      owned: [],
+      deck: [],
       campaignChapter: 0,
       musicEnabled: false,
+      factionChosen: false,
+      unlockedFactions: [],
       addCard: (id) => set((s) => ({ owned: [...new Set([...s.owned, id])] })),
       saveDeck: (deck) => set({ deck }),
+      chooseStartingFaction: (faction) =>
+        set({
+          factionChosen: true,
+          faction,
+          unlockedFactions: [faction],
+          owned: startingOwnedFor(faction),
+          deck: starterDeck(faction),
+        }),
       setFaction: (faction) =>
-        set({ faction, deck: starterDeck(faction), owned: startingOwnedFor(faction) }),
+        set((s) => (s.unlockedFactions.includes(faction) ? { faction, deck: starterDeck(faction) } : {})),
       record: (win) =>
         set((s) => {
           if (win) {
@@ -55,9 +71,18 @@ export const useGame = create<GameMeta>()(
         }),
       addGold: (amount) => set((s) => ({ gold: s.gold + amount })),
       completeChapter: (chapterId) =>
-        set((s) => ({
-          campaignChapter: chapterId >= s.campaignChapter ? chapterId + 1 : s.campaignChapter,
-        })),
+        set((s) => {
+          const campaignChapter = chapterId >= s.campaignChapter ? chapterId + 1 : s.campaignChapter;
+          const missing = (['Meute', 'Chevalier'] as Faction[]).find((f) => !s.unlockedFactions.includes(f));
+          if (campaignChapter >= UNLOCK_SECOND_FACTION_AT && missing) {
+            return {
+              campaignChapter,
+              unlockedFactions: [...s.unlockedFactions, missing],
+              owned: [...new Set([...s.owned, ...startingOwnedFor(missing)])],
+            };
+          }
+          return { campaignChapter };
+        }),
       setMusicEnabled: (enabled) => set({ musicEnabled: enabled }),
       resetProgress: () =>
         set({
@@ -66,9 +91,11 @@ export const useGame = create<GameMeta>()(
           losses: 0,
           level: 1,
           faction: 'Meute',
-          owned: startingOwnedFor('Meute'),
-          deck: starterDeck('Meute'),
+          owned: [],
+          deck: [],
           campaignChapter: 0,
+          factionChosen: false,
+          unlockedFactions: [],
         }),
     }),
     { name: 'nexus-save' }

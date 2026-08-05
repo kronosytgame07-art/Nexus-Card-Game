@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ALL_CARDS, copiesInDeck, maxCopiesAllowed, useGame } from './store/game';
+import { ALL_CARDS, copiesInDeck, maxCopiesAllowed, UNLOCK_SECOND_FACTION_AT, useGame } from './store/game';
 import { cardsByFaction, getCard } from './engine/cards';
 import { CardDef, Faction, FieldUnit, GameState, SupportCard } from './engine/types';
 import { CHAPTERS, chapterById } from './engine/campaign';
@@ -270,15 +270,20 @@ function Home() {
           </h2>
           <p>Construis ton héritage, affronte les gardiens de Nexus et découvre ce que la Reine a effacé.</p>
           <div className="faction-pick compact">
-            {(['Meute', 'Chevalier'] as Faction[]).map((f) => (
-              <button
-                key={f}
-                className={'faction-button' + (s.faction === f ? ' active' : '')}
-                onClick={() => s.setFaction(f)}
-              >
-                {f}
-              </button>
-            ))}
+            {(['Meute', 'Chevalier'] as Faction[]).map((f) => {
+              const unlocked = s.unlockedFactions.includes(f);
+              return (
+                <button
+                  key={f}
+                  className={'faction-button' + (s.faction === f ? ' active' : '') + (unlocked ? '' : ' locked')}
+                  disabled={!unlocked}
+                  title={unlocked ? undefined : `Verrouillé — gagne ${UNLOCK_SECOND_FACTION_AT} chapitres de campagne pour débloquer`}
+                  onClick={() => s.setFaction(f)}
+                >
+                  {unlocked ? f : `🔒 ${f}`}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -365,7 +370,10 @@ function Campaign() {
 function Collection() {
   const [query, setQuery] = useState('');
   const owned = useGame((s) => s.owned);
-  const filtered = ALL_CARDS.filter((c) => c.name.toLowerCase().includes(query.toLowerCase()));
+  const unlockedFactions = useGame((s) => s.unlockedFactions);
+  const visibleCards = ALL_CARDS.filter((c) => unlockedFactions.includes(c.faction));
+  const filtered = visibleCards.filter((c) => c.name.toLowerCase().includes(query.toLowerCase()));
+  const lockedFaction = (['Meute', 'Chevalier'] as Faction[]).find((f) => !unlockedFactions.includes(f));
   return (
     <section>
       <h2>Collection</h2>
@@ -376,8 +384,14 @@ function Collection() {
         ))}
       </div>
       <p className="hint">
-        {owned.length}/{ALL_CARDS.filter((c) => c.level === 1).length} cartes de base possédées
+        {owned.length}/{visibleCards.filter((c) => c.level === 1).length} cartes de base possédées
       </p>
+      {lockedFaction && (
+        <p className="hint">
+          🔒 Les cartes {lockedFaction} restent cachées tant que la faction n'est pas débloquée — gagne{' '}
+          {UNLOCK_SECOND_FACTION_AT} chapitres de campagne.
+        </p>
+      )}
     </section>
   );
 }
@@ -1005,15 +1019,20 @@ function Options() {
           <b>Faction</b>
           <p className="hint">Détermine ton deck de départ et l'IA du duel rapide.</p>
           <div className="faction-pick compact">
-            {(['Meute', 'Chevalier'] as Faction[]).map((f) => (
-              <button
-                key={f}
-                className={'faction-button' + (s.faction === f ? ' active' : '')}
-                onClick={() => s.setFaction(f)}
-              >
-                {f}
-              </button>
-            ))}
+            {(['Meute', 'Chevalier'] as Faction[]).map((f) => {
+              const unlocked = s.unlockedFactions.includes(f);
+              return (
+                <button
+                  key={f}
+                  className={'faction-button' + (s.faction === f ? ' active' : '') + (unlocked ? '' : ' locked')}
+                  disabled={!unlocked}
+                  title={unlocked ? undefined : `Verrouillé — gagne ${UNLOCK_SECOND_FACTION_AT} chapitres de campagne pour débloquer`}
+                  onClick={() => s.setFaction(f)}
+                >
+                  {unlocked ? f : `🔒 ${f}`}
+                </button>
+              );
+            })}
           </div>
         </article>
         <article className="options-card">
@@ -1041,7 +1060,48 @@ function Simple({ title }: { title: string }) {
   );
 }
 
+function FactionOnboarding() {
+  const s = useGame();
+  const wolfArt = `${import.meta.env.BASE_URL}cards/evo-loup-de-givre.png`;
+  const blurbs: Record<Faction, string> = {
+    Meute: 'Rejoins les loups des brumes. Instinct, meute et lune rouge — frappe vite, en nombre.',
+    Chevalier: "Sers l'ordre du royaume. Discipline, provocation et lumière sacrée — tiens la ligne.",
+  };
+
+  return (
+    <div className="onboarding">
+      <div className="onboarding-inner">
+        <p className="eyebrow">CHOISIS TON SERMENT</p>
+        <h2>Quel camp défendras-tu ?</h2>
+        <p>
+          Ce choix détermine ton deck de départ. L'autre faction reste verrouillée jusqu'à ce que
+          tu remportes les {UNLOCK_SECOND_FACTION_AT} premiers chapitres de la campagne.
+        </p>
+        <div className="onboarding-choices">
+          <button className="onboarding-card" onClick={() => s.chooseStartingFaction('Meute')}>
+            <span className="onboarding-art" style={{ backgroundImage: `url(${wolfArt})` }} />
+            <b>Meute</b>
+            <small>{blurbs.Meute}</small>
+          </button>
+          <button className="onboarding-card" onClick={() => s.chooseStartingFaction('Chevalier')}>
+            <span className="onboarding-art onboarding-art-placeholder">⚜</span>
+            <b>Chevalier</b>
+            <small>{blurbs.Chevalier}</small>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  const factionChosen = useGame((s) => s.factionChosen);
+  const hasLegacyDeck = useGame((s) => s.deck.length > 0);
+
+  if (!factionChosen && !hasLegacyDeck) {
+    return <FactionOnboarding />;
+  }
+
   return (
     <Shell>
       <Routes>
