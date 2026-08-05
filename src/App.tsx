@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ALL_CARDS, copiesInDeck, maxCopiesAllowed, useGame } from './store/game';
-import { cardsByFaction } from './engine/cards';
-import { CardDef, Faction, FieldUnit, GameState } from './engine/types';
+import { cardsByFaction, getCard } from './engine/cards';
+import { CardDef, Faction, FieldUnit, GameState, SupportCard } from './engine/types';
 import { CHAPTERS, chapterById } from './engine/campaign';
-import { activateUnitEffect, declareAttack, endTurn, evolveUnit, newGame, playCard } from './engine/engine';
+import { activateSupportCard, activateUnitEffect, declareAttack, endTurn, evolveUnit, newGame, playCard } from './engine/engine';
 import cardBack from './assets/cards/nexus-card-back.png';
 
 const nav = ['Jouer', 'Campagne', 'Collection', 'Decks', 'Profil', 'Classement', 'Boutique', 'Tutoriel', 'Paramètres'];
@@ -63,8 +63,14 @@ const COMBAT_TRACKS = [
   'audio/combat/duel-3-agressive.mp3',
 ];
 
+// Référence partagée en dehors de React : le bouton musique doit pouvoir appeler
+// .play() de façon SYNCHRONE dans son gestionnaire de clic (pas dans un useEffect
+// déclenché après coup), sinon Safari iOS et la plupart des navigateurs mobiles
+// bloquent silencieusement la lecture car l'appel n'est plus considéré comme
+// déclenché directement par un geste utilisateur.
+const sharedAudioRef: { current: HTMLAudioElement | null } = { current: null };
+
 function MusicManager() {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const location = useLocation();
   const enabled = useGame((s) => s.musicEnabled);
   const inCombat = location.pathname === '/combat';
@@ -83,34 +89,56 @@ function MusicManager() {
     wasInCombat.current = inCombat;
   }, [inCombat]);
 
+  // Change de piste (menu <-> combat) : ici pas de contrainte de geste utilisateur
+  // puisque la lecture est déjà en cours, on peut relancer depuis un effet.
   useEffect(() => {
-    const audio = audioRef.current;
+    const audio = sharedAudioRef.current;
     if (!audio) return;
     audio.volume = inCombat ? 0.4 : 0.45;
     if (enabled) {
       audio.load();
-      audio.play().catch(() => {
-        // Bloqué par la politique d'autoplay du navigateur tant qu'aucune interaction
-        // n'a eu lieu — le bouton musique relancera la lecture au prochain clic.
-      });
-    } else {
-      audio.pause();
+      audio.play().catch(() => {});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, track]);
+  }, [track]);
 
-  return <audio ref={audioRef} src={`${import.meta.env.BASE_URL}${track}`} loop preload="none" />;
+  useEffect(() => {
+    const audio = sharedAudioRef.current;
+    if (audio) audio.volume = inCombat ? 0.4 : 0.45;
+  }, [inCombat]);
+
+  return (
+    <audio
+      ref={(el) => {
+        sharedAudioRef.current = el;
+      }}
+      src={`${import.meta.env.BASE_URL}${track}`}
+      loop
+      preload="none"
+    />
+  );
 }
 
 function MusicToggle() {
   const enabled = useGame((s) => s.musicEnabled);
   const setMusicEnabled = useGame((s) => s.setMusicEnabled);
+  const onClick = () => {
+    const next = !enabled;
+    setMusicEnabled(next);
+    // Appel direct et synchrone dans le clic : c'est ce qui manquait pour que
+    // les navigateurs mobiles autorisent la lecture.
+    const audio = sharedAudioRef.current;
+    if (audio) {
+      if (next) {
+        audio.load();
+        audio.play().catch(() => {});
+      } else {
+        audio.pause();
+      }
+    }
+  };
   return (
-    <button
-      className="music-toggle"
-      onClick={() => setMusicEnabled(!enabled)}
-      title={enabled ? 'Couper la musique' : 'Activer la musique du menu'}
-    >
+    <button className="music-toggle" onClick={onClick} title={enabled ? 'Couper la musique' : 'Activer la musique du menu'}>
       {enabled ? '🔊' : '🔈'}
     </button>
   );
@@ -418,6 +446,8 @@ function Zone({
   selectedId,
   fx,
   onSelect,
+  support,
+  onActivateSupport,
 }: {
   title: string;
   units: FieldUnit[];
@@ -427,6 +457,8 @@ function Zone({
   selectedId?: string | null;
   fx: BattleFx;
   onSelect?: (id: string) => void;
+  support: SupportCard[];
+  onActivateSupport?: (instanceId: string) => void;
 }) {
   return (
     <div className={'zone-wrap ' + (isEnemy ? 'enemy-zone' : 'player-zone')}>
@@ -451,9 +483,24 @@ function Zone({
         })}
       </div>
       <div className="support-row" aria-label="Zone de soutien">
-        {Array.from({ length: 5 }, (_, index) => <div key={index}>◇</div>)}
+        {Array.from({ length: 5 }, (_, index) => {
+          const item = support[index];
+          if (!item) return <div key={`sup-empty-${index}`}>◇</div>;
+          const def = getCard(item.cardId);
+          return (
+            <button
+              key={item.instanceId}
+              className="support-card"
+              disabled={isEnemy || !onActivateSupport}
+              title={isEnemy ? 'Sort adverse posé face cachée' : `${def.name} — clique pour tenter de l'activer`}
+              onClick={() => onActivateSupport?.(item.instanceId)}
+            >
+              ✦
+            </button>
+          );
+        })}
       </div>
-      <small>SOUTIENS 0/5</small>
+      <small>SOUTIEN {support.length}/5</small>
     </div>
   );
 }
@@ -621,6 +668,7 @@ function Combat() {
         selectable={!!selectedAttacker}
         fx={fx}
         onSelect={(targetId) => resolveAttack(targetId)}
+        support={match.enemy.support}
       />
 
       <div className="turn-strip">
@@ -643,6 +691,8 @@ function Combat() {
         selectedId={selectedAttacker}
         fx={fx}
         onSelect={(id) => { setInspectedUnit(id); onPlayerUnitClick(id); }}
+        support={match.player.support}
+        onActivateSupport={(id) => setMatch((current) => activateSupportCard(current, 'player', id))}
       />
 
       {inspectedUnit && (

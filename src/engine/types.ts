@@ -61,6 +61,11 @@ export interface FieldUnit {
   effectUsesThisTurn: number;
 }
 
+export interface SupportCard {
+  instanceId: string;
+  cardId: string;
+}
+
 export type PlayerId = 'player' | 'enemy';
 
 export interface PlayerState {
@@ -73,6 +78,8 @@ export interface PlayerState {
   deck: string[];
   hand: string[];
   field: FieldUnit[];
+  /** Sorts posés face cachée en zone Soutien, en attente d'activation (5 emplacements). */
+  support: SupportCard[];
   graveyard: string[];
   /** Réserve séparée contenant jusqu’à 20 cartes d’évolution. */
   evosphere: string[];

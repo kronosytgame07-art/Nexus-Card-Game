@@ -13,6 +13,7 @@ import {
 } from './types';
 
 export const MAX_FIELD_UNITS = 3;
+export const MAX_SUPPORT = 5;
 
 function clone(state: GameState): GameState {
   return JSON.parse(JSON.stringify(state));
@@ -52,6 +53,7 @@ function makePlayer(id: PlayerId, faction: Faction, customDeck?: string[], lifeB
     deck,
     hand,
     field: [],
+    support: [],
     graveyard: [],
     evosphere,
     fatigue: 0,
@@ -171,9 +173,10 @@ function autoTarget(state: GameState, ownerId: PlayerId, effect: EffectDef, sour
   }
 }
 
-function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, sourceUnitId?: string) {
+function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, sourceUnitId?: string): boolean {
   const owner = state[ownerId];
   const opponent = state[other(ownerId)];
+  let succeeded = true;
 
   switch (effect.kind) {
     case 'draw': {
@@ -188,6 +191,8 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
         const [found] = owner.deck.splice(idx, 1);
         owner.hand.push(found);
         pushLog(state, `${labelFor(ownerId)} trouve ${getCard(found).name} dans son deck.`);
+      } else {
+        succeeded = false;
       }
       break;
     }
@@ -197,6 +202,8 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
       if (unit) {
         unit.taunt = true;
         pushLog(state, `${getCard(unit.cardId).name} gagne Provocation.`);
+      } else {
+        succeeded = false;
       }
       break;
     }
@@ -207,6 +214,8 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
         unit.attack += effect.value ?? 1;
         unit.buffs += effect.value ?? 1;
         pushLog(state, `${getCard(unit.cardId).name} gagne +${effect.value ?? 1} attaque.`);
+      } else {
+        succeeded = false;
       }
       break;
     }
@@ -217,6 +226,8 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
         unit.stunnedTurns += effect.value ?? 1;
         unit.canAttack = false;
         pushLog(state, `${getCard(unit.cardId).name} est étourdi.`);
+      } else {
+        succeeded = false;
       }
       break;
     }
@@ -234,7 +245,10 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
       break;
     }
     case 'summon': {
-      if (owner.field.length >= MAX_FIELD_UNITS) break;
+      if (owner.field.length >= MAX_FIELD_UNITS) {
+        succeeded = false;
+        break;
+      }
       const pool = [...CARD_DB.values()].filter(
         (c) => c.level === 1 && c.type === 'unit' && (!effect.target || c.faction === effect.target)
       );
@@ -254,6 +268,8 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
           effectUsesThisTurn: 0,
         });
         pushLog(state, `${labelFor(ownerId)} invoque ${pick.name}.`);
+      } else {
+        succeeded = false;
       }
       break;
     }
@@ -261,6 +277,7 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
   removeDead(state, other(ownerId));
   removeDead(state, ownerId);
   checkWinner(state);
+  return succeeded;
 }
 
 export function playCard(
@@ -277,6 +294,10 @@ export function playCard(
   if (def.cost > p.mana) return state;
   if (def.type === 'unit' && p.field.length >= MAX_FIELD_UNITS) {
     pushLog(state, 'Le plateau est plein, impossible de jouer cette unité.');
+    return state;
+  }
+  if (def.type === 'spell' && p.support.length >= MAX_SUPPORT) {
+    pushLog(state, 'La zone Soutien est pleine, impossible de poser ce sort.');
     return state;
   }
 
@@ -301,9 +322,9 @@ export function playCard(
     pushLog(state, `${labelFor(playerId)} joue ${def.name}.`);
     if (def.effect && def.text.toLowerCase().includes('à l’invocation')) resolveEffect(state, playerId, def.effect, unit.instanceId);
   } else {
-    pushLog(state, `${labelFor(playerId)} lance ${def.name}.`);
-    p.graveyard.push(def.id);
-    if (def.effect && def.text.toLowerCase().includes('à l’invocation')) resolveEffect(state, playerId, def.effect);
+    const support = { instanceId: instanceId(), cardId: def.id };
+    p.support.push(support);
+    pushLog(state, `${labelFor(playerId)} pose ${def.name} face cachée en Soutien.`);
   }
 
   return state;
@@ -483,12 +504,29 @@ export function runAiTurn(rawState: GameState): GameState {
     const p = state.enemy;
     const playable = p.hand
       .map((id) => getCard(id))
-      .filter((c) => c.cost <= p.mana && (c.type !== 'unit' || p.field.length < MAX_FIELD_UNITS))
+      .filter(
+        (c) =>
+          c.cost <= p.mana &&
+          (c.type !== 'unit' || p.field.length < MAX_FIELD_UNITS) &&
+          (c.type !== 'spell' || p.support.length < MAX_SUPPORT)
+      )
       .sort((a, b) => b.cost - a.cost);
     if (playable[0]) {
       state = playCard(state, 'enemy', playable[0].id);
       playedSomething = true;
     }
+  }
+
+  // Active les effets des unités déjà sur le plateau et les sorts posés en Soutien,
+  // comme le ferait un joueur cliquant sur chaque carte prête à s'activer.
+  for (const unit of state.enemy.field) {
+    const def = getCard(unit.cardId);
+    if (def.effect && !def.text.toLowerCase().includes('à l’invocation')) {
+      state = activateUnitEffect(state, 'enemy', unit.instanceId);
+    }
+  }
+  for (const s of [...state.enemy.support]) {
+    state = activateSupportCard(state, 'enemy', s.instanceId);
   }
 
   // Phase de combat.
@@ -569,5 +607,32 @@ export function activateUnitEffect(rawState: GameState, playerId: PlayerId, unit
   resolveEffect(state, playerId, def.effect, unit.instanceId);
   unit.effectUsesThisTurn = (unit.effectUsesThisTurn ?? 0) + 1;
   pushLog(state, def.name + ' active son effet (' + unit.effectUsesThisTurn + '/' + maxUses + ').');
+  return state;
+}
+
+/**
+ * Retourne un sort posé face cachée en zone Soutien et tente d'activer son effet.
+ * Si les conditions ne sont pas réunies (pas de cible valide, etc.), la carte
+ * reste posée face cachée et n'est pas consommée — elle pourra être retentée
+ * plus tard.
+ */
+export function activateSupportCard(rawState: GameState, playerId: PlayerId, supportInstanceId: string): GameState {
+  const state = clone(rawState);
+  if (state.winner || state.activePlayer !== playerId) return state;
+  const p = state[playerId];
+  const idx = p.support.findIndex((s) => s.instanceId === supportInstanceId);
+  if (idx < 0) return state;
+  const support = p.support[idx];
+  const def = getCard(support.cardId);
+  if (!def.effect) return state;
+
+  const succeeded = resolveEffect(state, playerId, def.effect);
+  if (succeeded) {
+    p.support.splice(idx, 1);
+    p.graveyard.push(def.id);
+    pushLog(state, `${def.name} se révèle et son effet s'active.`);
+  } else {
+    pushLog(state, `${def.name} reste face cachée : conditions non réunies pour l'activer.`);
+  }
   return state;
 }
