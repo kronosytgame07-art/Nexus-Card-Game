@@ -69,6 +69,13 @@ const evolutionNames: Record<Faction, string[]> = {
 };
 
 function buildFaction(faction: Faction, rows: Row[]): CardDef[] {
+  // Seules les 10 premières unités niveau 1 possèdent une évolution imprimée (une évolution
+  // par archétype clé) — calculé AVANT de construire les cartes pour ne pas promettre une
+  // évolution (waitTurns/evolvesTo) à une unité qui n'en aura jamais réellement une.
+  const evolvableIds = new Set(
+    rows.filter(([, , , , health]) => health > 0).slice(0, 10).map(([id]) => id)
+  );
+
   const base: CardDef[] = rows.map(([id, name, cost, attack, health, effect]) => ({
     id,
     name,
@@ -79,17 +86,15 @@ function buildFaction(faction: Faction, rows: Row[]): CardDef[] {
     attack,
     health,
     effect,
-    waitTurns: health > 0 ? 3 : undefined,
-    evolvesTo: health > 0 ? `evo-${id}` : undefined,
+    waitTurns: evolvableIds.has(id) ? 3 : undefined,
+    evolvesTo: evolvableIds.has(id) ? `evo-${id}` : undefined,
     copies: 3,
     rarity: rarityForCost(cost),
     image: `${import.meta.env.BASE_URL}cards/${id}.png`,
     text: describeEffect(effect),
   }));
 
-  // Seules les 10 premières unités niveau 1 possèdent une évolution imprimée,
-  // à l'image de la structure d'origine (une évolution par archétype clé).
-  const evolvables = base.filter((c) => c.type === 'unit').slice(0, 10);
+  const evolvables = base.filter((c) => evolvableIds.has(c.id));
   const names = evolutionNames[faction];
   const evolutions: CardDef[] = evolvables.map((from, i) => {
     const id = `evo-${from.id}`;

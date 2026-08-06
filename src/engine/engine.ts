@@ -447,7 +447,6 @@ export function endTurn(rawState: GameState): GameState {
   const next = other(finishing);
   state.activePlayer = next;
   state.phase = 'main';
-  if (next === 'player') state.turn += 1;
   startTurn(state, next);
   checkWinner(state);
 
@@ -586,6 +585,7 @@ export function runAiTurn(rawState: GameState): GameState {
   const next = clone(state);
   next.activePlayer = 'player';
   next.phase = 'main';
+  next.turn += 1;
   startTurn(next, 'player');
   checkWinner(next);
   return next;
