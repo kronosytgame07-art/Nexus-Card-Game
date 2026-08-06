@@ -278,6 +278,20 @@ textarea,
     align-self: stretch;
   }
 
+  .enemy-zone {
+    grid-template-rows: 10px 22px minmax(0, 1fr) 12px;
+  }
+
+  .enemy-zone > b { grid-row: 4; }
+  .enemy-zone > .board { grid-row: 3; }
+  .enemy-zone > .support-row { grid-row: 2; }
+  .enemy-zone > small { grid-row: 1; }
+
+  .enemy-zone .board,
+  .enemy-zone .support-row {
+    direction: ltr;
+  }
+
   .zone-wrap > b {
     margin: 0;
     font-size: 6px;
