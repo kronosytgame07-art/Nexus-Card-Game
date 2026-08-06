@@ -108,7 +108,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 const CardView = ({ card, onClick, disabled, badge }: { card: CardDef; onClick?: () => void; disabled?: boolean; badge?: string }) => (
-  <motion.button whileHover={disabled ? undefined : { y: -8, rotate: 1 }} className={'card ' + card.rarity} onClick={onClick} disabled={disabled}>
+  <motion.button whileHover={disabled ? undefined : { y: -8, rotate: 1 }} className={'card ' + card.rarity} onClick={onClick} disabled={disabled} data-card-type={card.type}>
     <i>{card.faction}</i><b>{card.name}</b><img className="card-art" src={card.image} alt={card.name} loading="lazy" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = cardBack; }} /><p>{card.text}</p><footer><span>{card.cost} ◆</span>{card.type === 'unit' ? <span>⚔ {card.attack}　♥ {card.health}</span> : <span>Sort</span>}</footer>{badge && <em className="card-badge">{badge}</em>}
   </motion.button>
 );

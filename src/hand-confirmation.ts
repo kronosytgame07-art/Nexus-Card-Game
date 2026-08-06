@@ -9,12 +9,10 @@ function cardText(card: HTMLElement, selector: string) {
   return card.querySelector(selector)?.textContent?.trim() ?? '';
 }
 
-function actionLabel(card: HTMLElement) {
-  const footer = cardText(card, 'footer').toLowerCase();
-  const type = card.dataset.cardType?.toLowerCase() ?? '';
-  if (type.includes('unit') || footer.includes('unité') || footer.includes('créature')) return 'INVOQUER';
-  if (type.includes('support') || footer.includes('soutien') || footer.includes('enchantement')) return 'POSER';
-  return 'UTILISER';
+function actionLabel() {
+  // Seuls les sorts passent par cette boîte de dialogue (les unités sont
+  // jouées directement depuis le tiroir de main) : le bouton est toujours "ACTIVER".
+  return 'ACTIVER';
 }
 
 function openHandDialog(card: HTMLElement) {
@@ -22,7 +20,7 @@ function openHandDialog(card: HTMLElement) {
   const name = cardText(card, 'b') || 'Carte';
   const rules = cardText(card, 'p') || card.dataset.effectText || 'Aucun texte disponible.';
   const image = card.querySelector('img') as HTMLImageElement | null;
-  const action = actionLabel(card);
+  const action = actionLabel();
 
   const overlay = document.createElement('div');
   overlay.id = HAND_DIALOG_ID;
@@ -57,8 +55,11 @@ function openHandDialog(card: HTMLElement) {
 
 document.addEventListener('click', (event) => {
   const target = event.target as Element | null;
-  const card = target?.closest('.battle .hand .card') as HTMLElement | null;
+  const card = target?.closest('.battle .hand.open .card') as HTMLElement | null;
   if (!card) return;
+  // Les unités se jouent directement depuis le tiroir ouvert (pas d'aperçu) ;
+  // seuls les sorts passent par la boîte de confirmation ci-dessous.
+  if (card.dataset.cardType === 'unit') return;
   if (bypassCards.has(card)) {
     bypassCards.delete(card);
     return;

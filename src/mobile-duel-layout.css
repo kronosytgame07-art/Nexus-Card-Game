@@ -356,7 +356,30 @@
     gap: 0 !important;
     overflow: visible !important;
     pointer-events: none !important;
-    transform: none !important;
+    transform: translateY(44px) !important;
+    transition: transform .22s ease-out !important;
+  }
+
+  body.in-battle .hand.open {
+    transform: translateY(0) !important;
+  }
+
+  body.in-battle .hand-toggle {
+    position: absolute !important;
+    left: 50% !important;
+    top: -8px !important;
+    width: 40px !important;
+    height: 14px !important;
+    min-width: 40px !important;
+    min-height: 14px !important;
+    padding: 0 !important;
+    transform: translateX(-50%) !important;
+    border-radius: 999px !important;
+    border: 1px solid #d8bb68aa !important;
+    background: #071414e6 !important;
+    box-shadow: 0 0 10px #d8bb6866 !important;
+    pointer-events: auto !important;
+    z-index: 21 !important;
   }
 
   body.in-battle .hand-card-wrap {
