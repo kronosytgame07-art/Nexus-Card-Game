@@ -58,6 +58,18 @@ jobs:
           cp "ChatGPT Image 5 août 2026, 18_37_22.png" dist/cards/evo-loup-sentinelle.png
           cp "ChatGPT Image 5 août 2026, 18_37_28.png" dist/cards/evo-hurleur-de-nuit.png
           cp "ChatGPT Image 5 août 2026, 18_37_35.png" dist/cards/evo-croc-de-fer.png
+      - name: Installer les illustrations Chevalier
+        run: |
+          cp "ChatGPT Image 6 août 2026, 03_35_03.png" dist/cards/ecuyer-dore.png
+          cp "ChatGPT Image 6 août 2026, 03_35_14.png" dist/cards/novice-du-serment.png
+          cp "ChatGPT Image 6 août 2026, 03_43_44.png" dist/cards/lame-blanche.png
+          cp "ChatGPT Image 6 août 2026, 03_44_26.png" dist/cards/garde-du-portail.png
+          cp "ChatGPT Image 6 août 2026, 03_45_13.png" dist/cards/paladin-des-cendres.png
+          cp "ChatGPT Image 6 août 2026, 03_46_00.png" dist/cards/chevalier-azur.png
+          cp "ChatGPT Image 6 août 2026, 03_46_51.png" dist/cards/porte-etendard.png
+          cp "ChatGPT Image 6 août 2026, 03_47_40.png" dist/cards/sentinelle-doree.png
+          cp "ChatGPT Image 6 août 2026, 03_53_25.png" dist/cards/duelliste-royal.png
+          cp "ChatGPT Image 6 août 2026, 03_54_22.png" dist/cards/capitaine-du-royaume.png
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
