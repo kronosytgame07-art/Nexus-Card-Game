@@ -81,6 +81,7 @@ jobs:
           cp "ChatGPT Image 6 août 2026, 04_14_54.png" dist/cards/evo-sentinelle-doree.png
           cp "ChatGPT Image 6 août 2026, 04_15_53.png" dist/cards/evo-duelliste-royal.png
           cp "ChatGPT Image 6 août 2026, 04_16_53.png" dist/cards/evo-capitaine-du-royaume.png
+          cp "ChatGPT Image 6 août 2026, 04_22_05.png" dist/cards/evo-ecuyer-dore.png
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
