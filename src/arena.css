@@ -76,11 +76,15 @@ body:has(.battle){margin:0;background:#020708;overflow:hidden}body:has(.battle) 
 .hero-dmg.player{order:99}
 
 /* Cases octogonales façon tuiles de pierre */
-.field-slot,.field-card,.support-card,.support-row div{clip-path:polygon(22% 0,78% 0,100% 22%,100% 78%,78% 100%,22% 100%,0 78%,0 22%)}
+.field-card,.support-card{clip-path:polygon(22% 0,78% 0,100% 22%,100% 78%,78% 100%,22% 100%,0 78%,0 22%)}
+.field-slot,.support-row div{border-radius:10px;border:1px dashed currentColor;opacity:.4}
 .field-slot{background:radial-gradient(circle at 40% 30%,rgba(255,255,255,.06),transparent 60%),repeating-linear-gradient(135deg,rgba(255,255,255,.03) 0 6px,transparent 6px 12px),rgba(10,18,20,.5)}
 .field-card:after{clip-path:polygon(22% 0,78% 0,100% 22%,100% 78%,78% 100%,22% 100%,0 78%,0 22%)}
 
 .pile-rail{display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;z-index:15}
+.battle-main{grid-row:2 / 5;display:flex;align-items:stretch;gap:12px;min-height:0;width:100%;position:relative}
+.battle-center{flex:1;display:flex;flex-direction:column;justify-content:space-between;min-width:0;min-height:0;gap:8px}
+.pile-rail{flex:0 0 auto;justify-content:space-evenly;padding:6px 0}
 
 /* Rail d'icones verticale a droite, comme le rail d'actions de Master Duel */
 body:has(.battle) .hud-buttons{flex-direction:column;top:50%;transform:translateY(-50%);right:6px}
