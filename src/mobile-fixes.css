@@ -435,23 +435,27 @@ textarea,
     transition: transform .24s ease-out;
   }
 
-  .battle:has(.hand:hover) .hand,
-  .battle:has(.hand:focus-within) .hand,
-  .battle:has(.hand-card-wrap:active) .hand {
+  .hand.open {
     transform: translate(-50%, 0);
   }
 
-  .hand::before {
-    content: '';
+  .hand-toggle {
     position: absolute;
     left: 50%;
-    top: -8px;
-    width: 48px;
-    height: 6px;
+    top: -10px;
+    width: 52px;
+    height: 18px;
+    min-width: 52px;
+    min-height: 18px;
+    padding: 0;
     transform: translateX(-50%);
     border-radius: 999px;
-    background: #d8bb68aa;
+    border: 1px solid #d8bb68aa;
+    background: #071414e6;
+    color: #d8bb68;
     box-shadow: 0 0 12px #d8bb6866;
+    font-size: 9px;
+    line-height: 1;
     pointer-events: auto;
   }
 
