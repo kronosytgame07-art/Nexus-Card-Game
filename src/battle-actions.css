@@ -1,6 +1,8 @@
 body.in-battle .nexus-phases{display:flex;align-items:center;gap:5px;margin-left:auto}
 body.in-battle .nexus-phases button{height:26px;padding:0 10px;border:1px solid rgba(239,201,107,.28);border-radius:999px;background:rgba(5,10,13,.9);color:#9caeaa;font:700 8px "DM Mono";letter-spacing:.7px;cursor:pointer}
 body.in-battle .nexus-phases button.active{border-color:#efc96b;color:#ffe69a;background:rgba(91,65,12,.42);box-shadow:0 0 12px rgba(239,201,107,.28)}
+body.in-battle .nexus-phases button.passed{opacity:.4}
+body.in-battle .nexus-phases button:disabled{cursor:default}
 body.in-battle .field-card.nexus-attacker{outline:3px solid #ffe174!important;box-shadow:0 0 0 4px rgba(255,225,116,.22),0 0 30px rgba(255,225,116,.85)!important;transform:translateY(-8px)!important}
 body.nexus-targeting .enemy-zone .field-card{cursor:crosshair!important;box-shadow:0 0 0 2px rgba(255,84,104,.65),0 0 22px rgba(255,84,104,.4)!important}
 .nexus-unit-actions{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px}

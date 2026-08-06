@@ -7,7 +7,7 @@ body.in-battle{margin:0;background:#020708;overflow:hidden}body.in-battle #root{
 .hud-pill{display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:999px;border:1px solid rgba(239,201,107,.5);background:rgba(4,10,11,.92);color:var(--gold);font:700 11px "DM Mono";white-space:nowrap;box-shadow:0 6px 16px rgba(0,0,0,.4)}
 .hud-pill.mana-readout{color:#83efd3;border-color:rgba(131,239,211,.5)}
 .hud-pill.life-readout{color:#ff9aab;border-color:rgba(239,73,97,.5)}
-.end-turn{position:relative;width:auto;height:28px;padding:0 14px;border:1px solid #7cf2d1;border-radius:999px;background:linear-gradient(90deg,#209d7c,#47e0b4);color:#02231c;font:700 10px "DM Mono";box-shadow:0 6px 16px rgba(0,0,0,.4)}.dmg-float{position:absolute;top:38%;left:50%;transform:translateX(-50%);z-index:6;font:900 22px "Space Grotesk";color:#ff5468;text-shadow:0 0 10px rgba(255,45,78,.9),0 2px 0 #3a0008;pointer-events:none}
+.dmg-float{position:absolute;top:38%;left:50%;transform:translateX(-50%);z-index:6;font:900 22px "Space Grotesk";color:#ff5468;text-shadow:0 0 10px rgba(255,45,78,.9),0 2px 0 #3a0008;pointer-events:none}
 .attack-flash{position:fixed;inset:0;z-index:55;pointer-events:none;background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.8) 49%,transparent 58%);animation:attackFlash .45s ease-out forwards}
 @keyframes attackFlash{0%{transform:translateX(-70%);opacity:0}35%{opacity:1}100%{transform:translateX(70%);opacity:0}}
 .hero-dmg-float{top:-26px;left:auto;right:0;transform:none;font-size:16px}
@@ -27,7 +27,7 @@ body.in-battle{margin:0;background:#020708;overflow:hidden}body.in-battle #root{
 @keyframes evoBlink{0%,100%{opacity:1}50%{opacity:.25}}
 @keyframes evoShake{0%,100%{transform:translate(0,0)}4%{transform:translate(-6px,2px)}8%{transform:translate(6px,-2px)}12%{transform:translate(-5px,0)}16%{transform:translate(5px,1px)}20%{transform:translate(0,0)}}
 @keyframes shockwave{0%{transform:translate(-50%,-50%) scale(.2);opacity:1}100%{transform:translate(-50%,-50%) scale(16);opacity:0}}
-@keyframes shockwave2{0%{transform:translate(-50%,-50%) scale(.2);opacity:.9}100%{transform:translate(-50%,-50%) scale(30);opacity:0}}.match-result{position:fixed;z-index:90}@media(max-height:760px){.battle{min-height:0;grid-template-rows:20px 44px minmax(220px,1fr) minmax(100px,150px)}.field-slot,.field-card,.support-row div,.support-card{height:clamp(120px,20vh,165px)}.hand{padding-bottom:45px}.hand .card{height:135px;min-height:135px}.hand .card-art{height:54px}.hud-pill{height:24px;font-size:9px}.end-turn{height:24px;font-size:9px}}
+@keyframes shockwave2{0%{transform:translate(-50%,-50%) scale(.2);opacity:.9}100%{transform:translate(-50%,-50%) scale(30);opacity:0}}.match-result{position:fixed;z-index:90}@media(max-height:760px){.battle{min-height:0;grid-template-rows:20px 44px minmax(220px,1fr) minmax(100px,150px)}.field-slot,.field-card,.support-row div,.support-card{height:clamp(120px,20vh,165px)}.hand{padding-bottom:45px}.hand .card{height:135px;min-height:135px}.hand .card-art{height:54px}.hud-pill{height:24px;font-size:9px}}
 .card-inspector-rules,.card-inspector-evolution,.card-inspector-usage{margin-top:10px;padding:9px 10px;border:1px solid rgba(255,255,255,.13);border-radius:9px;background:rgba(255,255,255,.045)}.card-inspector-rules>b,.card-inspector-evolution>b,.card-inspector-usage>b{display:block;margin-bottom:4px;color:#efc96b;font:8px "DM Mono";letter-spacing:1.5px}.card-inspector-rules p{margin:0;line-height:1.45}.card-inspector-evolution span,.card-inspector-usage span{display:block;font-weight:800}.card-inspector-evolution small{display:block;margin-top:3px;color:#9db0ac;font:8px "DM Mono"}.card-inspector-evolution.muted{opacity:.55}
 @media(max-width:900px){
   .battle{min-height:0;grid-template-rows:16px 32px minmax(150px,1fr) minmax(80px,110px)}
@@ -53,7 +53,6 @@ body.in-battle{margin:0;background:#020708;overflow:hidden}body.in-battle #root{
   .battle-footer{padding:4px 8px 4px 32px;height:32px}
   .battle-footer h3{font-size:10px}
   .battle-footer h3:before{width:20px;height:20px}
-  .end-turn{position:static;width:auto;margin-left:6px;padding:0 8px;height:22px;font-size:7px;white-space:nowrap}
   .hand{width:98vw;gap:4px;overflow-x:auto;justify-content:flex-start;padding:0 3px 4px}
   .hand .card{width:clamp(46px,13vw,66px);min-width:clamp(46px,13vw,66px);height:clamp(68px,19vw,96px);min-height:clamp(68px,19vw,96px);padding:3px}
   .hand .card b{font-size:8px;margin:2px 0}

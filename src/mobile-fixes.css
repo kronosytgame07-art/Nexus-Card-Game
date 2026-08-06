@@ -557,20 +557,6 @@ textarea,
     pointer-events: auto;
   }
 
-  .end-turn {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    width: 120px;
-    min-width: 120px;
-    height: 30px;
-    min-height: 30px;
-    padding: 4px 8px;
-    font-size: 7px;
-    border-radius: 9px;
-    pointer-events: auto;
-  }
-
   .battle-log,
   .combat-log { display: none; }
 

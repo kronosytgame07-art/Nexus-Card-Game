@@ -439,19 +439,6 @@
   body.in-battle .battle-footer .mana-readout,
   body.in-battle .battle-footer .turn-readout { font-size: 6px !important; height: 18px !important; padding: 0 6px !important; }
 
-  body.in-battle .battle-footer .end-turn {
-    position: relative !important;
-    inset: auto !important;
-    transform: none !important;
-    margin-left: 0 !important;
-    width: auto !important;
-    min-width: 0 !important;
-    height: 18px !important;
-    min-height: 18px !important;
-    padding: 0 7px !important;
-    font-size: 6px !important;
-  }
-
   body.in-battle .hand-confirmation-overlay {
     padding: 5px !important;
   }

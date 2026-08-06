@@ -77,7 +77,6 @@ body.in-battle .turn-strip{position:relative;align-self:center;justify-self:cent
 body.in-battle .battle-footer{position:fixed;right:max(10px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom));z-index:45;width:auto;display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:0;border:0;background:none;box-shadow:none}
 body.in-battle .battle-footer .life-readout{color:#88f0d4;border-color:rgba(65,226,179,.75)}
 body.in-battle .battle-footer .mana-readout{margin-left:0;color:#b6ffe9}
-body.in-battle .battle-footer .end-turn{position:relative!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;transform:none!important;width:auto!important;min-width:0!important}
 
 @media (max-height:760px){
   body.in-battle .battle{--arena-card-w:clamp(72px,6.2vw,104px);--arena-card-h:clamp(98px,16vh,136px);grid-template-rows:20px 54px minmax(0,1fr) 102px}
