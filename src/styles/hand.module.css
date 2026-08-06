@@ -1,0 +1,109 @@
+@import "./vars.css";
+
+.handRoot{
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: var(--hand-bottom-offset);
+  pointer-events: auto;
+  z-index: var(--z-hand);
+  height: calc(var(--card-height) * 1.25);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  transition: transform var(--transition-med) ease;
+  will-change: transform;
+}
+.enemyHandRoot{
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--hand-top-offset);
+  z-index: var(--z-hand);
+  height: calc(var(--card-height) * 1.25);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  transform-origin: top center;
+  transition: transform var(--transition-med) ease;
+  will-change: transform;
+}
+
+.open{ transform: translateY(0); }
+.closed{ transform: translateY(28%); }
+
+.handInner{
+  position: relative;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.cardButton{
+  position: absolute;
+  bottom: 0;
+  pointer-events: auto;
+  border: none;
+  background: transparent;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transform-origin: center bottom;
+  transition: transform var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  border-radius: 8px;
+  overflow: visible;
+}
+
+.cardImg{
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 6px;
+  user-select: none;
+}
+
+.cardName{
+  font-size: 12px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+
+.cardBackWrapper{
+  position: absolute;
+  top: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform-origin: center top;
+}
+.cardImgBack{
+  width: 100%;
+  height: auto;
+  opacity: 0.98;
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.18);
+}
+
+.enemyCount{
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  padding: 6px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+  pointer-events: none;
+  font-size: 14px;
+}
+
+@media (min-width:900px){
+  .handRoot{ height: calc(var(--card-height) * 1.4); bottom: calc(var(--hand-bottom-offset) * 0.6); }
+  .enemyHandRoot{ height: calc(var(--card-height) * 1.4); top: calc(var(--hand-top-offset) * 0.6); }
+  .cardName{ font-size: 13px; }
+}
