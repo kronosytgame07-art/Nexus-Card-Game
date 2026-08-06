@@ -26,7 +26,7 @@
     margin: 0 !important;
     padding: max(2px, env(safe-area-inset-top)) max(4px, env(safe-area-inset-right)) max(2px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left)) !important;
     display: grid !important;
-    grid-template-rows: 14px 72px minmax(0, 1fr) 82px !important;
+    grid-template-rows: 14px 90px minmax(0, 1fr) 34px !important;
     gap: 1px !important;
     overflow: hidden !important;
     box-sizing: border-box !important;
@@ -45,7 +45,7 @@
     grid-row: 2 !important;
     position: relative !important;
     width: 100% !important;
-    height: 72px !important;
+    height: 90px !important;
     min-height: 0 !important;
     margin: 0 !important;
     display: block !important;
@@ -55,7 +55,7 @@
   body.in-battle .enemy-combatant {
     position: relative !important;
     width: 100% !important;
-    height: 72px !important;
+    height: 26px !important;
     max-width: none !important;
     min-height: 0 !important;
     padding: 2px 5px !important;
@@ -85,7 +85,7 @@
     left: 50% !important;
     top: 0 !important;
     width: var(--mobile-axis) !important;
-    height: 72px !important;
+    height: 90px !important;
     padding: 0 !important;
     transform: translateX(-50%) !important;
     display: flex !important;
@@ -346,8 +346,8 @@
     inset: auto !important;
     width: var(--mobile-axis) !important;
     max-width: var(--mobile-axis) !important;
-    height: 82px !important;
-    min-height: 82px !important;
+    height: 34px !important;
+    min-height: 34px !important;
     margin: 0 auto !important;
     padding: 2px 4px 5px !important;
     display: flex !important;
