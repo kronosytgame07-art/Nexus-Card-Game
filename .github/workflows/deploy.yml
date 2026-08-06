@@ -93,7 +93,7 @@ jobs:
           cp "ChatGPT Image 6 août 2026, 04_34_04.png" dist/cards/aube-victorieuse.png
           cp "ChatGPT Image 6 août 2026, 04_35_11.png" dist/cards/reliquaire-du-roi.png
           cp "ChatGPT Image 6 août 2026, 04_36_37.png" dist/cards/serment-de-garde.png
-          cp "ChatGPT Image 6 août 2026, 04_37_26.png" dist/cards/voie-du-paladin.png
+          cp "ChatGPT Image 6 août 2026, 04_44_24.png" dist/cards/voie-du-paladin.png
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
