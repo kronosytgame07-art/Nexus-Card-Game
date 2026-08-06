@@ -179,16 +179,16 @@ textarea,
     max-height: 100dvh;
     padding: 0 max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left));
     display: grid;
-    grid-template-rows: 28px 42px minmax(0, 1fr) 86px 34px;
-    gap: 2px;
+    grid-template-rows: 26px 38px minmax(0, 1fr) 92px 34px;
+    gap: 1px;
     overflow: hidden;
   }
 
   .battle-meta {
     grid-row: 1;
     min-height: 0;
-    height: 28px;
-    padding: 4px 2px 0;
+    height: 26px;
+    padding: 3px 2px 0;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -200,7 +200,7 @@ textarea,
   .battle-top {
     grid-row: 2;
     min-height: 0;
-    height: 42px;
+    height: 38px;
     display: flex;
     align-items: center;
     z-index: 10;
@@ -213,21 +213,21 @@ textarea,
     min-height: 0;
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 3px 6px;
+    gap: 5px;
+    padding: 2px 5px;
     font-size: 8px;
   }
 
   .combatant .avatar,
   .enemy-combatant .avatar {
-    width: 24px;
-    height: 24px;
-    font-size: 11px;
+    width: 22px;
+    height: 22px;
+    font-size: 10px;
   }
 
   .combatant b,
   .enemy-combatant b {
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1;
   }
 
@@ -243,9 +243,11 @@ textarea,
   .battle-main {
     grid-row: 3;
     min-height: 0;
+    width: min(100%, 1180px);
+    margin-inline: auto;
     display: grid;
-    grid-template-columns: 44px minmax(0, 1fr) 44px;
-    gap: 4px;
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
+    gap: 2px;
     overflow: hidden;
   }
 
@@ -256,7 +258,7 @@ textarea,
     display: grid;
     grid-template-rows: minmax(0, 1fr) 24px minmax(0, 1fr);
     gap: 2px;
-    align-items: center;
+    align-items: stretch;
     overflow: hidden;
   }
 
@@ -271,6 +273,11 @@ textarea,
     overflow: hidden;
   }
 
+  .enemy-zone,
+  .player-zone {
+    align-self: stretch;
+  }
+
   .zone-wrap > b {
     margin: 0;
     font-size: 6px;
@@ -279,7 +286,7 @@ textarea,
   }
 
   .board {
-    width: min(100%, 720px);
+    width: min(100%, 760px);
     min-height: 0;
     margin-inline: auto;
     display: grid;
@@ -293,7 +300,7 @@ textarea,
     width: 100%;
     min-width: 0;
     min-height: 0;
-    height: clamp(48px, 11.5vh, 74px);
+    height: clamp(52px, 12.5vh, 82px);
     border-radius: 7px;
   }
 
@@ -309,7 +316,7 @@ textarea,
   .fu-stats { font-size: 7px; }
 
   .support-row {
-    width: min(100%, 760px);
+    width: min(100%, 780px);
     min-height: 0;
     margin: 0 auto;
     display: grid;
@@ -332,10 +339,10 @@ textarea,
   }
 
   .turn-strip {
-    width: 100%;
+    width: min(100%, 780px);
     min-height: 24px;
     height: 24px;
-    margin: 0;
+    margin: 0 auto;
     padding: 1px 7px;
     display: flex;
     align-items: center;
@@ -349,65 +356,66 @@ textarea,
   .attack-face { min-height: 20px; padding: 3px 6px; font-size: 7px; }
 
   .pile-rail {
-    width: 44px;
-    min-width: 44px;
+    width: 40px;
+    min-width: 40px;
     min-height: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: space-around;
-    gap: 4px;
+    justify-content: center;
+    gap: 10px;
     overflow: visible;
     z-index: 15;
   }
 
+  .pile-rail.left { transform: translateX(-2px); }
+  .pile-rail.right { transform: translateX(2px); }
+
   .card-pile {
     position: relative;
     inset: auto;
-    width: 36px;
-    min-width: 36px;
-    height: 50px;
-    min-height: 50px;
+    width: 34px;
+    min-width: 34px;
+    height: 48px;
+    min-height: 48px;
     padding: 0;
     transform: none;
     border-radius: 8px;
   }
 
-  .card-pile b {
-    display: none;
-  }
+  .card-pile b { display: none; }
 
   .card-pile em {
     position: absolute;
-    right: -5px;
-    bottom: -5px;
-    min-width: 17px;
-    height: 17px;
+    right: -4px;
+    bottom: -4px;
+    min-width: 16px;
+    height: 16px;
     display: grid;
     place-items: center;
     border-radius: 50%;
     font-size: 7px;
   }
 
-  .card-pile .pile-icon {
-    font-size: 13px;
-  }
+  .card-pile .pile-icon { font-size: 12px; }
 
   .hand {
     grid-row: 4;
     position: relative;
     inset: auto;
     z-index: 22;
-    width: 100%;
-    height: 86px;
-    min-height: 86px;
-    padding: 0 116px 2px 52px;
+    width: min(100%, 980px);
+    margin-inline: auto;
+    height: 92px;
+    min-height: 92px;
+    padding: 0 112px 8px 48px;
     display: flex;
     align-items: flex-end;
     justify-content: center;
     gap: 0;
     overflow: visible;
     pointer-events: none;
+    transform: translateY(-4px);
   }
 
   .hand-card-wrap {
@@ -420,10 +428,10 @@ textarea,
   .hand-card-wrap:first-child { margin-left: 0; }
 
   .hand .card {
-    width: clamp(54px, 8vw, 72px);
-    min-width: clamp(54px, 8vw, 72px);
-    height: 82px;
-    min-height: 82px;
+    width: clamp(56px, 8.2vw, 74px);
+    min-width: clamp(56px, 8.2vw, 74px);
+    height: 84px;
+    min-height: 84px;
     margin: 0;
     padding: 4px;
     border-radius: 7px;
@@ -440,7 +448,7 @@ textarea,
 
   .hand .card i,
   .hand .card p { display: none; }
-  .hand .card-art { height: 47px; margin: 3px 0; object-fit: cover; }
+  .hand .card-art { height: 49px; margin: 3px 0; object-fit: cover; }
   .hand .card footer { left: 4px; right: 4px; bottom: 3px; font-size: 6px; }
   .inspect-card {
     width: 22px;
@@ -455,7 +463,8 @@ textarea,
     position: relative;
     inset: auto;
     z-index: 25;
-    width: 100%;
+    width: min(100%, 1180px);
+    margin-inline: auto;
     height: 34px;
     min-height: 34px;
     padding: 2px 126px 2px 8px;
@@ -491,10 +500,5 @@ textarea,
 
   .card-preview,
   .card-inspector,
-  .preview-modal,
-  .pile-modal-content {
-    max-width: min(90vw, 380px);
-    max-height: 86dvh;
-    overflow: auto;
-  }
+  .preview-modal { max-width: min(90vw, 380px); max-height: 86dvh; overflow: auto; }
 }
