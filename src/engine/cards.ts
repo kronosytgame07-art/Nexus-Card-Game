@@ -7,7 +7,7 @@ function rarityForCost(cost: number): Rarity {
   return 'Légendaire';
 }
 
-type Row = [string, string, number, number, number, EffectDef | undefined];
+type Row = [string, string, number, number, number, EffectDef | undefined, boolean?];
 
 const wolfRows: Row[] = [
   ['louve-veilleuse', 'Louve Veilleuse', 1, 2, 3, { kind: 'protect' }],
@@ -30,6 +30,16 @@ const wolfRows: Row[] = [
   ['totem-alpha', 'Totem Alpha', 2, 0, 4, { kind: 'buff', value: 1 }],
   ['pacte-des-crocs', 'Pacte des Crocs', 1, 0, 0, { kind: 'draw', value: 1 }],
   ['derniere-trace', 'Dernière Trace', 2, 0, 0, { kind: 'search', target: 'Meute' }],
+
+  // --- Cartes de booster (obtenues uniquement en ouvrant un Booster Meute) ---
+  // Renforcent l'identité de l'archétype : agressivité, tempo (étourdissement),
+  // et synergie de meute (buffs/invocations), sans utiliser de mécanique nouvelle.
+  ['eclaireuse-des-crocs', 'Éclaireuse des Crocs', 1, 2, 2, { kind: 'draw', value: 1 }, true],
+  ['chasseuse-des-ombres', 'Chasseuse des Ombres', 2, 3, 2, { kind: 'protect' }, true],
+  ['meute-enragee', 'Meute Enragée', 3, 4, 2, { kind: 'buff', value: 2 }, true],
+  ['piege-de-givre', 'Piège de Givre', 1, 0, 0, { kind: 'stun', value: 2 }, true],
+  ['sang-pour-sang', 'Sang pour Sang', 3, 0, 0, { kind: 'damage', value: 5 }, true],
+  ['rugissement-de-la-meute', 'Rugissement de la Meute', 4, 0, 0, { kind: 'summon', target: 'Meute' }, true],
 ];
 
 const knightRows: Row[] = [
@@ -53,6 +63,16 @@ const knightRows: Row[] = [
   ['reliquaire-du-roi', 'Reliquaire du Roi', 2, 0, 4, { kind: 'buff', value: 1 }],
   ['serment-de-garde', 'Serment de Garde', 1, 0, 0, { kind: 'draw', value: 1 }],
   ['voie-du-paladin', 'Voie du Paladin', 2, 0, 0, { kind: 'search', target: 'Chevalier' }],
+
+  // --- Cartes de booster (obtenues uniquement en ouvrant un Booster Chevalier) ---
+  // Renforcent l'identité de l'archétype : défense (provocation), contrôle
+  // (étourdissement/dégâts), sans utiliser de mécanique nouvelle.
+  ['recrue-du-serment', 'Recrue du Serment', 1, 1, 3, { kind: 'protect' }, true],
+  ['bibliothecaire-royale', 'Bibliothécaire Royale', 2, 2, 3, { kind: 'draw', value: 1 }, true],
+  ['veteran-des-remparts', 'Vétéran des Remparts', 3, 3, 6, { kind: 'protect' }, true],
+  ['serment-inebranlable', 'Serment Inébranlable', 1, 0, 0, { kind: 'stun', value: 2 }, true],
+  ['lumiere-purificatrice', 'Lumière Purificatrice', 2, 0, 0, { kind: 'damage', value: 4 }, true],
+  ['renfort-du-royaume', 'Renfort du Royaume', 5, 0, 0, { kind: 'summon', target: 'Chevalier' }, true],
 ];
 
 const evolutionNames: Record<Faction, string[]> = {
@@ -76,7 +96,7 @@ function buildFaction(faction: Faction, rows: Row[]): CardDef[] {
     rows.filter(([, , , , health]) => health > 0).slice(0, 10).map(([id]) => id)
   );
 
-  const base: CardDef[] = rows.map(([id, name, cost, attack, health, effect]) => ({
+  const base: CardDef[] = rows.map(([id, name, cost, attack, health, effect, boosterOnly]) => ({
     id,
     name,
     faction,
@@ -92,6 +112,7 @@ function buildFaction(faction: Faction, rows: Row[]): CardDef[] {
     rarity: rarityForCost(cost),
     image: `${import.meta.env.BASE_URL}cards/${id}.png`,
     text: describeEffect(effect),
+    boosterOnly: boosterOnly || undefined,
   }));
 
   const evolvables = base.filter((c) => evolvableIds.has(c.id));
@@ -161,7 +182,7 @@ export function cardsByFaction(faction: Faction): CardDef[] {
 
 /** Construit la liste des 40 cartes (avec doublons) d'un deck de démarrage pour une faction. */
 export function starterDeck(faction: Faction): string[] {
-  const level1 = cardsByFaction(faction).filter((c) => c.level === 1);
+  const level1 = cardsByFaction(faction).filter((c) => c.level === 1 && !c.boosterOnly);
   const deck: string[] = [];
   for (const card of level1) {
     for (let i = 0; i < 2; i++) deck.push(card.id);

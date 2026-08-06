@@ -43,6 +43,8 @@ export interface CardDef {
   copies: number;
   rarity: Rarity;
   image: string;
+  /** Carte obtenue uniquement via un booster (pas distribuée automatiquement au choix de faction). */
+  boosterOnly?: boolean;
   text: string;
 }
 

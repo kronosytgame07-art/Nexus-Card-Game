@@ -86,13 +86,15 @@ body.in-battle{margin:0;background:#020708;overflow:hidden}body.in-battle #root{
 .field-card:after{clip-path:polygon(22% 0,78% 0,100% 22%,100% 78%,78% 100%,22% 100%,0 78%,0 22%)}
 
 .pile-rail{display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;z-index:15}
-.unit-actions{position:fixed;top:50%;right:max(14px,env(safe-area-inset-right));transform:translateY(-50%);z-index:220;width:min(300px,90vw);max-height:88vh;display:flex;flex-direction:column;overflow:hidden;border:1px solid #e6bd6355;border-radius:14px;background:linear-gradient(180deg,rgba(9,15,17,.97),rgba(4,9,10,.98));box-shadow:0 20px 50px rgba(0,0,0,.5)}
-.unit-actions-art{width:100%;height:min(38vh,220px);object-fit:cover;display:block;border-bottom:1px solid #e6bd6355;background:#04090b}
-.unit-actions-body{display:flex;flex-direction:column;gap:8px;padding:14px 16px;overflow-y:auto}
+.unit-actions{position:fixed;top:50%;right:max(14px,env(safe-area-inset-right));transform:translateY(-50%);z-index:220;width:min(300px,90vw);max-height:88dvh;min-height:0;display:flex;flex-direction:column;overflow:hidden;border:1px solid #e6bd6355;border-radius:14px;background:linear-gradient(180deg,rgba(9,15,17,.97),rgba(4,9,10,.98));box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.unit-actions-art{width:100%;height:min(38vh,220px);flex:0 0 auto;object-fit:cover;display:block;border-bottom:1px solid #e6bd6355;background:#04090b}
+.unit-actions-body{display:flex;flex-direction:column;gap:8px;padding:14px 16px;min-height:0;flex:1 1 auto;overflow-y:auto}
 .unit-actions-body b{font:700 15px "Playfair Display";color:var(--gold)}
 .unit-actions-stats{font:700 12px "DM Mono";color:#83efd3}
 .unit-actions-body p{margin:0;color:#c1d0cb;font-size:12px;line-height:1.4}
 .unit-actions-body button{margin:0;height:34px;border-radius:8px;font:700 11px "DM Mono";letter-spacing:.5px;cursor:pointer}
+.booster-preview{margin:4px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px}
+.booster-preview li{padding:6px 8px;border-radius:6px;background:#ffffff08;font-size:11px}
 .pile-modal{position:fixed;inset:0;z-index:200;display:flex;justify-content:flex-end;background:rgba(2,6,7,.6)}
 .pile-modal-content{width:min(380px,90vw);height:100%;background:#071316;border-left:1px solid #e6bd6355;box-shadow:-24px 0 50px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden}
 .pile-modal-content header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #ffffff14;flex:0 0 auto}

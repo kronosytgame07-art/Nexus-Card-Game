@@ -476,4 +476,17 @@
     max-height: 92dvh !important;
     overflow: auto !important;
   }
+
+  body.in-battle .unit-actions {
+    width: min(220px, 62vw) !important;
+    max-height: 90dvh !important;
+    right: max(6px, env(safe-area-inset-right)) !important;
+  }
+
+  body.in-battle .unit-actions-art { height: min(24vh, 110px) !important; }
+  body.in-battle .unit-actions-body { padding: 8px 10px !important; gap: 5px !important; }
+  body.in-battle .unit-actions-body b { font-size: 11px !important; }
+  body.in-battle .unit-actions-stats { font-size: 8px !important; }
+  body.in-battle .unit-actions-body p { font-size: 8px !important; line-height: 1.3 !important; }
+  body.in-battle .unit-actions-body button { height: 24px !important; font-size: 7px !important; }
 }

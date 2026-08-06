@@ -84,7 +84,7 @@ interface GameMeta {
 
 function startingOwnedFor(faction: Faction): string[] {
   return cardsByFaction(faction)
-    .filter((c) => c.level === 1)
+    .filter((c) => c.level === 1 && !c.boosterOnly)
     .map((c) => c.id);
 }
 
