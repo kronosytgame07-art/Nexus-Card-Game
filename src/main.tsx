@@ -15,7 +15,6 @@ import './combat-enhancements';
 import './action-animations';
 import './hand-confirmation';
 
-// Les modules du duel sont chargés après leurs feuilles de style pour garantir un rendu stable.
 const isInteractiveGameElement = (target: EventTarget | null) =>
   target instanceof Element &&
   Boolean(target.closest('#root button, #root a, #root .card, #root .field-card, #root .field-unit, #root .menu-card, #root .card-pile, #root img'));
