@@ -57,6 +57,8 @@ export interface FieldUnit {
   stunnedTurns: number;
   buffs: number;
   taunt: boolean;
+  /** Bonus d'Instinct de Meute actuellement appliqué (recalculé à chaque changement de terrain). */
+  packBonus: number;
   /** Nombre d’activations manuelles déjà utilisées pendant le tour courant. */
   effectUsesThisTurn: number;
 }

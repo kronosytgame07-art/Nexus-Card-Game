@@ -1,5 +1,6 @@
 import { CARD_DB, getCard, starterDeck } from './cards';
 import {
+  CardDef,
   EffectDef,
   Faction,
   FieldUnit,
@@ -129,6 +130,36 @@ function removeDead(state: GameState, id: PlayerId) {
     pushLog(state, `${getCard(u.cardId).name} tombe au combat.`);
   }
   p.field = p.field.filter((u) => u.health > 0);
+}
+
+/**
+ * Mécaniques d'archétype — chaque faction joue différemment :
+ *  - Meute (Instinct de Meute) : chaque créature Meute gagne +1 ATQ pour chaque AUTRE
+ *    créature Meute sur le même terrain. Recalculé à chaque changement de terrain via un
+ *    delta (packBonus stocké) pour ne jamais dupliquer le bonus.
+ *  - Chevalier (Rang Sacré) : jouer un chevalier coûte 1 mana de moins pour chaque
+ *    chevalier déjà présent sur le terrain (minimum 1 mana). Voir chevalierPlayCost().
+ */
+function applyPackBonuses(state: GameState) {
+  for (const id of ['player', 'enemy'] as PlayerId[]) {
+    const p = state[id];
+    for (const unit of p.field) {
+      const def = getCard(unit.cardId);
+      if (def.faction !== 'Meute') continue;
+      const packSize = p.field.filter(
+        (u) => u.instanceId !== unit.instanceId && getCard(u.cardId).faction === 'Meute'
+      ).length;
+      unit.attack += packSize - unit.packBonus;
+      unit.packBonus = packSize;
+    }
+  }
+}
+
+/** Coût réel pour jouer une carte, en tenant compte du Rang Sacré des chevaliers. */
+function effectivePlayCost(def: CardDef, owner: PlayerState): number {
+  if (def.faction !== 'Chevalier' || def.type !== 'unit') return def.cost;
+  const knightsOnField = owner.field.filter((u) => getCard(u.cardId).faction === 'Chevalier').length;
+  return Math.max(1, def.cost - knightsOnField);
 }
 
 function checkWinner(state: GameState) {
@@ -265,6 +296,7 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
           stunnedTurns: 0,
           buffs: 0,
           taunt: false,
+          packBonus: 0,
           effectUsesThisTurn: 0,
         });
         pushLog(state, `${labelFor(ownerId)} invoque ${pick.name}.`);
@@ -291,7 +323,8 @@ export function playCard(
   const handIdx = p.hand.indexOf(cardId);
   if (handIdx < 0) return state;
   const def = getCard(cardId);
-  if (def.cost > p.mana) return state;
+  const cost = effectivePlayCost(def, p);
+  if (cost > p.mana) return state;
   if (def.type === 'unit' && p.field.length >= MAX_FIELD_UNITS) {
     pushLog(state, 'Le plateau est plein, impossible de jouer cette unité.');
     return state;
@@ -302,7 +335,7 @@ export function playCard(
   }
 
   p.hand.splice(handIdx, 1);
-  p.mana -= def.cost;
+  p.mana -= cost;
 
   if (def.type === 'unit') {
     const unit: FieldUnit = {
@@ -316,10 +349,11 @@ export function playCard(
       stunnedTurns: 0,
       buffs: 0,
       taunt: false,
-          effectUsesThisTurn: 0,
+      packBonus: 0,
+      effectUsesThisTurn: 0,
     };
     p.field.push(unit);
-    pushLog(state, `${labelFor(playerId)} joue ${def.name}.`);
+    pushLog(state, `${labelFor(playerId)} joue ${def.name}${cost < def.cost ? ` (Rang Sacré : ${cost}◆ au lieu de ${def.cost}◆)` : ''}.`);
     if (def.effect && def.text.toLowerCase().includes('à l’invocation')) resolveEffect(state, playerId, def.effect, unit.instanceId);
   } else {
     const support = { instanceId: instanceId(), cardId: def.id };
@@ -327,6 +361,7 @@ export function playCard(
     pushLog(state, `${labelFor(playerId)} pose ${def.name} face cachée en Soutien.`);
   }
 
+  applyPackBonuses(state);
   return state;
 }
 
@@ -372,6 +407,7 @@ export function declareAttack(
 
   removeDead(state, 'player');
   removeDead(state, 'enemy');
+  applyPackBonuses(state);
   checkWinner(state);
   return state;
 }
@@ -424,9 +460,11 @@ export function evolveUnit(
   unit.health = evo.health;
   unit.turnsOnField = 0;
   unit.canAttack = false;
+  unit.packBonus = 0;
 
   pushLog(state, `WARNING EVOLUTION — ${base.name} évolue en ${evo.name} !`);
   if (evo.effect) resolveEffect(state, playerId, evo.effect, unit.instanceId);
+  applyPackBonuses(state);
   return state;
 }
 
@@ -505,7 +543,7 @@ export function runAiTurn(rawState: GameState): GameState {
       .map((id) => getCard(id))
       .filter(
         (c) =>
-          c.cost <= p.mana &&
+          effectivePlayCost(c, p) <= p.mana &&
           (c.type !== 'unit' || p.field.length < MAX_FIELD_UNITS) &&
           (c.type !== 'spell' || p.support.length < MAX_SUPPORT)
       )
@@ -607,6 +645,7 @@ export function activateUnitEffect(rawState: GameState, playerId: PlayerId, unit
   resolveEffect(state, playerId, def.effect, unit.instanceId);
   unit.effectUsesThisTurn = (unit.effectUsesThisTurn ?? 0) + 1;
   pushLog(state, def.name + ' active son effet (' + unit.effectUsesThisTurn + '/' + maxUses + ').');
+  applyPackBonuses(state);
   return state;
 }
 
@@ -634,5 +673,6 @@ export function activateSupportCard(rawState: GameState, playerId: PlayerId, sup
   } else {
     pushLog(state, `${def.name} reste face cachée : conditions non réunies pour l'activer.`);
   }
+  applyPackBonuses(state);
   return state;
 }
