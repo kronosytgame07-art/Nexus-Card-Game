@@ -8,6 +8,9 @@ export const UNLOCK_SECOND_FACTION_AT = 3;
 export const XP_PER_LEVEL = 100;
 
 export type Language = 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt';
+export type VisualQuality = 'eco' | 'balanced' | 'high';
+export type AnimationMode = 'full' | 'reduced' | 'off';
+export type InterfaceScale = 'small' | 'normal' | 'large';
 
 interface GameMeta {
   gold: number;
@@ -24,10 +27,24 @@ interface GameMeta {
   language: Language;
   factionChosen: boolean;
   unlockedFactions: Faction[];
+  playerName: string;
+  avatarCardId: string;
+  visualQuality: VisualQuality;
+  animationMode: AnimationMode;
+  glowEffects: boolean;
+  screenShake: boolean;
+  interfaceScale: InterfaceScale;
   addCard: (id: string) => void;
   saveDeck: (deck: string[]) => void;
   chooseStartingFaction: (faction: Faction) => void;
   setFaction: (faction: Faction) => void;
+  setPlayerName: (name: string) => void;
+  setAvatarCardId: (cardId: string) => void;
+  setVisualQuality: (quality: VisualQuality) => void;
+  setAnimationMode: (mode: AnimationMode) => void;
+  setGlowEffects: (enabled: boolean) => void;
+  setScreenShake: (enabled: boolean) => void;
+  setInterfaceScale: (scale: InterfaceScale) => void;
   record: (win: boolean) => void;
   addGold: (amount: number) => void;
   addXp: (amount: number) => void;
@@ -41,6 +58,11 @@ function startingOwnedFor(faction: Faction): string[] {
   return cardsByFaction(faction)
     .filter((c) => c.level === 1)
     .map((c) => c.id);
+}
+
+function defaultAvatarFor(faction: Faction): string {
+  const unit = cardsByFaction(faction).find((c) => c.type === 'unit' && c.level === 1);
+  return unit?.id ?? '';
 }
 
 function applyXp(level: number, xp: number, gems: number, amount: number) {
@@ -74,18 +96,33 @@ export const useGame = create<GameMeta>()(
       language: 'fr',
       factionChosen: false,
       unlockedFactions: [],
+      playerName: 'Chronos',
+      avatarCardId: '',
+      visualQuality: 'balanced',
+      animationMode: 'full',
+      glowEffects: true,
+      screenShake: true,
+      interfaceScale: 'normal',
       addCard: (id) => set((s) => ({ owned: [...new Set([...s.owned, id])] })),
       saveDeck: (deck) => set({ deck }),
       chooseStartingFaction: (faction) =>
-        set({
+        set((s) => ({
           factionChosen: true,
           faction,
           unlockedFactions: [faction],
           owned: startingOwnedFor(faction),
           deck: starterDeck(faction),
-        }),
+          avatarCardId: s.avatarCardId || defaultAvatarFor(faction),
+        })),
       setFaction: (faction) =>
         set((s) => (s.unlockedFactions.includes(faction) ? { faction, deck: starterDeck(faction) } : {})),
+      setPlayerName: (name) => set({ playerName: name.trim().slice(0, 20) || 'Chronos' }),
+      setAvatarCardId: (cardId) => set({ avatarCardId: cardId }),
+      setVisualQuality: (visualQuality) => set({ visualQuality }),
+      setAnimationMode: (animationMode) => set({ animationMode }),
+      setGlowEffects: (glowEffects) => set({ glowEffects }),
+      setScreenShake: (screenShake) => set({ screenShake }),
+      setInterfaceScale: (interfaceScale) => set({ interfaceScale }),
       record: (win) =>
         set((s) => {
           const progression = applyXp(s.level, s.xp, s.gems, win ? 40 : 15);
@@ -124,6 +161,8 @@ export const useGame = create<GameMeta>()(
           campaignChapter: 0,
           factionChosen: false,
           unlockedFactions: [],
+          playerName: 'Chronos',
+          avatarCardId: '',
         }),
     }),
     { name: 'nexus-save' }
