@@ -73,6 +73,7 @@ const sharedAudioRef: { current: HTMLAudioElement | null } = { current: null };
 function MusicManager() {
   const location = useLocation();
   const enabled = useGame((s) => s.musicEnabled);
+  const musicVolume = useGame((s) => s.musicVolume);
   const inCombat = location.pathname === '/combat';
   const wasInCombat = useRef(false);
   const [track, setTrack] = useState(MENU_TRACK);
@@ -84,10 +85,11 @@ function MusicManager() {
   useEffect(() => {
     const audio = sharedAudioRef.current;
     if (!audio) return;
-    audio.volume = inCombat ? 0.4 : 0.45;
+    audio.volume = (inCombat ? 0.4 : 0.45) * (musicVolume / 100);
     if (enabled) { audio.load(); audio.play().catch(() => {}); }
   }, [track]);
-  useEffect(() => { const audio = sharedAudioRef.current; if (audio) audio.volume = inCombat ? 0.4 : 0.45; }, [inCombat]);
+  useEffect(() => { const audio = sharedAudioRef.current; if (audio) audio.volume = (inCombat ? 0.4 : 0.45) * (musicVolume / 100); }, [inCombat, musicVolume]);
+  useEffect(() => { const audio = sharedAudioRef.current; if (audio && enabled) audio.play().catch(() => {}); else if (audio && !enabled) audio.pause(); }, [enabled]);
   return <audio ref={(el) => { sharedAudioRef.current = el; }} src={`${import.meta.env.BASE_URL}${track}`} loop preload="none" />;
 }
 
@@ -315,13 +317,20 @@ function Profile() {
   return <section><h2>Profil du joueur</h2><div className="profile profile-editor"><div className="profile-avatar">{avatar ? <img src={avatar.image} alt={avatar.name} /> : <b>✦</b>}</div><div className="profile-main"><label>Pseudo<input value={name} maxLength={20} onChange={(e) => setName(e.target.value)} onBlur={saveName} /></label><button className="secondary" onClick={saveName}>Enregistrer le pseudo</button><p>Niveau {s.level} · {s.wins} victoires · {s.losses} défaites</p><div className="xp-row"><progress value={s.xp} max={XP_PER_LEVEL} /><span>{s.xp}/{XP_PER_LEVEL} XP</span></div><p>💎 {s.gems} gemmes · ✦ {s.gold} or</p></div></div><h3>Choisir une image de profil</h3><div className="avatar-grid">{avatarCards.map((card) => <button key={card.id} className={'avatar-choice' + (s.avatarCardId === card.id ? ' active' : '')} onClick={() => s.setAvatarCardId(card.id)} title={card.name}><img src={card.image} alt={card.name} /><span>{card.name}</span></button>)}</div></section>;
 }
 
-const LANGUAGE_LABELS: Record<Language, string> = { fr: 'Français', en: 'English', es: 'Español', de: 'Deutsch', it: 'Italiano', pt: 'Português' };
+const LANGUAGE_LABELS: Record<Language, string> = { fr: 'Français', en: 'English', es: 'Español', de: 'Deutsch', it: 'Italiano', pt: 'Português', ja: '日本語', ko: '한국어', zh: '简体中文' };
 const QUALITY_LABELS: Record<VisualQuality, string> = { eco: 'Économie', balanced: 'Équilibrée', high: 'Élevée' };
 const ANIMATION_LABELS: Record<AnimationMode, string> = { full: 'Complètes', reduced: 'Réduites', off: 'Désactivées' };
 const SCALE_LABELS: Record<InterfaceScale, string> = { small: 'Petite', normal: 'Normale', large: 'Grande' };
 function Options() {
   const s = useGame();
-  return <section><h2>Options</h2><div className="options-grid"><article className="options-card"><b>Audio</b><p className="hint">Musique de menu et de duel.</p><button className="secondary" onClick={() => s.setMusicEnabled(!s.musicEnabled)}>{s.musicEnabled ? '🔊 Musique activée' : '🔈 Musique coupée'}</button></article><article className="options-card"><b>Affichage</b><p className="hint">Réglages adaptés au mobile et aux performances de l'appareil.</p><label>Qualité visuelle<select value={s.visualQuality} onChange={(e) => s.setVisualQuality(e.target.value as VisualQuality)}>{(Object.keys(QUALITY_LABELS) as VisualQuality[]).map((value) => <option key={value} value={value}>{QUALITY_LABELS[value]}</option>)}</select></label><label>Animations<select value={s.animationMode} onChange={(e) => s.setAnimationMode(e.target.value as AnimationMode)}>{(Object.keys(ANIMATION_LABELS) as AnimationMode[]).map((value) => <option key={value} value={value}>{ANIMATION_LABELS[value]}</option>)}</select></label><label>Taille de l'interface<select value={s.interfaceScale} onChange={(e) => s.setInterfaceScale(e.target.value as InterfaceScale)}>{(Object.keys(SCALE_LABELS) as InterfaceScale[]).map((value) => <option key={value} value={value}>{SCALE_LABELS[value]}</option>)}</select></label><button className="secondary" onClick={() => s.setGlowEffects(!s.glowEffects)}>{s.glowEffects ? '✨ Effets lumineux activés' : 'Effets lumineux désactivés'}</button><button className="secondary" onClick={() => s.setScreenShake(!s.screenShake)}>{s.screenShake ? '📳 Tremblements activés' : 'Tremblements désactivés'}</button></article><article className="options-card"><b>Langue</b><p className="hint">Choisis la langue de l'interface.</p><select value={s.language} onChange={(e) => s.setLanguage(e.target.value as Language)}>{(Object.keys(LANGUAGE_LABELS) as Language[]).map((language) => <option key={language} value={language}>{LANGUAGE_LABELS[language]}</option>)}</select></article></div></section>;
+  const { active: fullscreenActive, toggle: toggleFullscreen } = useFullscreen();
+  const isCoarsePointer = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
+  return <section><h2>Options</h2><div className="options-grid">
+    <article className="options-card"><b>Audio</b><p className="hint">Musique de menu et de duel.</p><button className="secondary" onClick={() => s.setMusicEnabled(!s.musicEnabled)}>{s.musicEnabled ? '🔊 Musique activée' : '🔈 Musique coupée'}</button><label>Volume musique<input type="range" min={0} max={100} value={s.musicVolume} onChange={(e) => s.setMusicVolume(Number(e.target.value))} /></label><label>Volume effets<input type="range" min={0} max={100} value={s.sfxVolume} onChange={(e) => s.setSfxVolume(Number(e.target.value))} /></label></article>
+    <article className="options-card"><b>Affichage</b><p className="hint">Réglages adaptés au mobile et aux performances de l'appareil.</p><label>Qualité visuelle<select value={s.visualQuality} onChange={(e) => s.setVisualQuality(e.target.value as VisualQuality)}>{(Object.keys(QUALITY_LABELS) as VisualQuality[]).map((value) => <option key={value} value={value}>{QUALITY_LABELS[value]}</option>)}</select></label><label>Animations<select value={s.animationMode} onChange={(e) => s.setAnimationMode(e.target.value as AnimationMode)}>{(Object.keys(ANIMATION_LABELS) as AnimationMode[]).map((value) => <option key={value} value={value}>{ANIMATION_LABELS[value]}</option>)}</select></label><label>Taille de l'interface<select value={s.interfaceScale} onChange={(e) => s.setInterfaceScale(e.target.value as InterfaceScale)}>{(Object.keys(SCALE_LABELS) as InterfaceScale[]).map((value) => <option key={value} value={value}>{SCALE_LABELS[value]}</option>)}</select></label><button className="secondary" onClick={() => s.setGlowEffects(!s.glowEffects)}>{s.glowEffects ? '✨ Effets lumineux activés' : 'Effets lumineux désactivés'}</button><button className="secondary" onClick={() => s.setScreenShake(!s.screenShake)}>{s.screenShake ? '📳 Tremblements activés' : 'Tremblements désactivés'}</button><button className="secondary" onClick={() => s.setShowFps(!s.showFps)}>{s.showFps ? '📈 Compteur FPS affiché' : 'Compteur FPS masqué'}</button><button className="secondary" onClick={() => s.setBatterySaver(!s.batterySaver)}>{s.batterySaver ? '🔋 Mode batterie activé' : 'Mode batterie désactivé'}</button>{isCoarsePointer && <button className="secondary" onClick={() => s.setVibrationEnabled(!s.vibrationEnabled)}>{s.vibrationEnabled ? '📳 Vibration activée' : 'Vibration désactivée'}</button>}{!isCoarsePointer && <button className="secondary" onClick={toggleFullscreen}>{fullscreenActive ? '⤡ Quitter le plein écran' : '⛶ Plein écran'}</button>}</article>
+    <article className="options-card"><b>Langue</b><p className="hint">Choisis la langue de l'interface.</p><select value={s.language} onChange={(e) => s.setLanguage(e.target.value as Language)}>{(Object.keys(LANGUAGE_LABELS) as Language[]).map((language) => <option key={language} value={language}>{LANGUAGE_LABELS[language]}</option>)}</select><p className="hint">La traduction complète de l'interface arrive dans une prochaine passe — la langue choisie est déjà mémorisée.</p></article>
+    <article className="options-card"><b>Réinitialisation</b><p className="hint">Remet Audio / Affichage / Langue à leurs valeurs par défaut. Ne touche pas à ta progression (decks, cartes, XP).</p><button className="secondary" onClick={() => { if (window.confirm('Réinitialiser tous les paramètres (audio, affichage, langue) ?')) s.resetSettings(); }}>↺ Réinitialiser les paramètres</button></article>
+  </div></section>;
 }
 
 function Simple({ title }: { title: string }) { return <section><h2>{title}</h2><p className="hint">Cette section arrive dans une prochaine passe de développement.</p></section>; }

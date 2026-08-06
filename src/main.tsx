@@ -11,7 +11,6 @@ import './final-board-layout.css';
 import './mobile-duel-layout.css';
 import './mobile-fixes.css';
 import './hand-confirmation';
-import './menu-playlist';
 
 const isInteractiveGameElement = (target: EventTarget | null) =>
   target instanceof Element &&
