@@ -1,108 +1,85 @@
-/* Mise en page finale PC : axe central commun aux deux joueurs. */
+/* Plateau final PC : symétrique, centré et lisible. */
 @media (min-width: 901px) {
   body:has(.battle) .battle {
-    grid-template-rows: 24px 150px minmax(0, 1fr) minmax(128px, 170px) 48px !important;
-    padding-inline: 0 !important;
-  }
-
-  body:has(.battle) .battle-top,
-  body:has(.battle) .battle-main,
-  body:has(.battle) .hand,
-  body:has(.battle) .battle-footer {
-    width: 100% !important;
-    max-width: none !important;
-    margin-inline: 0 !important;
-    justify-self: stretch !important;
-  }
-
-  body:has(.battle) .battle-main {
+    --duel-axis-width: min(1040px, 72vw);
+    --field-card-w: clamp(92px, 6.8vw, 128px);
+    --field-card-h: clamp(128px, 17vh, 176px);
     position: relative !important;
     display: grid !important;
-    grid-template-columns: 88px minmax(0, 1fr) 88px !important;
-    left: auto !important;
-    right: auto !important;
-    transform: none !important;
-  }
-
-  body:has(.battle) .battle-center {
-    grid-column: 2 !important;
-    width: 100% !important;
+    grid-template-rows: 24px 138px minmax(0, 1fr) 154px 50px !important;
+    width: 100vw !important;
     max-width: none !important;
-    margin: 0 !important;
-    justify-self: stretch !important;
-    display: grid !important;
-    grid-template-rows: minmax(0, 1fr) 38px minmax(0, 1fr) !important;
-    justify-items: center !important;
+    padding: 0 !important;
+    overflow: hidden !important;
   }
 
-  body:has(.battle) .zone-wrap {
-    width: max-content !important;
-    max-width: calc(100vw - 220px) !important;
-    margin-inline: auto !important;
-    justify-self: center !important;
-  }
+  body:has(.battle) .battle-meta { padding: 4px 2.5% !important; }
 
-  body:has(.battle) .board,
-  body:has(.battle) .support-row {
-    width: max-content !important;
-    margin-inline: auto !important;
-    justify-content: center !important;
-  }
-
-  /* Côté adverse réellement inversé : soutiens derrière, créatures près du centre. */
-  body:has(.battle) .enemy-zone {
-    display: grid !important;
-    grid-template-areas:
-      "title"
-      "support-label"
-      "support"
-      "board" !important;
-    align-content: center !important;
-  }
-  body:has(.battle) .enemy-zone > b { grid-area: title !important; }
-  body:has(.battle) .enemy-zone > small { grid-area: support-label !important; }
-  body:has(.battle) .enemy-zone .support-row { grid-area: support !important; }
-  body:has(.battle) .enemy-zone .board { grid-area: board !important; }
-
-  /* Main adverse : même gabarit que la main du joueur, centrée au-dessus du terrain. */
   body:has(.battle) .battle-top {
     position: relative !important;
+    width: 100vw !important;
+    max-width: none !important;
+    margin: 0 !important;
     display: block !important;
   }
+
   body:has(.battle) .combatant.enemy-combatant {
-    width: 100% !important;
+    position: relative !important;
+    width: 100vw !important;
     height: 100% !important;
     min-height: 0 !important;
+    padding: 8px 2.5% !important;
     border: 0 !important;
     border-radius: 0 !important;
     background: transparent !important;
     box-shadow: none !important;
-    padding: 8px 3% !important;
     display: flex !important;
-    flex-direction: row !important;
     align-items: flex-start !important;
+    flex-direction: row !important;
+    gap: 10px !important;
   }
-  body:has(.battle) .enemy-combatant .enemy-hand-row {
+
+  body:has(.battle) .enemy-hand-row {
     position: absolute !important;
     left: 50% !important;
     top: 2px !important;
     transform: translateX(-50%) !important;
-    width: min(900px, 72vw) !important;
-    height: 140px !important;
-    padding: 0 !important;
+    width: var(--duel-axis-width) !important;
+    height: 132px !important;
     display: flex !important;
     align-items: flex-start !important;
     justify-content: center !important;
     overflow: visible !important;
-    z-index: 5 !important;
+    padding: 0 !important;
+    z-index: 12 !important;
   }
+
+  body:has(.battle) .enemy-hand-row::after {
+    content: attr(data-count) " cartes";
+    position: absolute;
+    top: 108px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 3px 9px;
+    border-radius: 999px;
+    border: 1px solid rgba(239,201,107,.45);
+    background: rgba(5,8,13,.86);
+    color: #e9c878;
+    font: 8px "DM Mono";
+    letter-spacing: 1px;
+  }
+
   body:has(.battle) .enemy-hand-card {
-    width: clamp(84px, 7vw, 118px) !important;
-    height: clamp(116px, 10vw, 162px) !important;
-    margin-left: clamp(-34px, -2vw, -16px) !important;
+    width: clamp(78px, 6.4vw, 112px) !important;
+    height: clamp(108px, 9vw, 154px) !important;
+    flex: 0 0 auto !important;
+    margin-left: clamp(-30px, -1.8vw, -14px) !important;
     border-radius: 10px !important;
-    background-size: cover !important;
+    background-size: contain !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
     transform-origin: 50% -20% !important;
+    transition: transform .2s ease !important;
   }
   body:has(.battle) .enemy-hand-card:first-child { margin-left: 0 !important; }
   body:has(.battle) .enemy-hand-card:nth-child(1) { transform: translateY(8px) rotate(7deg) !important; }
@@ -111,44 +88,205 @@
   body:has(.battle) .enemy-hand-card:nth-child(4) { transform: rotate(-1deg) !important; }
   body:has(.battle) .enemy-hand-card:nth-child(5) { transform: translateY(3px) rotate(-4deg) !important; }
   body:has(.battle) .enemy-hand-card:nth-child(n+6) { transform: translateY(8px) rotate(-7deg) !important; }
+  body:has(.battle) .enemy-hand-card.enemy-card-draw { animation: enemyDrawFinal .85s ease-out !important; }
 
-  body:has(.battle) .enemy-combatant > .avatar,
-  body:has(.battle) .enemy-combatant > div:not(.enemy-hand-row) {
-    margin-right: 8px !important;
+  body:has(.battle) .battle-main {
+    position: relative !important;
+    width: 100vw !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: grid !important;
+    grid-template-columns: 90px minmax(0, 1fr) 90px !important;
+    align-items: stretch !important;
+    transform: none !important;
   }
-  body:has(.battle) .enemy-combatant > .life { margin-left: auto !important; }
 
-  /* Main joueur centrée sur le même axe. */
+  body:has(.battle) .battle-center {
+    grid-column: 2 !important;
+    width: var(--duel-axis-width) !important;
+    max-width: var(--duel-axis-width) !important;
+    height: 100% !important;
+    margin: 0 auto !important;
+    display: grid !important;
+    grid-template-rows: minmax(0, 1fr) 42px minmax(0, 1fr) !important;
+    justify-items: center !important;
+    align-items: center !important;
+    transform: none !important;
+  }
+
+  body:has(.battle) .pile-rail.left { grid-column: 1 !important; }
+  body:has(.battle) .pile-rail.right { grid-column: 3 !important; }
+
+  body:has(.battle) .zone-wrap {
+    width: var(--duel-axis-width) !important;
+    max-width: var(--duel-axis-width) !important;
+    margin: 0 auto !important;
+    justify-self: center !important;
+    text-align: center !important;
+  }
+
+  body:has(.battle) .enemy-zone {
+    display: grid !important;
+    grid-template-areas:
+      "title"
+      "supportlabel"
+      "support"
+      "board" !important;
+    align-content: end !important;
+  }
+  body:has(.battle) .enemy-zone > b { grid-area: title !important; }
+  body:has(.battle) .enemy-zone > small { grid-area: supportlabel !important; }
+  body:has(.battle) .enemy-zone .support-row { grid-area: support !important; }
+  body:has(.battle) .enemy-zone .board { grid-area: board !important; }
+
+  body:has(.battle) .player-zone {
+    display: grid !important;
+    grid-template-areas:
+      "title"
+      "board"
+      "support"
+      "supportlabel" !important;
+    align-content: start !important;
+  }
+  body:has(.battle) .player-zone > b { grid-area: title !important; }
+  body:has(.battle) .player-zone .board { grid-area: board !important; }
+  body:has(.battle) .player-zone .support-row { grid-area: support !important; }
+  body:has(.battle) .player-zone > small { grid-area: supportlabel !important; }
+
+  body:has(.battle) .board,
+  body:has(.battle) .support-row {
+    width: max-content !important;
+    margin: 4px auto !important;
+    display: grid !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: clamp(8px, 1vw, 16px) !important;
+  }
+  body:has(.battle) .board { grid-template-columns: repeat(3, var(--field-card-w)) !important; }
+  body:has(.battle) .support-row { grid-template-columns: repeat(5, var(--field-card-w)) !important; }
+
+  body:has(.battle) .field-slot,
+  body:has(.battle) .field-card,
+  body:has(.battle) .support-row > div,
+  body:has(.battle) .support-card {
+    width: var(--field-card-w) !important;
+    min-width: var(--field-card-w) !important;
+    max-width: var(--field-card-w) !important;
+    height: var(--field-card-h) !important;
+    min-height: var(--field-card-h) !important;
+    max-height: var(--field-card-h) !important;
+    border-radius: 11px !important;
+  }
+
+  body:has(.battle) .field-card,
+  body:has(.battle) .support-card {
+    overflow: hidden !important;
+    padding: 0 !important;
+    background-color: #050a0b !important;
+    background-size: contain !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+  }
+
+  body:has(.battle) .field-card img {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    background: #050a0b !important;
+  }
+
+  body:has(.battle) .turn-strip {
+    position: relative !important;
+    width: min(820px, 62vw) !important;
+    height: 38px !important;
+    margin: 0 auto !important;
+    justify-self: center !important;
+    z-index: 30 !important;
+  }
+
   body:has(.battle) .hand {
+    width: var(--duel-axis-width) !important;
+    max-width: var(--duel-axis-width) !important;
+    height: 100% !important;
+    margin: 0 auto !important;
+    padding: 0 12px 8px !important;
     display: flex !important;
     justify-content: center !important;
     align-items: flex-end !important;
-    padding-inline: 110px !important;
     overflow: visible !important;
   }
+
+  body:has(.battle) .hand .card {
+    width: clamp(94px, 6.8vw, 124px) !important;
+    min-width: clamp(94px, 6.8vw, 124px) !important;
+    height: clamp(132px, 18vh, 174px) !important;
+    min-height: clamp(132px, 18vh, 174px) !important;
+  }
+
+  body:has(.battle) .battle-footer {
+    width: var(--duel-axis-width) !important;
+    max-width: var(--duel-axis-width) !important;
+    margin: 0 auto !important;
+    justify-self: center !important;
+  }
+
+  body:has(.battle) .battle-footer .end-turn {
+    position: fixed !important;
+    left: calc(50% + min(410px, 31vw) + 14px) !important;
+    right: auto !important;
+    top: 50% !important;
+    bottom: auto !important;
+    transform: translateY(-50%) !important;
+    width: clamp(170px, 12vw, 230px) !important;
+    height: 38px !important;
+    z-index: 50 !important;
+  }
+}
+
+body[data-nexus-phase="main"] .nexus-attack-action { display: none !important; }
+body[data-nexus-phase="battle"] .nexus-attack-action { display: inline-flex !important; }
+
+.nexus-direct-attack {
+  position: fixed;
+  left: 50%;
+  top: calc(50% - 48px);
+  transform: translateX(-50%);
+  z-index: 1200;
+  padding: 10px 18px;
+  border: 1px solid #ef6c6c;
+  border-radius: 999px;
+  background: #38131a;
+  color: #ffdce2;
+  font-weight: 800;
 }
 
 .hand-confirmation-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: 1500;
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(1, 5, 8, .78);
+  background: rgba(1,5,8,.8);
   backdrop-filter: blur(10px);
 }
 .hand-confirmation {
   position: relative;
-  width: min(720px, 92vw);
+  width: min(760px, 92vw);
   display: grid;
-  grid-template-columns: minmax(210px, 280px) 1fr;
-  gap: 24px;
+  grid-template-columns: minmax(220px, 300px) 1fr;
+  gap: 26px;
   padding: 24px;
-  border: 1px solid rgba(239, 201, 107, .65);
+  border: 1px solid rgba(239,201,107,.7);
   border-radius: 18px;
-  background: linear-gradient(145deg, rgba(20, 24, 34, .98), rgba(4, 13, 15, .98));
-  box-shadow: 0 30px 90px rgba(0, 0, 0, .72), 0 0 35px rgba(239, 201, 107, .12);
+  background: linear-gradient(145deg, rgba(20,24,34,.99), rgba(4,13,15,.99));
+  box-shadow: 0 30px 90px rgba(0,0,0,.72), 0 0 35px rgba(239,201,107,.12);
 }
 .hand-confirmation-close {
   position: absolute;
@@ -164,7 +302,7 @@
 }
 .hand-confirmation-preview img {
   width: 100%;
-  max-height: 390px;
+  max-height: 420px;
   object-fit: contain;
   border-radius: 12px;
   filter: drop-shadow(0 18px 24px rgba(0,0,0,.55));
@@ -175,6 +313,12 @@
 .hand-confirmation-info p { color: #c1d0cb; line-height: 1.55; }
 .hand-confirmation-actions { display: flex; gap: 10px; margin-top: 22px; }
 .hand-confirmation-actions button { flex: 1; margin: 0; }
+
+@keyframes enemyDrawFinal {
+  0% { opacity: 0; transform: translate(210px,-60px) rotate(14deg) scale(.65); }
+  70% { opacity: 1; transform: translate(0,8px) rotate(-4deg) scale(1.08); }
+  100% { opacity: 1; }
+}
 
 @media (max-width: 700px) {
   .hand-confirmation { grid-template-columns: 1fr; max-height: 92vh; overflow: auto; }
