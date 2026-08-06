@@ -1,0 +1,25 @@
+.profileRoot{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.avatar{
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  object-fit:cover;
+  border:2px solid rgba(255,255,255,0.08);
+}
+.text{
+  display:flex;
+  flex-direction:column;
+}
+.name{
+  font-size:14px;
+  font-weight:600;
+  color:#fff;
+}
+.deck{
+  font-size:11px;
+  color:rgba(255,255,255,0.75);
+}
