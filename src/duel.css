@@ -484,19 +484,6 @@ body.in-battle main {
 .hand .card p { display: none; }
 .hand .card-art { height: clamp(46px, 8vh, 78px); margin: 3px 0; }
 .hand .card footer { font-size: 9px; left: 6px; right: 6px; bottom: 5px; }
-.inspect-card {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, .3);
-  background: rgba(0, 0, 0, .55);
-  color: #fff;
-  font-size: 11px;
-  cursor: pointer;
-}
 
 /* ---------- Aperçu de carte avant activation ------------------------------ */
 .card-preview-overlay {
@@ -525,7 +512,8 @@ body.in-battle main {
 .card-preview-info small { color: #66e6c4; font: 9px "DM Mono"; letter-spacing: 2px; }
 .card-preview-info h3 { margin: 8px 0 10px; font: 700 24px "Playfair Display"; }
 .card-preview-info p { color: #c1d0cb; line-height: 1.5; }
-.card-preview-stats { display: flex; gap: 10px; margin: 10px 0; font: 700 12px "DM Mono"; color: var(--gold); }
+.card-preview-stats { display: flex; justify-content: center; gap: 10px; margin: 10px 0; font: 700 12px "DM Mono"; color: var(--gold); }
+.card-preview-info .card-preview-stats { justify-content: flex-start; }
 .card-preview-actions { display: flex; gap: 10px; margin-top: 18px; }
 .card-preview-actions button { flex: 1; margin: 0; }
 @media (max-width: 640px) {
@@ -614,6 +602,5 @@ body.in-battle main {
   .hand .card-art { height: clamp(28px, 8vh, 42px); }
   .hand .card footer { font-size: 6px; }
   .hand-card-wrap { margin-left: clamp(-16px, -3vw, -8px); }
-  .inspect-card { width: 17px; height: 17px; font-size: 8px; }
   .unit-actions { bottom: calc(var(--hand-peek) + 36px); padding: 10px; }
 }
