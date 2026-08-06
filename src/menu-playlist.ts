@@ -88,12 +88,13 @@ const syncAudio = () => {
 const notifyRouteChange = () => window.setTimeout(syncAudio, 0);
 
 const patchHistory = (method: 'pushState' | 'replaceState') => {
-  const original = history[method];
-  history[method] = function (...args) {
-    const result = original.apply(this, args as Parameters<History[typeof method]>);
+  const original = history[method].bind(history);
+  const patched: History[typeof method] = (...args) => {
+    const result = original(...args);
     notifyRouteChange();
     return result;
-  } as History[typeof method];
+  };
+  history[method] = patched;
 };
 
 void Promise.all(MENU_TRACKS.map(async (track) => ((await trackExists(track)) ? track : null))).then((tracks) => {
