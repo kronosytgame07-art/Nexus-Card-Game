@@ -70,6 +70,17 @@ jobs:
           cp "ChatGPT Image 6 août 2026, 03_47_40.png" dist/cards/sentinelle-doree.png
           cp "ChatGPT Image 6 août 2026, 03_53_25.png" dist/cards/duelliste-royal.png
           cp "ChatGPT Image 6 août 2026, 03_54_22.png" dist/cards/capitaine-du-royaume.png
+      - name: Installer les evolutions Chevalier
+        run: |
+          cp "ChatGPT Image 6 août 2026, 04_08_43.png" dist/cards/evo-novice-du-serment.png
+          cp "ChatGPT Image 6 août 2026, 04_09_45.png" dist/cards/evo-lame-blanche.png
+          cp "ChatGPT Image 6 août 2026, 04_10_59.png" dist/cards/evo-garde-du-portail.png
+          cp "ChatGPT Image 6 août 2026, 04_11_57.png" dist/cards/evo-paladin-des-cendres.png
+          cp "ChatGPT Image 6 août 2026, 04_12_54.png" dist/cards/evo-chevalier-azur.png
+          cp "ChatGPT Image 6 août 2026, 04_13_53.png" dist/cards/evo-porte-etendard.png
+          cp "ChatGPT Image 6 août 2026, 04_14_54.png" dist/cards/evo-sentinelle-doree.png
+          cp "ChatGPT Image 6 août 2026, 04_15_53.png" dist/cards/evo-duelliste-royal.png
+          cp "ChatGPT Image 6 août 2026, 04_16_53.png" dist/cards/evo-capitaine-du-royaume.png
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
