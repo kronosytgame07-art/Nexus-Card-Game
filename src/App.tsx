@@ -1,30 +1,559 @@
-@@
--import cardBack from './assets/cards/nexus-card-back.jpg';
-+import cardBack from './assets/cards/nexus-card-back.jpg';
-+import PlayerHand from './components/PlayerHand';
-+import EnemyHand from './components/EnemyHand';
-+import Profile from './components/Profile';
-@@
- function Combat() {
-   const s = useGame(); const location = useLocation(); const go = useNavigate();
-@@
--  const [match, setMatch] = useState<GameState>(startMatch); const [selectedAttacker, setSelectedAttacker] = useState<string | null>(null); const [reported, setReported] = useState(false); const [...]
-+  const [match, setMatch] = useState<GameState>(startMatch);
-+  const [selectedAttacker, setSelectedAttacker] = useState<string | null>(null);
-+  const [reported, setReported] = useState(false);
-+  const [handOpen, setHandOpen] = useState(false);
-+  const [...]
-@@
--  const play = (id: string) => { if (match.activePlayer !== 'player' || match.winner) return; if (!handOpen) { setHandOpen(true); return; } if (phase !== 'main') { showHint('Passe en Main Phase p[...]
-+  const play = (id: string) => { if (match.activePlayer !== 'player' || match.winner) return; if (!handOpen) { setHandOpen(true); return; } if (phase !== 'main') { showHint('Passe en Main Phase p[...]
-@@
--  const pileCards: CardDef[] = pileOpen === 'grave' ? match.player.graveyard.map((id: string) => getCard(id)) : pileOpen === 'evo' ? match.player.evosphere.map((id: string) => getCard(id)) : [];
--  return <section className="battle" onClick={(event) => { if (handOpen && !(event.target as HTMLElement).closest('.hand')) setHandOpen(false); }}><div className="battle-meta"><b>{chapter ? `Chap[...]
-+  const pileCards: CardDef[] = pileOpen === 'grave' ? match.player.graveyard.map((id: string) => getCard(id)) : pileOpen === 'evo' ? match.player.evosphere.map((id: string) => getCard(id)) : [];
-+
-+  // Prepare hand objects for the new components
-+  const makeCardData = (id: string) => { const c = getCard(id); return { id, name: c?.name ?? id, image: c?.image ?? CARD_BACK_URL }; };
-+  const playerHandObjects = match.player.hand.map(makeCardData);
-+  const enemyHandObjects = match.enemy.hand.map(makeCardData);
-+
-+  return <section className="battle" onClick={(event) => { if (handOpen && !(event.target as HTMLElement).closest('.hand')) setHandOpen(false); }}><div className="battle-meta"><b>{chapter ? `Chap[...]
+import { useEffect, useRef, useState } from 'react';
+import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ALL_CARDS, AnimationMode, copiesInDeck, EVOSPHERE_MAX, InterfaceScale, Language, MAIN_DECK_MAX, MAIN_DECK_MIN, maxCopiesAllowed, UNLOCK_SECOND_FACTION_AT, useGame, VisualQuality, XP_PER_LEVEL } from './store/game';
+import { cardsByFaction, getCard } from './engine/cards';
+import { CardDef, Faction, FieldUnit, GameState, SupportCard } from './engine/types';
+import { CHAPTERS, chapterById } from './engine/campaign';
+import { activateSupportCard, activateUnitEffect, declareAttack, endTurn, evolveUnit, newGame, playCard } from './engine/engine';
+import { LANGUAGES, LANGUAGE_LABELS, translate } from './i18n';
+import cardBack from './assets/cards/nexus-card-back.jpg';
+
+const NAV_KEYS = ['nav_play', 'nav_campaign', 'nav_collection', 'nav_decks', 'nav_profile', 'nav_ranking', 'nav_shop', 'nav_tutorial', 'nav_settings'] as const;
+const nav = ['Jouer', 'Campagne', 'Collection', 'Decks', 'Profil', 'Classement', 'Boutique', 'Tutoriel', 'Paramètres'];
+const path = (x: string) => (x === 'Jouer' ? '/' : '/' + x.toLowerCase());
+const CARD_BACK_URL = `${import.meta.env.BASE_URL}cards/card-back.jpg`;
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+function useInstallPrompt() {
+  const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
+  useEffect(() => {
+    const handler = (event: Event) => {
+      event.preventDefault();
+      setDeferred(event as BeforeInstallPromptEvent);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+  const install = async () => {
+    if (!deferred) return;
+    await deferred.prompt();
+    await deferred.userChoice;
+    setDeferred(null);
+  };
+  return { available: !!deferred, install };
+}
+
+function useFullscreen() {
+  const [active, setActive] = useState(!!document.fullscreenElement);
+  useEffect(() => {
+    const onChange = () => setActive(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
+  const toggle = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+        const orientation = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
+        if (orientation?.lock) await orientation.lock('landscape').catch(() => {});
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch {}
+  };
+  return { active, toggle };
+}
+
+function FullscreenButton({ className = 'fullscreen-toggle' }: { className?: string }) {
+  const { active, toggle } = useFullscreen();
+  return <button className={className} onClick={toggle} title={active ? 'Quitter le plein écran' : 'Plein écran'}>{active ? '⤡' : '⛶'}</button>;
+}
+
+function PortraitGate() {
+  return <div className="portrait-gate" aria-hidden="true"><div><span className="rotate-icon">⟳</span><p>Tourne ton appareil</p><small>Nexus Arena se joue en mode paysage.</small></div></div>;
+}
+
+/** Pose les classes body.on-home / body.in-battle utilisées par les feuilles CSS
+ *  pour adapter le chrome (aside, main) sans jamais recourir à :has(). */
+function useRouteBodyClass() {
+  const location = useLocation();
+  useEffect(() => {
+    const body = document.body;
+    body.classList.toggle('in-battle', location.pathname === '/combat');
+    body.classList.toggle('on-home', location.pathname === '/');
+    return () => {
+      body.classList.remove('in-battle', 'on-home');
+    };
+  }, [location.pathname]);
+}
+
+const MENU_TRACK = 'audio/menu-theme.mp3';
+const COMBAT_TRACKS = ['audio/combat/duel-1-dark-intense.mp3', 'audio/combat/duel-2-epique-choeurs.mp3', 'audio/combat/duel-3-agressive.mp3'];
+const sharedAudioRef: { current: HTMLAudioElement | null } = { current: null };
+
+function MusicManager() {
+  const location = useLocation();
+  const enabled = useGame((s) => s.musicEnabled);
+  const musicVolume = useGame((s) => s.musicVolume);
+  const inCombat = location.pathname === '/combat';
+  const wasInCombat = useRef(false);
+  const [track, setTrack] = useState(MENU_TRACK);
+  useEffect(() => {
+    if (inCombat && !wasInCombat.current) setTrack(COMBAT_TRACKS[Math.floor(Math.random() * COMBAT_TRACKS.length)]);
+    else if (!inCombat && wasInCombat.current) setTrack(MENU_TRACK);
+    wasInCombat.current = inCombat;
+  }, [inCombat]);
+  useEffect(() => {
+    const audio = sharedAudioRef.current;
+    if (!audio) return;
+    audio.volume = Math.min(1, Math.max(0, musicVolume / 100)) * (inCombat ? 0.9 : 1);
+    if (enabled) { audio.load(); audio.play().catch(() => {}); }
+  }, [track]);
+  useEffect(() => {
+    const audio = sharedAudioRef.current;
+    if (audio) audio.volume = Math.min(1, Math.max(0, musicVolume / 100)) * (inCombat ? 0.9 : 1);
+  }, [inCombat, musicVolume]);
+  return <audio ref={(el) => { sharedAudioRef.current = el; }} src={`${import.meta.env.BASE_URL}${track}`} loop preload="none" />;
+}
+
+function MusicToggle() {
+  const enabled = useGame((s) => s.musicEnabled);
+  const setMusicEnabled = useGame((s) => s.setMusicEnabled);
+  const onClick = () => {
+    const next = !enabled;
+    setMusicEnabled(next);
+    const audio = sharedAudioRef.current;
+    if (audio) next ? (audio.load(), audio.play().catch(() => {})) : audio.pause();
+  };
+  return <button className="music-toggle" onClick={onClick} title={enabled ? 'Couper la musique' : 'Activer la musique du menu'}>{enabled ? '🔊' : '🔈'}</button>;
+}
+
+function Shell({ children }: { children: React.ReactNode }) {
+  useRouteBodyClass();
+  const location = useLocation();
+  const inBattle = location.pathname === '/combat';
+  const language = useGame((s) => s.language);
+  if (inBattle) {
+    // Pas de barre latérale pendant le duel : le terrain utilise tout l'écran.
+    // (On évite ainsi tout recours à un sélecteur CSS `:has()` pour la masquer.)
+    return <><PortraitGate /><MusicManager />{children}<div className="hud-buttons"><MusicToggle /><FullscreenButton /></div></>;
+  }
+  return <><PortraitGate /><MusicManager /><aside><h1>✦ NEXUS <small>CARD ARENA</small></h1>{nav.map((x, i) => <NavLink key={x} to={path(x)} end={x === 'Jouer'}>{translate(language, NAV_KEYS[i])}</NavLink>)}</aside><main>{children}</main><div className="hud-buttons"><MusicToggle /><FullscreenButton /></div></>;
+}
+
+const CardView = ({ card, onClick, disabled, badge }: { card: CardDef; onClick?: () => void; disabled?: boolean; badge?: string }) => (
+  <motion.button whileHover={disabled ? undefined : { y: -8, rotate: 1 }} className={'card ' + card.rarity} onClick={onClick} disabled={disabled}>
+    <i>{card.faction}</i><b>{card.name}</b><img className="card-art" src={card.image} alt={card.name} loading="lazy" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = cardBack; }} /><p>{card.text}</p><footer><span>{card.cost} ◆</span>{card.type === 'unit' ? <span>⚔ {card.attack}　♥ {card.health}</span> : <span>Sort</span>}</footer>{badge && <em className="card-badge">{badge}</em>}
+  </motion.button>
+);
+
+function Home() {
+  const go = useNavigate(); const s = useGame(); const { available: canInstall, install } = useInstallPrompt();
+  const opponentFaction: Faction = s.faction === 'Meute' ? 'Chevalier' : 'Meute';
+  const heroBg = `${import.meta.env.BASE_URL}backgrounds/home-hero.jpg`;
+  return <section className="home-hero" style={{ backgroundImage: `url(${heroBg})` }}><header className="home-topbar"><div className="home-logo"><span className="home-logo-mark">✦</span><div><b>NEXUS</b><small>CARD ARENA</small></div></div>{canInstall && <button className="install-button" onClick={install}>↓ Installer</button>}</header><div className="home-showcase"><div className="home-copy"><p className="eyebrow">LE SERMENT ET LA MEUTE</p><h2>Entre dans<br /><em>l'Évosphère</em></h2><p>Construis ton héritage, affronte les gardiens de Nexus et découvre ce que la Reine a effacé.</p><div className="faction-pick compact">{(['Meute', 'Chevalier'] as Faction[]).map((f) => { const unlocked = s.unlockedFactions.includes(f); return <button key={f} className={'faction-button' + (s.faction === f ? ' active' : '') + (unlocked ? '' : ' locked')} disabled={!unlocked} title={unlocked ? undefined : `Verrouillé — gagne ${UNLOCK_SECOND_FACTION_AT} chapitres de campagne pour débloquer`} onClick={() => s.setFaction(f)}>{unlocked ? f : `🔒 ${f}`}</button>; })}</div></div></div><div className="menu-cards"><button className="menu-card" onClick={() => go('/campagne')}><span className="menu-card-icon gold">✦</span><span className="menu-card-body"><small>HISTOIRE</small><b>Mode Campagne</b><em>{s.campaignChapter}/{CHAPTERS.length} chapitres terminés</em></span><span className="menu-card-arrow">→</span></button><button className="menu-card" onClick={() => go('/combat')}><span className="menu-card-icon teal">⚔</span><span className="menu-card-body"><small>ENTRAÎNEMENT</small><b>Duel rapide</b><em>Main mélangée · contre {opponentFaction}</em></span><span className="menu-card-arrow">→</span></button><button className="menu-card" onClick={() => go('/paramètres')}><span className="menu-card-icon violet">⚙</span><span className="menu-card-body"><small>NEXUS</small><b>Options</b><em>Graphismes · Langue · Audio</em></span><span className="menu-card-arrow">→</span></button></div><div className="stats"><b>{s.playerName} · Niveau {s.level}</b><span>{s.xp}/{XP_PER_LEVEL} XP · {s.wins} victoires · {s.losses} défaites</span><span>💎 {s.gems} · {s.gold} ✦</span></div></section>;
+}
+
+function Campaign() { const s = useGame(); const go = useNavigate(); return <section><h2>Campagne</h2><p className="hint">{s.campaignChapter} / {CHAPTERS.length} chapitres terminés</p><div className="chapter-list">{CHAPTERS.map((chapter, i) => { const locked = i > s.campaignChapter; const done = i < s.campaignChapter; return <article key={chapter.id} className={'chapter' + (locked ? ' locked' : '')}><span className="number">0{i + 1}</span><div className="chapter-body"><b>{chapter.title}</b><small>{done ? 'Victoire inscrite dans les archives' : locked ? 'Scellé par la Reine' : `Gardien ${chapter.opponentFaction} · IA ${chapter.aiDifficulty}`}</small></div>{!locked && <button onClick={() => go('/combat', { state: { chapterId: chapter.id } })}>{done ? 'Rejouer' : 'Jouer'}</button>}{locked && <span>◌</span>}</article>; })}</div></section>; }
+
+function Collection() { const [query, setQuery] = useState(''); const owned = useGame((s) => s.owned); const unlockedFactions = useGame((s) => s.unlockedFactions); const visibleCards = ALL_CARDS.filter((c) => unlockedFactions.includes(c.faction)); const filtered = visibleCards.filter((c) => c.name.toLowerCase().includes(query.toLowerCase())); const lockedFaction = (['Meute', 'Chevalier'] as Faction[]).find((f) => !unlockedFactions.includes(f)); return <section><h2>Collection</h2><input placeholder="Rechercher une carte…" value={query} onChange={(e) => setQuery(e.target.value)} /><div className="grid">{filtered.map((c) => <CardView key={c.id} card={c} badge={owned.includes(c.id) ? undefined : 'Non possédée'} />)}</div><p className="hint">{owned.length}/{visibleCards.filter((c) => c.level === 1 && !c.boosterOnly).length} cartes de base possédées</p>{lockedFaction && <p className="hint">🔒 Les cartes {lockedFaction} restent cachées tant que la faction n'est pas débloquée — gagne {UNLOCK_SECOND_FACTION_AT} chapitres de campagne.</p>}</section>; }
+
+function DeckMenu({ onEdit }: { onEdit: (id: string) => void }) {
+  const s = useGame();
+  const [creatingFaction, setCreatingFaction] = useState<Faction | null>(null);
+  const [newName, setNewName] = useState('');
+
+  const startCreate = (faction: Faction) => {
+    setCreatingFaction(faction);
+    setNewName(`Deck ${faction} ${s.decks.filter((d) => d.faction === faction).length + 1}`);
+  };
+  const confirmCreate = () => {
+    if (!creatingFaction) return;
+    const id = s.createDeck(newName, creatingFaction);
+    setCreatingFaction(null);
+    onEdit(id);
+  };
+
+  return (
+    <section>
+      <h2>Mes decks</h2>
+      {s.decks.length === 0 ? (
+        <p className="hint">Aucun deck pour le moment.</p>
+      ) : (
+        <div className="deck-menu-list">
+          {s.decks.map((d) => {
+            const count = d.main.length;
+            const status = count < MAIN_DECK_MIN ? 'incomplet' : count > MAIN_DECK_MAX ? 'trop plein' : 'prêt';
+            return (
+              <article key={d.id} className={'deck-menu-row' + (s.activeDeckId === d.id ? ' active' : '')}>
+                <div>
+                  <b>{d.name}</b>
+                  <small>{d.faction} · {count}/{MAIN_DECK_MAX} cartes · {status}</small>
+                </div>
+                <div className="deck-menu-actions">
+                  <button className="secondary" onClick={() => onEdit(d.id)}>Modifier</button>
+                  <button className="secondary" onClick={() => s.setActiveDeck(d.id)} disabled={s.activeDeckId === d.id}>
+                    {s.activeDeckId === d.id ? 'Actif' : 'Utiliser'}
+                  </button>
+                  <button className="secondary danger" onClick={() => { if (confirm(`Supprimer "${d.name}" ?`)) s.deleteDeck(d.id); }}>
+                    Supprimer
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+
+      <h3>Créer un nouveau deck</h3>
+      {creatingFaction ? (
+        <div className="deck-create-form">
+          <input value={newName} maxLength={30} onChange={(e) => setNewName(e.target.value)} placeholder="Nom du deck" />
+          <button className="primary" onClick={confirmCreate}>Créer {creatingFaction}</button>
+          <button className="secondary" onClick={() => setCreatingFaction(null)}>Annuler</button>
+        </div>
+      ) : (
+        <div className="faction-pick compact">
+          {(['Meute', 'Chevalier'] as Faction[]).map((f) => {
+            const unlocked = s.unlockedFactions.includes(f);
+            return (
+              <button
+                key={f}
+                className={'faction-button' + (unlocked ? '' : ' locked')}
+                disabled={!unlocked}
+                title={unlocked ? undefined : `Verrouillé — gagne ${UNLOCK_SECOND_FACTION_AT} chapitres de campagne`}
+                onClick={() => startCreate(f)}
+              >
+                {unlocked ? `+ ${f}` : `🔒 ${f}`}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <p className="hint">Règles : {MAIN_DECK_MIN} à {MAIN_DECK_MAX} cartes par deck · pas d'Extra Deck · l'Évosphère (max {EVOSPHERE_MAX}) se remplit automatiquement avec les évolutions des cartes de ton deck · aucun craft, uniquement les cartes déjà possédées.</p>
+    </section>
+  );
+}
+
+function DeckEditor({ deckId, onBack }: { deckId: string; onBack: () => void }) {
+  const s = useGame();
+  const savedDeck = s.decks.find((d) => d.id === deckId);
+  const pool = savedDeck ? cardsByFaction(savedDeck.faction).filter((c) => c.level === 1 && !c.boosterOnly) : [];
+  if (!savedDeck) return <section><h2>Deck introuvable</h2><button className="secondary" onClick={onBack}>Retour</button></section>;
+
+  const main = savedDeck.main;
+  const count = main.length;
+  const add = (id: string) => {
+    if (count >= MAIN_DECK_MAX) return;
+    if (copiesInDeck(main, id) < maxCopiesAllowed(id)) s.setDeckCards(deckId, [...main, id]);
+  };
+  const removeAt = (i: number) => s.setDeckCards(deckId, main.filter((_, n) => n !== i));
+  const statusClass = count < MAIN_DECK_MIN ? 'warn' : count > MAIN_DECK_MAX ? 'danger' : 'ok';
+
+  return (
+    <section>
+      <div className="deck-editor-head">
+        <button className="secondary" onClick={onBack}>← Menu des decks</button>
+        <h2>{savedDeck.name}</h2>
+      </div>
+      <p className={'hint deck-count ' + statusClass}>
+        {count}/{MAIN_DECK_MAX} cartes ({MAIN_DECK_MIN} minimum pour jouer) · faction {savedDeck.faction}
+      </p>
+      <div className="builder">
+        <div>
+          <h3>Composition</h3>
+          {main.length === 0 && <p className="hint">Deck vide — ajoute des cartes ci-contre.</p>}
+          {main.map((id, i) => {
+            const c = pool.find((card) => card.id === id);
+            return (
+              <button className="deck-row" key={i} onClick={() => removeAt(i)}>
+                {c?.name ?? id} <span>×</span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="grid">
+          {pool.map((c) => (
+            <CardView
+              key={c.id}
+              card={c}
+              badge={`${copiesInDeck(main, c.id)}/${maxCopiesAllowed(c.id)}`}
+              disabled={copiesInDeck(main, c.id) >= maxCopiesAllowed(c.id) || count >= MAIN_DECK_MAX}
+              onClick={() => add(c.id)}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Decks() {
+  const s = useGame();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  useEffect(() => {
+    if (editingId && !s.decks.some((d) => d.id === editingId)) setEditingId(null);
+  }, [editingId, s.decks]);
+  return editingId ? <DeckEditor deckId={editingId} onBack={() => setEditingId(null)} /> : <DeckMenu onEdit={setEditingId} />;
+}
+
+type BattleFx = { type: 'summon'; side: 'player' | 'enemy'; instanceId?: string } | { type: 'attack'; side: 'player' | 'enemy'; instanceId: string } | { type: 'evolution'; side: 'player' | 'enemy'; cardName: string } | null;
+type UiPhase = 'main' | 'battle';
+
+function FieldCard({ unit, isEnemy, taunted, selectable, selected, fx, onSelect, damagePulse }: { unit: FieldUnit; isEnemy: boolean; taunted: boolean; selectable: boolean; selected: boolean; fx: BattleFx; onSelect?: (id: string) => void; damagePulse?: { key: string; amount: number } }) {
+  const card = ALL_CARDS.find((entry) => entry.id === unit.cardId); if (!card) return null;
+  const isSummoning = fx?.type === 'summon' && fx.side === (isEnemy ? 'enemy' : 'player') && (!fx.instanceId || fx.instanceId === unit.instanceId);
+  const isAttacking = fx?.type === 'attack' && fx.instanceId === unit.instanceId; const isHit = !!damagePulse;
+  const evolvable = !isEnemy && !!card.waitTurns && !!card.evolvesTo && unit.turnsOnField >= card.waitTurns;
+  return <motion.button layout initial={{ scale: 0.15, opacity: 0, rotateY: 100 }} animate={isAttacking ? { scale: [1, 1.12, 1], y: isEnemy ? [0, 32, 0] : [0, -32, 0], opacity: 1, rotateY: 0 } : isSummoning ? { scale: [0.35, 1.18, 1], opacity: [0, 1, 1], rotateY: [90, -8, 0] } : isHit ? { scale: 1, opacity: 1, rotateY: 0, y: 0, x: [0, -7, 7, -5, 5, -2, 2, 0] } : { scale: 1, opacity: 1, rotateY: 0, y: 0, x: 0 }} transition={{ duration: isAttacking ? 0.48 : isHit ? 0.4 : 0.62, ease: 'easeOut' }} className={'field-card ' + card.rarity + (isEnemy && taunted && !unit.taunt ? ' not-targetable' : '') + (unit.taunt ? ' taunt' : '') + (unit.stunnedTurns > 0 ? ' stunned' : '') + (isHit ? ' hit-flash' : '') + (selected ? ' selected' : '')} disabled={!selectable} onClick={() => onSelect?.(unit.instanceId)} data-card-id={card.id} data-instance-id={unit.instanceId} data-evolvable={evolvable}><img src={card.image} alt={card.name} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = cardBack; }} /><span className="field-card-name">{card.name}</span><span className="field-card-level">NIV {card.level}</span><span className="field-card-atk">⚔ {unit.attack}</span><span className="field-card-hp">♥ {unit.health}</span><span className="field-card-tags">{unit.taunt && <em>PROVOCATION</em>}{unit.stunnedTurns > 0 && <em>ÉTOURDI</em>}</span>{damagePulse && <motion.span key={damagePulse.key} className="dmg-float" initial={{ opacity: 1, y: 0, scale: 0.8 }} animate={{ opacity: [1, 1, 0], y: -46, scale: [0.8, 1.25, 1] }} transition={{ duration: 0.85, ease: 'easeOut' }}>-{damagePulse.amount}</motion.span>}</motion.button>;
+}
+
+function Zone({ title, units, isEnemy, taunted, selectable, selectedId, fx, onSelect, support, onActivateSupport, damagePulses }: { title: string; units: FieldUnit[]; isEnemy: boolean; taunted: boolean; selectable: boolean; selectedId?: string | null; fx: BattleFx; onSelect?: (id: string) => void; support: SupportCard[]; onActivateSupport?: (instanceId: string) => void; damagePulses: Record<string, { key: string; amount: number }> }) {
+  return <div className={'zone-wrap ' + (isEnemy ? 'enemy-zone' : 'player-zone')}><b>{title}</b><div className="board">{Array.from({ length: 3 }, (_, index) => { const unit = units[index]; return unit ? <FieldCard key={unit.instanceId} unit={unit} isEnemy={isEnemy} taunted={taunted} selectable={selectable} selected={selectedId === unit.instanceId} fx={fx} onSelect={onSelect} damagePulse={damagePulses[unit.instanceId]} /> : <div className="field-slot" key={`slot-${index}`}>◇</div>; })}</div><div className="support-row" aria-label="Zone de soutien">{Array.from({ length: 5 }, (_, index) => { const item = support[index]; if (!item) return <div key={`sup-empty-${index}`}>◇</div>; const def = getCard(item.cardId); return <button key={item.instanceId} className="support-card" style={{ backgroundImage: `url(${CARD_BACK_URL})` }} disabled={isEnemy || !onActivateSupport} title={isEnemy ? 'Sort adverse posé face cachée' : `${def.name} — clique pour tenter de l'activer`} onClick={() => onActivateSupport?.(item.instanceId)} />; })}</div></div>;
+}
+
+function Combat() {
+  const s = useGame(); const location = useLocation(); const go = useNavigate();
+  const chapterId = (location.state as { chapterId?: number } | null)?.chapterId;
+  const chapter = chapterId !== undefined ? chapterById(chapterId) : undefined;
+  const opponentFaction = chapter ? chapter.opponentFaction : s.faction === 'Meute' ? 'Chevalier' : 'Meute';
+  const aiDifficulty = chapter ? chapter.aiDifficulty : 'novice'; const lifeBonus = chapter ? chapter.enemyLifeBonus : 0; const reward = chapter ? chapter.reward : 35;
+  const startMatch = () => newGame(s.faction, opponentFaction, aiDifficulty, s.deck, lifeBonus);
+  const [match, setMatch] = useState<GameState>(startMatch);
+  const [selectedAttacker, setSelectedAttacker] = useState<string | null>(null);
+  const [reported, setReported] = useState(false);
+  const [effectHint, setEffectHint] = useState('');
+  const [inspectedUnit, setInspectedUnit] = useState<string | null>(null);
+  const [unitPulses, setUnitPulses] = useState<Record<string, { key: string; amount: number }>>({});
+  const [heroPulses, setHeroPulses] = useState<{ player?: { key: string; amount: number }; enemy?: { key: string; amount: number } }>({});
+  const [handOpen, setHandOpen] = useState(false);
+  const [uiPhase, setUiPhase] = useState<UiPhase>('main');
+  const [previewCard, setPreviewCard] = useState<string | null>(null);
+  const showHint = (message: string) => { setEffectHint(message); window.setTimeout(() => setEffectHint(''), 1800); };
+  const pulseFromDiff = (before: GameState, after: GameState) => { const units: Record<string, { key: string; amount: number }> = {}; const heroes: { player?: { key: string; amount: number }; enemy?: { key: string; amount: number } } = {}; for (const side of ['player', 'enemy'] as const) { const beforeMap = new Map(before[side].field.map((u) => [u.instanceId, u.health])); for (const u of after[side].field) { const prevHp = beforeMap.get(u.instanceId); if (prevHp != null && u.health < prevHp) units[u.instanceId] = { key: `${u.instanceId}-${Date.now()}-${Math.random()}`, amount: prevHp - u.health }; } if (after[side].life < before[side].life) heroes[side] = { key: `${side}-${Date.now()}`, amount: before[side].life - after[side].life }; } if (Object.keys(units).length || Object.keys(heroes).length) { setUnitPulses(units); setHeroPulses(heroes); window.setTimeout(() => { setUnitPulses({}); setHeroPulses({}); }, 950); } };
+  const [fx, setFx] = useState<BattleFx>(null); const [pileOpen, setPileOpen] = useState<null | 'grave' | 'evo'>(null); const fxTimer = useRef<number | null>(null);
+  const triggerFx = (nextFx: BattleFx, duration = 700) => { if (fxTimer.current) window.clearTimeout(fxTimer.current); setFx(nextFx); fxTimer.current = window.setTimeout(() => setFx(null), duration); };
+  useEffect(() => () => { if (fxTimer.current) window.clearTimeout(fxTimer.current); }, []);
+  useEffect(() => { if (!match.winner || reported) return; const won = match.winner === 'player'; s.record(won); if (won) { s.addGold(reward); if (chapter) s.completeChapter(chapter.id); } setReported(true); }, [match.winner, reported, reward, chapter, s]);
+
+  const play = (id: string) => {
+    if (match.activePlayer !== 'player' || match.winner) return;
+    const card = ALL_CARDS.find((entry) => entry.id === id);
+    const before = match;
+    const next = playCard(match, 'player', id);
+    if (next === match) return;
+    setMatch(next);
+    setHandOpen(false);
+    pulseFromDiff(before, next);
+    if (card?.type === 'unit') {
+      const newest = next.player.field[next.player.field.length - 1];
+      triggerFx({ type: 'summon', side: 'player', instanceId: newest?.instanceId }, 720);
+    }
+  };
+  const openPreview = (id: string) => {
+    if (match.activePlayer !== 'player' || match.winner) return;
+    if (!handOpen) { setHandOpen(true); return; }
+    if (uiPhase !== 'main') { showHint('Passe en Phase Principale pour jouer une carte.'); return; }
+    setPreviewCard(id);
+  };
+  const confirmPreview = () => {
+    if (!previewCard) return;
+    const id = previewCard;
+    setPreviewCard(null);
+    play(id);
+  };
+  const selectOwnUnit = (id: string) => {
+    if (match.activePlayer !== 'player' || match.winner) return;
+    if (uiPhase === 'battle') {
+      const unit = match.player.field.find((entry) => entry.instanceId === id);
+      if (!unit || !unit.canAttack || unit.stunnedTurns > 0) { showHint('Cette créature ne peut pas attaquer maintenant.'); return; }
+      setInspectedUnit(null);
+      setSelectedAttacker((current) => (current === id ? null : id));
+      return;
+    }
+    setSelectedAttacker(null);
+    setInspectedUnit((current) => (current === id ? null : id));
+  };
+  const attackUnit = (targetId: string) => { if (!selectedAttacker) return; const before = match; triggerFx({ type: 'attack', side: 'player', instanceId: selectedAttacker }, 520); const next = declareAttack(match, 'player', selectedAttacker, targetId); setMatch(next); pulseFromDiff(before, next); setSelectedAttacker(null); };
+  const attackHero = () => { if (!selectedAttacker) return; const before = match; triggerFx({ type: 'attack', side: 'player', instanceId: selectedAttacker }, 520); const next = declareAttack(match, 'player', selectedAttacker, null); setMatch(next); pulseFromDiff(before, next); setSelectedAttacker(null); };
+  const evolve = (instanceId: string) => { const beforeUnit = match.player.field.find((entry) => entry.instanceId === instanceId); if (!beforeUnit) return; const beforeCard = ALL_CARDS.find((entry) => entry.id === beforeUnit.cardId); const evolvedCard = beforeCard?.evolvesTo ? ALL_CARDS.find((entry) => entry.id === beforeCard.evolvesTo) : undefined; const next = evolveUnit(match, 'player', instanceId); if (next === match) return; setMatch(next); setInspectedUnit(null); triggerFx({ type: 'evolution', side: 'player', cardName: evolvedCard?.name ?? 'Évolution' }, 1000); };
+  const activateEffect = (instanceId: string) => { const before = match; const unit = before.player.field.find((entry) => entry.instanceId === instanceId); if (!unit) return; const card = ALL_CARDS.find((entry) => entry.id === unit.cardId); const next = activateUnitEffect(before, 'player', instanceId); if (next === before) { showHint('Cet effet ne peut pas être activé maintenant.'); return; } setMatch(next); pulseFromDiff(before, next); showHint(card ? `Effet de ${card.name} activé !` : 'Effet activé !'); };
+  const activateSupport = (instanceId: string) => { const before = match; const item = before.player.support.find((entry) => entry.instanceId === instanceId); if (!item) return; const card = getCard(item.cardId); const next = activateSupportCard(before, 'player', instanceId); if (next === before) { showHint(`${card.name} ne peut pas être activé maintenant.`); return; } setMatch(next); pulseFromDiff(before, next); showHint(`${card.name} activé !`); };
+  const nextTurn = () => {
+    setHandOpen(false); setInspectedUnit(null); setUiPhase('main');
+    if (match.activePlayer !== 'player' || match.winner) return;
+    setSelectedAttacker(null);
+    const before = match;
+    triggerFx(null);
+    const afterPlayerEnd = endTurn(match);
+    setMatch(afterPlayerEnd);
+    pulseFromDiff(before, afterPlayerEnd);
+  };
+  const restart = () => { setMatch(startMatch()); setReported(false); setSelectedAttacker(null); setEffectHint(''); setInspectedUnit(null); setUnitPulses({}); setHeroPulses({}); setHandOpen(false); setUiPhase('main'); setPreviewCard(null); };
+  const closeHandOnBoardTap = (event: React.MouseEvent) => { if (handOpen && !(event.target as HTMLElement).closest('.hand')) setHandOpen(false); };
+  const enemyHasTaunt = match.enemy.field.some((unit) => unit.taunt); const activePlayerUnit = inspectedUnit ? match.player.field.find((unit) => unit.instanceId === inspectedUnit) : undefined;
+  const pileCards: CardDef[] = pileOpen === 'grave' ? match.player.graveyard.map((id: string) => getCard(id)) : pileOpen === 'evo' ? match.player.evosphere.map((id: string) => getCard(id)) : [];
+  const previewDef = previewCard ? ALL_CARDS.find((entry) => entry.id === previewCard) : undefined;
+
+  return (
+    <section className="battle" onClick={closeHandOnBoardTap}>
+      <div className="battle-meta"><b>{chapter ? `Chapitre ${chapter.id + 1} — ${chapter.title}` : 'Duel rapide'}</b><span>IA {aiDifficulty}</span></div>
+
+      <div className="battle-top">
+        <div className="combatant">
+          <span className="avatar">✦</span>
+          <div><b>{chapter ? chapter.title : 'Rival Nexus'}</b><small>{opponentFaction}</small></div>
+          <span className="life">♥ {match.enemy.life}</span>
+          <span className="mana">◆ {match.enemy.mana}/{match.enemy.maxMana}</span>
+          {heroPulses.enemy && <span className="hero-dmg">-{heroPulses.enemy.amount}</span>}
+        </div>
+        <div className="enemy-hand-row" aria-label={`Main de l'adversaire : ${match.enemy.hand.length} cartes`} data-count={match.enemy.hand.length}>
+          {Array.from({ length: match.enemy.hand.length }, (_, i) => <span key={i} className="enemy-hand-card" style={{ backgroundImage: `url(${CARD_BACK_URL})` }} />)}
+        </div>
+      </div>
+
+      <div className="battle-main">
+        <div className="pile-rail left">
+          <button className="card-pile grave" onClick={() => { setHandOpen(false); setPileOpen('grave'); }}><span className="pile-icon">☠</span><b>FOSSE</b><em>{match.player.graveyard.length}</em></button>
+        </div>
+        <div className="battle-center">
+          <Zone title="ADVERSAIRE" units={match.enemy.field} isEnemy taunted={enemyHasTaunt} selectable={!!selectedAttacker} selectedId={null} fx={fx} onSelect={attackUnit} support={match.enemy.support} damagePulses={unitPulses} />
+          <div className="turn-strip">
+            <b>{match.activePlayer === 'player' ? 'À TOI DE JOUER' : "TOUR DE L'ADVERSAIRE"}</b>
+            <span>Tour {match.turn}</span>
+            <div className="phase-bar">
+              <button className={'phase-button' + (uiPhase === 'main' ? ' active' : '')} onClick={() => setUiPhase('main')}>{translate(s.language, 'main_phase').toUpperCase()}</button>
+              <button className={'phase-button' + (uiPhase === 'battle' ? ' active' : '')} onClick={() => setUiPhase('battle')}>{translate(s.language, 'battle_phase').toUpperCase()}</button>
+            </div>
+            {selectedAttacker && <button className="attack-face" disabled={enemyHasTaunt} onClick={attackHero}>Attaque directe</button>}
+          </div>
+          <Zone title="TON TERRAIN" units={match.player.field} isEnemy={false} taunted={false} selectable={match.activePlayer === 'player'} selectedId={selectedAttacker} fx={fx} onSelect={selectOwnUnit} support={match.player.support} onActivateSupport={activateSupport} damagePulses={unitPulses} />
+        </div>
+        <div className="pile-rail right">
+          <button className="card-pile evo" onClick={() => { setHandOpen(false); setPileOpen('evo'); }}><span className="pile-icon">✦</span><b>ÉVOSPHÈRE</b><em>{match.player.evosphere.length}</em></button>
+          <button className="card-pile deck" type="button" title="Le contenu du deck reste caché tant qu'aucun effet ne te permet d'y chercher une carte"><span className="pile-icon">▣</span><b>DECK</b><em>{match.player.deck.length}</em></button>
+        </div>
+      </div>
+
+      <div className={'duel-hud' + (handOpen ? ' hud-hidden' : '')}>
+        <span className="duel-hud-pill life">♥ {match.player.life}</span>
+        <span className="duel-hud-pill mana">◆ {match.player.mana}/{match.player.maxMana}</span>
+        <span className="duel-hud-pill turn">{translate(s.language, 'turn')} {match.turn}</span>
+        <button className="end-turn" onClick={nextTurn} disabled={match.activePlayer !== 'player' || !!match.winner}>{translate(s.language, 'end_turn').toUpperCase()}</button>
+        {heroPulses.player && <span className="hero-dmg player">-{heroPulses.player.amount}</span>}
+      </div>
+
+      <div className={'hand' + (handOpen ? ' open' : '')} onClick={(event) => event.stopPropagation()}>
+        <button className="hand-toggle" type="button" aria-label={handOpen ? 'Refermer la main' : 'Ouvrir la main'} onClick={() => setHandOpen((open) => !open)} />
+        {match.player.hand.map((id: string, index: number) => {
+          const card = getCard(id);
+          return <div key={`${id}-${index}`} className="hand-card-wrap"><CardView card={card} disabled={match.activePlayer !== 'player' || !!match.winner} onClick={() => openPreview(id)} /></div>;
+        })}
+      </div>
+
+      {fx?.type === 'evolution' && <div className="evolution-flash"><span>ÉVOLUTION</span><b>{fx.cardName}</b></div>}
+
+      {pileOpen && <div className="pile-modal" role="dialog" aria-modal="true" onClick={() => setPileOpen(null)}><div className="pile-modal-content" onClick={(e) => e.stopPropagation()}><header><h3>{pileOpen === 'grave' ? 'Fosse' : 'Évosphère'}</h3><button onClick={() => setPileOpen(null)}>×</button></header><div className="pile-grid">{pileCards.length ? pileCards.map((card: CardDef, i: number) => <CardView key={`${card.id}-${i}`} card={card} />) : <p className="hint">Aucune carte.</p>}</div></div></div>}
+
+      {activePlayerUnit && (() => {
+        const def = getCard(activePlayerUnit.cardId);
+        const canEvolve = !!def.evolvesTo && !!def.waitTurns && activePlayerUnit.turnsOnField >= def.waitTurns;
+        const maxUses = def.effect && !def.text.toLowerCase().includes('à l’invocation') ? (def.text.toLowerCase().includes('2 fois par tour') ? 2 : 1) : 0;
+        return <div className="unit-actions"><b>{def.name}</b><p>{def.text}</p>{maxUses > 0 && <button className="secondary" onClick={() => activateEffect(activePlayerUnit.instanceId)}>Activer l'effet ({activePlayerUnit.effectUsesThisTurn ?? 0}/{maxUses})</button>}{canEvolve && <button className="primary" onClick={() => evolve(activePlayerUnit.instanceId)}>ÉVOLUER</button>}<button className="secondary" onClick={() => setInspectedUnit(null)}>Fermer</button></div>;
+      })()}
+
+      {previewDef && (
+        <div className="card-preview-overlay" onClick={() => setPreviewCard(null)}>
+          <div className="card-preview" onClick={(event) => event.stopPropagation()}>
+            <img className="card-preview-art" src={previewDef.image} alt={previewDef.name} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = cardBack; }} />
+            <div className="card-preview-info">
+              <small>APERÇU DE LA CARTE</small>
+              <h3>{previewDef.name}</h3>
+              <div className="card-preview-stats"><span>{previewDef.cost} ◆</span>{previewDef.type === 'unit' ? <span>⚔ {previewDef.attack}　♥ {previewDef.health}</span> : <span>Sort</span>}</div>
+              <p>{previewDef.text}</p>
+              <div className="card-preview-actions">
+                <button className="secondary" onClick={() => setPreviewCard(null)}>{translate(s.language, 'cancel').toUpperCase()}</button>
+                <button className="primary" onClick={confirmPreview}>{translate(s.language, previewDef.type === 'unit' ? 'play' : 'activate').toUpperCase()}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {effectHint && <div className="effect-hint">💡 {effectHint}</div>}
+
+      {match.winner && <div className="match-result"><p className={match.winner === 'player' ? 'win' : 'loss'}>{match.winner === 'player' ? `Victoire ! +${reward} ✦` : 'Défaite — retente ta chance.'}</p><div className="match-result-actions"><button className="primary" onClick={restart}>{chapter ? 'Rejouer ce chapitre' : 'Nouveau duel'}</button>{chapter && <button className="secondary" onClick={() => go('/campagne')}>Retour à la campagne</button>}</div></div>}
+    </section>
+  );
+}
+
+function Profile() {
+  const s = useGame();
+  const [name, setName] = useState(s.playerName);
+  const avatarCards = ALL_CARDS.filter((card) => card.type === 'unit' && card.level === 1 && s.unlockedFactions.includes(card.faction));
+  const avatar = ALL_CARDS.find((card) => card.id === s.avatarCardId) ?? avatarCards[0];
+  const saveName = () => s.setPlayerName(name);
+  const toNextLevel = XP_PER_LEVEL - s.xp;
+  return <section><h2>Profil du joueur</h2><div className="profile profile-editor"><div className="profile-avatar">{avatar ? <img src={avatar.image} alt={avatar.name} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = cardBack; }} /> : <b>✦</b>}</div><div className="profile-main"><label>Pseudo<input value={name} maxLength={20} onChange={(e) => setName(e.target.value)} onBlur={saveName} /></label><button className="secondary" onClick={saveName}>Enregistrer le pseudo</button><p>Niveau {s.level} · {s.wins} victoires · {s.losses} défaites</p><div className="xp-row"><progress value={s.xp} max={XP_PER_LEVEL} /><span>{s.xp}/{XP_PER_LEVEL} XP · encore {toNextLevel} XP avant le niveau {s.level + 1}</span></div><p>💎 {s.gems} gemmes · ✦ {s.gold} or</p><p className="hint">Chaque victoire donne de l'XP. Chaque niveau rapporte 100 gemmes, et 500 gemmes tous les 5 niveaux. Les gemmes serviront aux boosters, avatars et cosmétiques.</p></div></div><h3>Choisir une image de profil</h3><div className="avatar-grid">{avatarCards.map((card) => <button key={card.id} className={'avatar-choice' + (s.avatarCardId === card.id ? ' active' : '')} onClick={() => s.setAvatarCardId(card.id)} title={card.name}><img src={card.image} alt={card.name} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = cardBack; }} /><span>{card.name}</span></button>)}</div></section>;
+}
+
+const QUALITY_LABELS: Record<VisualQuality, string> = { eco: 'Économie', balanced: 'Équilibrée', high: 'Élevée' };
+const ANIMATION_LABELS: Record<AnimationMode, string> = { full: 'Complètes', reduced: 'Réduites', off: 'Désactivées' };
+const SCALE_LABELS: Record<InterfaceScale, string> = { small: 'Petite', normal: 'Normale', large: 'Grande' };
+
+function Options() {
+  const s = useGame();
+  const t = (key: string) => translate(s.language, key);
+  return (
+    <section>
+      <h2>{t('options')}</h2>
+      <div className="options-grid">
+        <article className="options-card">
+          <b>Audio</b>
+          <button className="secondary" onClick={() => s.setMusicEnabled(!s.musicEnabled)}>{s.musicEnabled ? '🔊 Musique activée' : '🔈 Musique coupée'}</button>
+          <label>{t('music_volume')}<input type="range" min={0} max={100} value={s.musicVolume} onChange={(e) => s.setMusicVolume(Number(e.target.value))} /></label>
+          <label>{t('sfx_volume')}<input type="range" min={0} max={100} value={s.sfxVolume} onChange={(e) => s.setSfxVolume(Number(e.target.value))} /></label>
+        </article>
+
+        <article className="options-card">
+          <b>{t('display')}</b>
+          <label>{t('graphics_quality')}<select value={s.visualQuality} onChange={(e) => s.setVisualQuality(e.target.value as VisualQuality)}>{(Object.keys(QUALITY_LABELS) as VisualQuality[]).map((value) => <option key={value} value={value}>{QUALITY_LABELS[value]}</option>)}</select></label>
+          <label>{t('animations')}<select value={s.animationMode} onChange={(e) => s.setAnimationMode(e.target.value as AnimationMode)}>{(Object.keys(ANIMATION_LABELS) as AnimationMode[]).map((value) => <option key={value} value={value}>{ANIMATION_LABELS[value]}</option>)}</select></label>
+          <label>Taille de l'interface<select value={s.interfaceScale} onChange={(e) => s.setInterfaceScale(e.target.value as InterfaceScale)}>{(Object.keys(SCALE_LABELS) as InterfaceScale[]).map((value) => <option key={value} value={value}>{SCALE_LABELS[value]}</option>)}</select></label>
+          <button className="secondary" onClick={() => s.setGlowEffects(!s.glowEffects)}>{s.glowEffects ? '✨ Effets lumineux activés' : 'Effets lumineux désactivés'}</button>
+          <button className="secondary" onClick={() => s.setScreenShake(!s.screenShake)}>{s.screenShake ? '📳 Tremblements activés' : 'Tremblements désactivés'}</button>
+          <button className="secondary" onClick={() => s.setShowFps(!s.showFps)}>{s.showFps ? `📈 ${t('show_fps')} : oui` : `${t('show_fps')} : non`}</button>
+          <button className="secondary pc-only" onClick={() => s.setBatterySaver(!s.batterySaver)}>{s.batterySaver ? `🔋 ${t('battery_saver')} : oui` : `${t('battery_saver')} : non`}</button>
+          <button className="secondary" onClick={() => s.setVibrationEnabled(!s.vibrationEnabled)}>{s.vibrationEnabled ? `📳 ${t('vibration')} : oui` : `${t('vibration')} : non`}</button>
+          <FullscreenButton className="secondary pc-only" />
+        </article>
+
+        <article className="options-card">
+          <b>{t('language')}</b>
+          <select value={s.language} onChange={(e) => s.setLanguage(e.target.value as Language)}>{LANGUAGES.map((language) => <option key={language} value={language}>{LANGUAGE_LABELS[language]}</option>)}</select>
+        </article>
+
+        <article className="options-card danger">
+          <b>{t('reset_settings')}</b>
+          <button className="secondary danger" onClick={() => { if (confirm('Réinitialiser tous les paramètres ?')) s.resetSettings(); }}>{t('reset_settings')}</button>
+        </article>
+      </div>
+    </section>
+  );
+}
+
+function Simple({ title }: { title: string }) { return <section><h2>{title}</h2><p className="hint">Cette section arrive dans une prochaine passe de développement.</p></section>; }
+
+function FactionOnboarding() { const s = useGame(); const wolfArt = `${import.meta.env.BASE_URL}cards/evo-loup-de-givre.png`; const blurbs: Record<Faction, string> = { Meute: 'Rejoins les loups des brumes. Instinct, meute et lune rouge — frappe vite, en nombre.', Chevalier: "Sers l'ordre du royaume. Discipline, provocation et lumière sacrée — tiens la ligne." }; return <div className="onboarding"><div className="onboarding-inner"><p className="eyebrow">CHOISIS TON SERMENT</p><h2>Quel camp défendras-tu ?</h2><p>Ce choix détermine ton deck de départ. L'autre faction reste verrouillée jusqu'à ce que tu remportes les {UNLOCK_SECOND_FACTION_AT} premiers chapitres de la campagne.</p><div className="onboarding-choices"><button className="onboarding-card" onClick={() => s.chooseStartingFaction('Meute')}><span className="onboarding-art" style={{ backgroundImage: `url(${wolfArt})` }} /><b>Meute</b><small>{blurbs.Meute}</small></button><button className="onboarding-card" onClick={() => s.chooseStartingFaction('Chevalier')}><span className="onboarding-art onboarding-art-placeholder">⚜</span><b>Chevalier</b><small>{blurbs.Chevalier}</small></button></div></div></div>; }
+
+function DisplaySettingsBridge() {
+  const s = useGame();
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.quality = s.visualQuality;
+    root.dataset.animations = s.animationMode;
+    root.dataset.glow = s.glowEffects ? 'on' : 'off';
+    root.dataset.shake = s.screenShake ? 'on' : 'off';
+    root.dataset.uiScale = s.interfaceScale;
+    root.dataset.battery = s.batterySaver ? 'on' : 'off';
+    root.lang = s.language;
+  }, [s.visualQuality, s.animationMode, s.glowEffects, s.screenShake, s.interfaceScale, s.batterySaver, s.language]);
+  return null;
+}
+
+export default function App() { const factionChosen = useGame((s) => s.factionChosen); const hasLegacyDeck = useGame((s) => s.deck.length > 0); if (!factionChosen && !hasLegacyDeck) return <FactionOnboarding />; return <><DisplaySettingsBridge /><Shell><Routes><Route path="/" element={<Home />} /><Route path="/campagne" element={<Campaign />} /><Route path="/collection" element={<Collection />} /><Route path="/decks" element={<Decks />} /><Route path="/profil" element={<Profile />} /><Route path="/combat" element={<Combat />} /><Route path="/paramètres" element={<Options />} />{['classement', 'boutique', 'tutoriel'].map((x) => <Route key={x} path={'/' + x} element={<Simple title={x[0].toUpperCase() + x.slice(1)} />} />)}</Routes></Shell></>; }
