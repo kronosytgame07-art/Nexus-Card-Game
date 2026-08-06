@@ -446,25 +446,26 @@ body.in-battle main {
 .hand-toggle {
   position: absolute;
   left: 50%;
-  top: -14px;
+  top: -22px;
   transform: translateX(-50%);
-  width: 56px;
-  height: 18px;
+  width: 72px;
+  height: 26px;
   padding: 0;
-  border: 1px solid rgba(216, 187, 104, .7);
+  border: 1px solid rgba(239, 201, 107, .85);
   border-radius: 999px 999px 0 0;
-  background: #071414e6;
-  color: #d8bb68;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, .4);
+  background: #0c1a16f2;
+  color: #efc96b;
+  box-shadow: 0 -3px 12px rgba(0, 0, 0, .5);
+  font-size: 13px;
+  line-height: 1;
 }
 .hand-toggle:before {
-  content: "";
-  position: absolute;
-  left: 50%; top: 50%;
-  width: 22px; height: 3px;
-  transform: translate(-50%, -50%);
-  border-radius: 2px;
-  background: currentColor;
+  content: "▲";
+  display: block;
+  transform: translateY(2px);
+}
+.hand.open .hand-toggle:before {
+  content: "▼";
 }
 
 .hand-card-wrap {
