@@ -5,11 +5,14 @@ import { Faction } from '../engine/types';
 
 /** Nombre de chapitres de campagne à remporter pour débloquer la seconde faction. */
 export const UNLOCK_SECOND_FACTION_AT = 3;
+export const XP_PER_LEVEL = 100;
 
 export type Language = 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt';
 
 interface GameMeta {
   gold: number;
+  gems: number;
+  xp: number;
   wins: number;
   losses: number;
   level: number;
@@ -27,6 +30,7 @@ interface GameMeta {
   setFaction: (faction: Faction) => void;
   record: (win: boolean) => void;
   addGold: (amount: number) => void;
+  addXp: (amount: number) => void;
   completeChapter: (chapterId: number) => void;
   setMusicEnabled: (enabled: boolean) => void;
   setLanguage: (language: Language) => void;
@@ -39,10 +43,26 @@ function startingOwnedFor(faction: Faction): string[] {
     .map((c) => c.id);
 }
 
+function applyXp(level: number, xp: number, gems: number, amount: number) {
+  let nextLevel = level;
+  let nextXp = xp + Math.max(0, amount);
+  let nextGems = gems;
+
+  while (nextXp >= XP_PER_LEVEL) {
+    nextXp -= XP_PER_LEVEL;
+    nextLevel += 1;
+    nextGems += nextLevel % 5 === 0 ? 500 : 100;
+  }
+
+  return { level: nextLevel, xp: nextXp, gems: nextGems };
+}
+
 export const useGame = create<GameMeta>()(
   persist(
     (set) => ({
       gold: 250,
+      gems: 0,
+      xp: 0,
       wins: 0,
       losses: 0,
       level: 1,
@@ -68,13 +88,13 @@ export const useGame = create<GameMeta>()(
         set((s) => (s.unlockedFactions.includes(faction) ? { faction, deck: starterDeck(faction) } : {})),
       record: (win) =>
         set((s) => {
-          if (win) {
-            const wins = s.wins + 1;
-            return { wins, level: 1 + Math.floor(wins / 5) };
-          }
-          return { losses: s.losses + 1 };
+          const progression = applyXp(s.level, s.xp, s.gems, win ? 40 : 15);
+          return win
+            ? { wins: s.wins + 1, ...progression }
+            : { losses: s.losses + 1, ...progression };
         }),
       addGold: (amount) => set((s) => ({ gold: s.gold + amount })),
+      addXp: (amount) => set((s) => applyXp(s.level, s.xp, s.gems, amount)),
       completeChapter: (chapterId) =>
         set((s) => {
           const campaignChapter = chapterId >= s.campaignChapter ? chapterId + 1 : s.campaignChapter;
@@ -93,6 +113,8 @@ export const useGame = create<GameMeta>()(
       resetProgress: () =>
         set({
           gold: 250,
+          gems: 0,
+          xp: 0,
           wins: 0,
           losses: 0,
           level: 1,
