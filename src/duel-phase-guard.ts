@@ -1,3 +1,5 @@
+export {};
+
 let currentPhase: 'main' | 'battle' = 'main';
 let previousEnemyHand = -1;
 
