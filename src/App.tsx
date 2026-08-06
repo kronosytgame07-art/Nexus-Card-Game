@@ -356,7 +356,39 @@ function Options() {
   </div></section>;
 }
 
-function Simple({ title }: { title: string }) { return <section><h2>{title}</h2><p className="hint">Cette section arrive dans une prochaine passe de développement.</p></section>; }
+const TUTORIAL_STEPS: { title: string; text: string }[] = [
+  { title: '1. Le but du duel', text: "Réduis les PV de ton adversaire à 0 pour gagner. Chaque joueur commence à 25 PV. Attaque son héros directement, ou élimine ses créatures pour dégager le passage." },
+  { title: '2. Le mana', text: "Tu gagnes +1 mana maximum à chacun de tes tours (jusqu'à 10), et ton mana se recharge entièrement à chaque tour. Chaque carte a un coût en mana affiché en haut à gauche : tu ne peux la jouer que si tu as assez de mana disponible." },
+  { title: '3. La main en tiroir', text: "Tes cartes sont rangées en bas de l'écran, à moitié cachées au repos. Touche une carte ou la poignée pour ouvrir la main en entier. Touche le terrain pour la refermer sans jouer." },
+  { title: '4. Poser une créature', text: "Ouvre ta main puis touche une créature : un aperçu s'affiche avec le bouton INVOQUER. Confirme pour la poser sur ton terrain (3 emplacements). Une créature qui vient d'être posée ne peut pas attaquer ce tour-ci." },
+  { title: '5. Jouer un sort', text: "Même principe que pour une créature : ouvre ta main, touche le sort, un aperçu s'affiche avec le bouton ACTIVER. Les enchantements et soutiens se posent face cachée dans les 5 emplacements de soutien et restent sur le terrain jusqu'à leur activation." },
+  { title: '6. Attaquer', text: "En Battle Phase, touche une de tes créatures pour la sélectionner comme attaquante, puis touche une créature adverse pour l'attaquer, ou utilise le bouton 'Attaquer directement' pour viser le héros adverse. Si l'adversaire a une créature en Provocation, tu dois d'abord l'éliminer." },
+  { title: '7. Évoluer une créature', text: "Une créature qui reste assez longtemps sur le terrain (indiqué dans son texte) peut évoluer : touche-la, puis choisis ÉVOLUER dans le panneau qui s'affiche à droite. Elle devient une version plus forte." },
+  { title: '8. Activer un effet', text: "Certaines créatures ont un effet activable : touche ta créature, puis choisis 'Activer l'effet' dans le panneau à droite. Chaque effet a un nombre d'utilisations limité par tour." },
+  { title: "9. La Fosse et l'Évosphère", text: "Les cartes défaussées ou détruites vont dans la Fosse (à gauche). Les formes d'évolution possibles de ton deck constituent ton Évosphère (à droite). Touche ces piles pour voir leur contenu." },
+  { title: '10. Fin de tour', text: "Quand tu as fini de jouer tes cartes et tes attaques, touche FIN DE TOUR. Ton adversaire joue alors son tour, puis c'est de nouveau à toi." },
+];
+
+function Tutorial() {
+  return <section><h2>Tutoriel</h2><p className="hint">Les bases pour ton premier duel — relis cette page à tout moment depuis le menu.</p><div className="options-grid">{TUTORIAL_STEPS.map((step) => <article key={step.title} className="options-card"><b>{step.title}</b><p className="hint">{step.text}</p></article>)}</div></section>;
+}
+
+const BOOSTERS: { id: Faction; name: string; price: number; blurb: string }[] = [
+  { id: 'Meute', name: 'Booster Meute', price: 150, blurb: 'Nouvelles cartes Meute, pensées pour renforcer les decks qui possèdent déjà les 3 exemplaires maximum de chaque carte actuelle.' },
+  { id: 'Chevalier', name: 'Booster Chevalier', price: 150, blurb: 'Nouvelles cartes Chevalier, pensées pour renforcer les decks qui possèdent déjà les 3 exemplaires maximum de chaque carte actuelle.' },
+];
+
+function Shop() {
+  const s = useGame();
+  return <section><h2>Boutique</h2><p className="hint">💎 {s.gems} gemmes · ✦ {s.gold} or</p><div className="options-grid">{BOOSTERS.map((booster) => <article key={booster.id} className="options-card"><b>{booster.name}</b><p className="hint">{booster.blurb}</p><p className="hint">Prix : ✦ {booster.price}</p><button className="secondary" disabled title="Les nouvelles cartes de ce booster n'ont pas encore d'illustration — vente désactivée en attendant.">🔒 Bientôt disponible</button></article>)}</div><p className="hint">Les decks actuels ont déjà 3 exemplaires de chaque carte existante (maximum autorisé) : ces boosters ne contiendront donc que des cartes inédites, pas de doublons. Ils s'activeront dès que ces nouvelles cartes et leurs illustrations seront prêtes.</p></section>;
+}
+
+function Leaderboard() {
+  const s = useGame();
+  const total = s.wins + s.losses;
+  const winRate = total > 0 ? Math.round((s.wins / total) * 100) : 0;
+  return <section><h2>Classement</h2><p className="hint">Le classement en ligne demande un serveur partagé entre joueurs, qui n'existe pas encore dans ce projet — en attendant, voici ton propre palmarès.</p><div className="options-grid"><article className="options-card"><b>{s.playerName}</b><p className="hint">Niveau {s.level} · {s.wins} victoires · {s.losses} défaites</p><p className="hint">Taux de victoire : {winRate}%</p></article></div></section>;
+}
 
 function FactionOnboarding() { const s = useGame(); const wolfArt = `${import.meta.env.BASE_URL}cards/evo-loup-de-givre.png`; const blurbs: Record<Faction, string> = { Meute: 'Rejoins les loups des brumes. Instinct, meute et lune rouge — frappe vite, en nombre.', Chevalier: "Sers l'ordre du royaume. Discipline, provocation et lumière sacrée — tiens la ligne." }; return <div className="onboarding"><div className="onboarding-inner"><p className="eyebrow">CHOISIS TON SERMENT</p><h2>Quel camp défendras-tu ?</h2><p>Ce choix détermine ton deck de départ. L'autre faction reste verrouillée jusqu'à ce que tu remportes les {UNLOCK_SECOND_FACTION_AT} premiers chapitres de la campagne.</p><div className="onboarding-choices"><button className="onboarding-card" onClick={() => s.chooseStartingFaction('Meute')}><span className="onboarding-art" style={{ backgroundImage: `url(${wolfArt})` }} /><b>Meute</b><small>{blurbs.Meute}</small></button><button className="onboarding-card" onClick={() => s.chooseStartingFaction('Chevalier')}><span className="onboarding-art onboarding-art-placeholder">⚜</span><b>Chevalier</b><small>{blurbs.Chevalier}</small></button></div></div></div>; }
 
@@ -373,4 +405,4 @@ function DisplaySettingsBridge() {
   return null;
 }
 
-export default function App() { const factionChosen = useGame((s) => s.factionChosen); const hasLegacyDeck = useGame((s) => s.deck.length > 0); if (!factionChosen && !hasLegacyDeck) return <FactionOnboarding />; return <><DisplaySettingsBridge /><Shell><Routes><Route path="/" element={<Home />} /><Route path="/campagne" element={<Campaign />} /><Route path="/collection" element={<Collection />} /><Route path="/decks" element={<Decks />} /><Route path="/profil" element={<Profile />} /><Route path="/combat" element={<Combat />} /><Route path="/paramètres" element={<Options />} />{['classement', 'boutique', 'tutoriel'].map((x) => <Route key={x} path={'/' + x} element={<Simple title={x[0].toUpperCase() + x.slice(1)} />} />)}</Routes></Shell></>; }
+export default function App() { const factionChosen = useGame((s) => s.factionChosen); const hasLegacyDeck = useGame((s) => s.deck.length > 0); if (!factionChosen && !hasLegacyDeck) return <FactionOnboarding />; return <><DisplaySettingsBridge /><Shell><Routes><Route path="/" element={<Home />} /><Route path="/campagne" element={<Campaign />} /><Route path="/collection" element={<Collection />} /><Route path="/decks" element={<Decks />} /><Route path="/profil" element={<Profile />} /><Route path="/combat" element={<Combat />} /><Route path="/paramètres" element={<Options />} /><Route path="/classement" element={<Leaderboard />} /><Route path="/boutique" element={<Shop />} /><Route path="/tutoriel" element={<Tutorial />} /></Routes></Shell></>; }
