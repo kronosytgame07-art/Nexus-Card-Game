@@ -518,7 +518,7 @@ function Options() {
           <button className="secondary" onClick={() => s.setGlowEffects(!s.glowEffects)}>{s.glowEffects ? '✨ Effets lumineux activés' : 'Effets lumineux désactivés'}</button>
           <button className="secondary" onClick={() => s.setScreenShake(!s.screenShake)}>{s.screenShake ? '📳 Tremblements activés' : 'Tremblements désactivés'}</button>
           <button className="secondary" onClick={() => s.setShowFps(!s.showFps)}>{s.showFps ? `📈 ${t('show_fps')} : oui` : `${t('show_fps')} : non`}</button>
-          <button className="secondary pc-only" onClick={() => s.setBatterySaver(!s.batterySaver)}>{s.batterySaver ? `🔋 ${t('battery_saver')} : oui` : `${t('battery_saver')} : non`}</button>
+          <button className="secondary" onClick={() => s.setBatterySaver(!s.batterySaver)}>{s.batterySaver ? `🔋 ${t('battery_saver')} : oui` : `${t('battery_saver')} : non`}</button>
           <button className="secondary" onClick={() => s.setVibrationEnabled(!s.vibrationEnabled)}>{s.vibrationEnabled ? `📳 ${t('vibration')} : oui` : `${t('vibration')} : non`}</button>
           <FullscreenButton className="secondary pc-only" />
         </article>
