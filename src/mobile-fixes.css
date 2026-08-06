@@ -177,9 +177,9 @@ textarea,
     height: 100dvh;
     min-height: 0;
     max-height: 100dvh;
-    padding: 0 max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left));
+    padding: 0 max(8px, env(safe-area-inset-right)) max(2px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
     display: grid;
-    grid-template-rows: 26px 38px minmax(0, 1fr) 92px 34px;
+    grid-template-rows: 24px 34px minmax(0, 1fr) 88px;
     gap: 1px;
     overflow: hidden;
   }
@@ -187,7 +187,7 @@ textarea,
   .battle-meta {
     grid-row: 1;
     min-height: 0;
-    height: 26px;
+    height: 24px;
     padding: 3px 2px 0;
     display: flex;
     align-items: flex-start;
@@ -200,7 +200,7 @@ textarea,
   .battle-top {
     grid-row: 2;
     min-height: 0;
-    height: 38px;
+    height: 34px;
     display: flex;
     align-items: center;
     z-index: 10;
@@ -256,8 +256,8 @@ textarea,
     min-height: 0;
     height: 100%;
     display: grid;
-    grid-template-rows: minmax(0, 1fr) 24px minmax(0, 1fr);
-    gap: 2px;
+    grid-template-rows: minmax(0, 1fr) 22px minmax(0, 1fr);
+    gap: 1px;
     align-items: stretch;
     overflow: hidden;
   }
@@ -268,7 +268,7 @@ textarea,
     height: 100%;
     margin: 0;
     display: grid;
-    grid-template-rows: 12px minmax(0, 1fr) 22px 10px;
+    grid-template-rows: 11px minmax(0, 1fr) 30px 9px;
     align-items: center;
     overflow: hidden;
   }
@@ -279,7 +279,7 @@ textarea,
   }
 
   .enemy-zone {
-    grid-template-rows: 10px 22px minmax(0, 1fr) 12px;
+    grid-template-rows: 9px 30px minmax(0, 1fr) 11px;
   }
 
   .enemy-zone > b { grid-row: 4; }
@@ -314,7 +314,7 @@ textarea,
     width: 100%;
     min-width: 0;
     min-height: 0;
-    height: clamp(52px, 12.5vh, 82px);
+    height: clamp(58px, 13.5vh, 88px);
     border-radius: 7px;
   }
 
@@ -335,15 +335,15 @@ textarea,
     margin: 0 auto;
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 3px;
+    gap: 4px;
   }
 
   .support-row > div,
   .support-row > button,
   .support-card {
     min-height: 0;
-    height: 20px;
-    border-radius: 5px;
+    height: 28px;
+    border-radius: 6px;
   }
 
   .zone-wrap > small {
@@ -354,8 +354,8 @@ textarea,
 
   .turn-strip {
     width: min(100%, 780px);
-    min-height: 24px;
-    height: 24px;
+    min-height: 22px;
+    height: 22px;
     margin: 0 auto;
     padding: 1px 7px;
     display: flex;
@@ -367,7 +367,7 @@ textarea,
   }
 
   .turn-strip span { font-size: 7px; }
-  .attack-face { min-height: 20px; padding: 3px 6px; font-size: 7px; }
+  .attack-face { min-height: 18px; padding: 2px 6px; font-size: 7px; }
 
   .pile-rail {
     width: 40px;
@@ -420,16 +420,16 @@ textarea,
     z-index: 22;
     width: min(100%, 980px);
     margin-inline: auto;
-    height: 92px;
-    min-height: 92px;
-    padding: 0 112px 8px 48px;
+    height: 88px;
+    min-height: 88px;
+    padding: 0 126px max(2px, env(safe-area-inset-bottom)) 56px;
     display: flex;
     align-items: flex-end;
     justify-content: center;
     gap: 0;
     overflow: visible;
     pointer-events: none;
-    transform: translateY(-4px);
+    transform: none;
   }
 
   .hand-card-wrap {
@@ -473,40 +473,60 @@ textarea,
   }
 
   .battle-footer {
-    grid-row: 5;
-    position: relative;
+    position: absolute;
     inset: auto;
-    z-index: 25;
-    width: min(100%, 1180px);
-    margin-inline: auto;
-    height: 34px;
-    min-height: 34px;
-    padding: 2px 126px 2px 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    left: max(8px, env(safe-area-inset-left));
+    right: max(8px, env(safe-area-inset-right));
+    bottom: max(4px, env(safe-area-inset-bottom));
+    z-index: 30;
+    width: auto;
+    height: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    display: block;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    pointer-events: none;
     overflow: visible;
   }
 
   .life-readout,
   .mana-readout {
+    position: absolute;
+    bottom: 0;
+    min-width: 54px;
+    height: 26px;
     margin: 0;
-    padding: 0;
+    padding: 0 8px;
+    display: grid;
+    place-items: center;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    background: #071414e6;
+    box-shadow: 0 4px 14px #0009;
     font-size: 7px;
+    font-weight: 700;
     line-height: 1;
+    pointer-events: auto;
   }
+
+  .life-readout { left: 0; color: #68f4d1; }
+  .mana-readout { left: 60px; color: #e7c266; }
 
   .end-turn {
     position: absolute;
     right: 0;
-    bottom: 2px;
+    bottom: 0;
     width: 120px;
     min-width: 120px;
     height: 30px;
     min-height: 30px;
     padding: 4px 8px;
     font-size: 7px;
-    border-radius: 8px;
+    border-radius: 9px;
+    pointer-events: auto;
   }
 
   .battle-log,
