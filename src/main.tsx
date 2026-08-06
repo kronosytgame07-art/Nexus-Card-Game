@@ -9,10 +9,8 @@ import './card-piles.css';
 import './mobile-fixes.css';
 import './symmetric-opponent.css';
 import './battle-actions.css';
-import './action-animations.css';
 import './final-board-layout.css';
 import './combat-enhancements';
-import './action-animations';
 import './hand-confirmation';
 
 const isInteractiveGameElement = (target: EventTarget | null) =>
