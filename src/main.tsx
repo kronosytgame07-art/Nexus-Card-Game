@@ -14,6 +14,7 @@ import './mobile-duel-layout.css';
 import './combat-enhancements';
 import './duel-phase-guard';
 import './hand-confirmation';
+import './menu-playlist';
 
 const isInteractiveGameElement = (target: EventTarget | null) =>
   target instanceof Element &&
