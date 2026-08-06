@@ -336,7 +336,7 @@
     border-radius: 6px !important;
   }
 
-  body.in-battle .card-pile b { display: none !important; }
+  body.in-battle .card-pile b { display: block !important; font-size: 4px !important; line-height: 1 !important; margin-top: 1px !important; letter-spacing: .2px !important; }
   body.in-battle .card-pile .pile-icon { font-size: 10px !important; }
   body.in-battle .card-pile em { font-size: 6px !important; }
 

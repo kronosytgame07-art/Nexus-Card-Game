@@ -395,7 +395,7 @@ textarea,
     border-radius: 8px;
   }
 
-  .card-pile b { display: none; }
+  .card-pile b { display: block; font-size: 5px; line-height: 1; margin-top: 1px; letter-spacing: .2px; }
 
   .card-pile em {
     position: absolute;
