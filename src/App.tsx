@@ -454,7 +454,7 @@ function Combat() {
         const def = getCard(activePlayerUnit.cardId);
         const canEvolve = !!def.evolvesTo && !!def.waitTurns && activePlayerUnit.turnsOnField >= def.waitTurns;
         const maxUses = def.effect && !def.text.toLowerCase().includes('à l’invocation') ? (def.text.toLowerCase().includes('2 fois par tour') ? 2 : 1) : 0;
-        return <div className="unit-actions"><b>{def.name}</b><p>{def.text}</p>{maxUses > 0 && <button className="secondary" onClick={() => activateEffect(activePlayerUnit.instanceId)}>Activer l'effet ({activePlayerUnit.effectUsesThisTurn ?? 0}/{maxUses})</button>}{canEvolve && <button className="primary" onClick={() => evolve(activePlayerUnit.instanceId)}>ÉVOLUER</button>}<button className="secondary" onClick={() => setInspectedUnit(null)}>Fermer</button></div>;
+        return <div className="unit-actions"><b>{def.name}</b><div className="card-preview-stats"><span>⚔ {activePlayerUnit.attack}</span><span>♥ {activePlayerUnit.health}/{activePlayerUnit.maxHealth}</span></div><p>{def.text}</p>{maxUses > 0 && <button className="secondary" onClick={() => activateEffect(activePlayerUnit.instanceId)}>Activer l'effet ({activePlayerUnit.effectUsesThisTurn ?? 0}/{maxUses})</button>}{canEvolve && <button className="primary" onClick={() => evolve(activePlayerUnit.instanceId)}>ÉVOLUER</button>}<button className="secondary" onClick={() => setInspectedUnit(null)}>Fermer</button></div>;
       })()}
 
       {previewDef && (
