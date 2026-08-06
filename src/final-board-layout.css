@@ -1,3 +1,5 @@
+@import "./vars.css";
+
 /* Plateau final PC : symétrique, centré et lisible. */
 @media (min-width: 901px) {
   body.in-battle .battle {
