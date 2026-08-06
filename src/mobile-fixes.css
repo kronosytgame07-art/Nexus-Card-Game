@@ -103,12 +103,8 @@ textarea,
     -webkit-overflow-scrolling: touch;
   }
 
-  main:has(.home),
-  main:has(.home-hero),
-  main:has(.battle),
-  main:has(.combat-screen),
-  main:has(.combat-arena),
-  main:has(.arena-shell) {
+  body.on-home main,
+  body.in-battle main {
     overflow: hidden;
   }
 
@@ -163,8 +159,8 @@ textarea,
   .fullscreen-toggle,
   .music-toggle { width: 25px; height: 25px; font-size: 10px; }
 
-  body:has(.battle) aside { display: none; }
-  body:has(.battle) main {
+  body.in-battle aside { display: none; }
+  body.in-battle main {
     width: 100%;
     height: 100dvh;
     padding: 0;
