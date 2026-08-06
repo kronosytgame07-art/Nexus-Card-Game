@@ -9,7 +9,9 @@ import './card-piles.css';
 import './mobile-fixes.css';
 import './symmetric-opponent.css';
 import './battle-actions.css';
+import './action-animations.css';
 import './combat-enhancements';
+import './action-animations';
 
 const isInteractiveGameElement = (target: EventTarget | null) =>
   target instanceof Element &&
