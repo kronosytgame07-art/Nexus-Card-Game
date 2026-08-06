@@ -7,13 +7,9 @@ import './arena.css';
 import './combat-enhancements.css';
 import './card-piles.css';
 import './mobile-fixes.css';
-import './symmetric-opponent.css';
 import './battle-actions.css';
-import './action-animations.css';
-import './combat-enhancements';
-import './action-animations';
+import './final-combat-fix.css';
 
-// Les modules du duel sont chargés après leurs feuilles de style pour garantir un rendu stable.
 const isInteractiveGameElement = (target: EventTarget | null) =>
   target instanceof Element &&
   Boolean(target.closest('#root button, #root a, #root .card, #root .field-card, #root .field-unit, #root .menu-card, #root .card-pile, #root img'));
