@@ -1,0 +1,182 @@
+/* Mise en page finale PC : axe central commun aux deux joueurs. */
+@media (min-width: 901px) {
+  body:has(.battle) .battle {
+    grid-template-rows: 24px 150px minmax(0, 1fr) minmax(128px, 170px) 48px !important;
+    padding-inline: 0 !important;
+  }
+
+  body:has(.battle) .battle-top,
+  body:has(.battle) .battle-main,
+  body:has(.battle) .hand,
+  body:has(.battle) .battle-footer {
+    width: 100% !important;
+    max-width: none !important;
+    margin-inline: 0 !important;
+    justify-self: stretch !important;
+  }
+
+  body:has(.battle) .battle-main {
+    position: relative !important;
+    display: grid !important;
+    grid-template-columns: 88px minmax(0, 1fr) 88px !important;
+    left: auto !important;
+    right: auto !important;
+    transform: none !important;
+  }
+
+  body:has(.battle) .battle-center {
+    grid-column: 2 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    justify-self: stretch !important;
+    display: grid !important;
+    grid-template-rows: minmax(0, 1fr) 38px minmax(0, 1fr) !important;
+    justify-items: center !important;
+  }
+
+  body:has(.battle) .zone-wrap {
+    width: max-content !important;
+    max-width: calc(100vw - 220px) !important;
+    margin-inline: auto !important;
+    justify-self: center !important;
+  }
+
+  body:has(.battle) .board,
+  body:has(.battle) .support-row {
+    width: max-content !important;
+    margin-inline: auto !important;
+    justify-content: center !important;
+  }
+
+  /* Côté adverse réellement inversé : soutiens derrière, créatures près du centre. */
+  body:has(.battle) .enemy-zone {
+    display: grid !important;
+    grid-template-areas:
+      "title"
+      "support-label"
+      "support"
+      "board" !important;
+    align-content: center !important;
+  }
+  body:has(.battle) .enemy-zone > b { grid-area: title !important; }
+  body:has(.battle) .enemy-zone > small { grid-area: support-label !important; }
+  body:has(.battle) .enemy-zone .support-row { grid-area: support !important; }
+  body:has(.battle) .enemy-zone .board { grid-area: board !important; }
+
+  /* Main adverse : même gabarit que la main du joueur, centrée au-dessus du terrain. */
+  body:has(.battle) .battle-top {
+    position: relative !important;
+    display: block !important;
+  }
+  body:has(.battle) .combatant.enemy-combatant {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 8px 3% !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+  }
+  body:has(.battle) .enemy-combatant .enemy-hand-row {
+    position: absolute !important;
+    left: 50% !important;
+    top: 2px !important;
+    transform: translateX(-50%) !important;
+    width: min(900px, 72vw) !important;
+    height: 140px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    overflow: visible !important;
+    z-index: 5 !important;
+  }
+  body:has(.battle) .enemy-hand-card {
+    width: clamp(84px, 7vw, 118px) !important;
+    height: clamp(116px, 10vw, 162px) !important;
+    margin-left: clamp(-34px, -2vw, -16px) !important;
+    border-radius: 10px !important;
+    background-size: cover !important;
+    transform-origin: 50% -20% !important;
+  }
+  body:has(.battle) .enemy-hand-card:first-child { margin-left: 0 !important; }
+  body:has(.battle) .enemy-hand-card:nth-child(1) { transform: translateY(8px) rotate(7deg) !important; }
+  body:has(.battle) .enemy-hand-card:nth-child(2) { transform: translateY(3px) rotate(4deg) !important; }
+  body:has(.battle) .enemy-hand-card:nth-child(3) { transform: rotate(1deg) !important; }
+  body:has(.battle) .enemy-hand-card:nth-child(4) { transform: rotate(-1deg) !important; }
+  body:has(.battle) .enemy-hand-card:nth-child(5) { transform: translateY(3px) rotate(-4deg) !important; }
+  body:has(.battle) .enemy-hand-card:nth-child(n+6) { transform: translateY(8px) rotate(-7deg) !important; }
+
+  body:has(.battle) .enemy-combatant > .avatar,
+  body:has(.battle) .enemy-combatant > div:not(.enemy-hand-row) {
+    margin-right: 8px !important;
+  }
+  body:has(.battle) .enemy-combatant > .life { margin-left: auto !important; }
+
+  /* Main joueur centrée sur le même axe. */
+  body:has(.battle) .hand {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: flex-end !important;
+    padding-inline: 110px !important;
+    overflow: visible !important;
+  }
+}
+
+.hand-confirmation-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(1, 5, 8, .78);
+  backdrop-filter: blur(10px);
+}
+.hand-confirmation {
+  position: relative;
+  width: min(720px, 92vw);
+  display: grid;
+  grid-template-columns: minmax(210px, 280px) 1fr;
+  gap: 24px;
+  padding: 24px;
+  border: 1px solid rgba(239, 201, 107, .65);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(20, 24, 34, .98), rgba(4, 13, 15, .98));
+  box-shadow: 0 30px 90px rgba(0, 0, 0, .72), 0 0 35px rgba(239, 201, 107, .12);
+}
+.hand-confirmation-close {
+  position: absolute;
+  right: 12px;
+  top: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.22);
+  background: rgba(0,0,0,.42);
+  color: white;
+  cursor: pointer;
+}
+.hand-confirmation-preview img {
+  width: 100%;
+  max-height: 390px;
+  object-fit: contain;
+  border-radius: 12px;
+  filter: drop-shadow(0 18px 24px rgba(0,0,0,.55));
+}
+.hand-confirmation-info { align-self: center; }
+.hand-confirmation-info small { color: #66e6c4; font: 9px "DM Mono"; letter-spacing: 2px; }
+.hand-confirmation-info h3 { margin: 8px 0 14px; font-size: 28px; }
+.hand-confirmation-info p { color: #c1d0cb; line-height: 1.55; }
+.hand-confirmation-actions { display: flex; gap: 10px; margin-top: 22px; }
+.hand-confirmation-actions button { flex: 1; margin: 0; }
+
+@media (max-width: 700px) {
+  .hand-confirmation { grid-template-columns: 1fr; max-height: 92vh; overflow: auto; }
+  .hand-confirmation-preview img { max-height: 250px; }
+}
