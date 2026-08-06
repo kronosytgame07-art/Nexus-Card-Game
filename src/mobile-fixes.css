@@ -538,6 +538,25 @@ textarea,
   .life-readout { left: 0; color: #68f4d1; }
   .mana-readout { left: 60px; color: #e7c266; }
 
+  .turn-readout {
+    position: absolute;
+    left: 120px;
+    bottom: 0;
+    min-width: 44px;
+    height: 26px;
+    padding: 0 8px;
+    display: grid;
+    place-items: center;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    background: #071414e6;
+    box-shadow: 0 4px 14px #0009;
+    font-size: 7px;
+    font-weight: 700;
+    color: #efc96b;
+    pointer-events: auto;
+  }
+
   .end-turn {
     position: absolute;
     right: 0;

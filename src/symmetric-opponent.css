@@ -2,7 +2,7 @@
 body.in-battle .battle{
   --arena-card-w:clamp(92px,7.1vw,132px);
   --arena-card-h:clamp(126px,18vh,174px);
-  grid-template-rows:26px 72px minmax(0,1fr) minmax(112px,156px) 48px;
+  grid-template-rows:26px 72px minmax(0,1fr) minmax(112px,156px);
 }
 
 body.in-battle .battle-top{
@@ -73,39 +73,35 @@ body.in-battle .field-card-atk,body.in-battle .field-card-hp{bottom:5px}
 
 body.in-battle .turn-strip{position:relative;align-self:center;justify-self:center;width:min(760px,52vw);height:36px;margin:0;z-index:32}
 
-/* HUD joueur compact, sans grande barre basse. */
-body.in-battle .battle-footer{position:relative;z-index:30;justify-self:center;width:min(980px,72vw);height:44px;display:flex;align-items:center;justify-content:flex-start;gap:12px;padding:3px 12px;border:1px solid rgba(65,226,179,.42);border-radius:18px;background:linear-gradient(0deg,rgba(5,30,25,.94),rgba(7,12,14,.94));box-shadow:0 -8px 24px rgba(0,0,0,.32),inset 0 0 24px rgba(65,226,179,.06)}
+/* HUD joueur : cluster flottant compact, ne réserve plus de ligne de grille. */
+body.in-battle .battle-footer{position:fixed;right:max(10px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom));z-index:45;width:auto;display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:0;border:0;background:none;box-shadow:none}
 body.in-battle .battle-footer .life-readout{color:#88f0d4;border-color:rgba(65,226,179,.75)}
 body.in-battle .battle-footer .mana-readout{margin-left:0;color:#b6ffe9}
-
-/* Le bouton est collé à droite de la barre de tour sur PC. */
-body.in-battle .battle-footer .end-turn{position:fixed!important;left:calc(50% + min(380px,26vw) + 12px)!important;right:auto!important;top:50%!important;bottom:auto!important;transform:translateY(-50%)!important;width:clamp(150px,11vw,220px)!important;height:36px!important;z-index:48}
+body.in-battle .battle-footer .end-turn{position:relative!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;transform:none!important;width:auto!important;min-width:0!important}
 
 @media (max-height:760px){
-  body.in-battle .battle{--arena-card-w:clamp(72px,6.2vw,104px);--arena-card-h:clamp(98px,16vh,136px);grid-template-rows:20px 54px minmax(0,1fr) 102px 42px}
+  body.in-battle .battle{--arena-card-w:clamp(72px,6.2vw,104px);--arena-card-h:clamp(98px,16vh,136px);grid-template-rows:20px 54px minmax(0,1fr) 102px}
   body.in-battle .combatant{min-height:46px;padding:4px 10px}
   body.in-battle .enemy-combatant .avatar{width:34px;height:34px;flex-basis:34px}
   body.in-battle .enemy-hand-row{height:46px}
   body.in-battle .enemy-hand-card{width:34px;height:47px;border-radius:6px}
-  body.in-battle .enemy-combatant .life,body.in-battle .enemy-combatant .mana,body.in-battle .battle-footer .life-readout,body.in-battle .battle-footer .mana-readout{height:32px;min-width:62px;font-size:10px}
+  body.in-battle .enemy-combatant .life,body.in-battle .enemy-combatant .mana{height:32px;min-width:62px;font-size:10px}
 }
 
 @media (max-width:1100px){
   body.in-battle .battle{--arena-card-w:clamp(64px,8vw,92px);--arena-card-h:clamp(88px,14vh,126px)}
   body.in-battle .battle-main{grid-template-columns:60px minmax(0,1fr) 60px!important}
-  body.in-battle .combatant,body.in-battle .battle-footer{width:88vw}
+  body.in-battle .combatant{width:88vw}
   body.in-battle .turn-strip{width:min(650px,62vw)}
-  body.in-battle .battle-footer .end-turn{left:auto!important;right:4%!important}
 }
 
 @media (max-width:900px){
-  body.in-battle .combatant,body.in-battle .battle-footer{width:94vw}
+  body.in-battle .combatant{width:94vw}
   body.in-battle .enemy-combatant{gap:7px;padding-inline:9px}
   body.in-battle .enemy-combatant>div:not(.enemy-hand-row){min-width:88px}
   body.in-battle .enemy-combatant .life,body.in-battle .enemy-combatant .mana{min-width:58px;padding:0 7px}
   body.in-battle .enemy-hand-row{padding-inline:4px}
   body.in-battle .enemy-hand-card{width:34px;height:48px}
-  body.in-battle .battle-footer .end-turn{position:static!important;transform:none!important;margin-left:auto;width:170px!important}
 }
 
 /* Verrouillage final PC : les anciennes règles d'arène donnaient encore une largeur maximale

@@ -26,7 +26,7 @@
     margin: 0 !important;
     padding: max(2px, env(safe-area-inset-top)) max(4px, env(safe-area-inset-right)) max(2px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left)) !important;
     display: grid !important;
-    grid-template-rows: 14px 72px minmax(0, 1fr) 82px 26px !important;
+    grid-template-rows: 14px 72px minmax(0, 1fr) 82px !important;
     gap: 1px !important;
     overflow: hidden !important;
     box-sizing: border-box !important;
@@ -399,33 +399,33 @@
   }
 
   body.in-battle .battle-footer {
-    grid-row: 5 !important;
-    position: relative !important;
-    width: var(--mobile-axis) !important;
-    max-width: var(--mobile-axis) !important;
-    height: 26px !important;
-    min-height: 26px !important;
-    margin: 0 auto !important;
-    padding: 1px 3px !important;
+    position: fixed !important;
+    right: max(4px, env(safe-area-inset-right)) !important;
+    bottom: max(4px, env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
     display: flex !important;
     align-items: center !important;
-    gap: 5px !important;
+    gap: 3px !important;
     overflow: visible !important;
   }
 
   body.in-battle .battle-footer .life-readout,
-  body.in-battle .battle-footer .mana-readout { font-size: 6px !important; }
+  body.in-battle .battle-footer .mana-readout,
+  body.in-battle .battle-footer .turn-readout { font-size: 6px !important; height: 18px !important; padding: 0 6px !important; }
 
   body.in-battle .battle-footer .end-turn {
-    position: static !important;
+    position: relative !important;
     inset: auto !important;
     transform: none !important;
-    margin-left: auto !important;
+    margin-left: 0 !important;
     width: auto !important;
-    min-width: 96px !important;
-    height: 22px !important;
-    min-height: 22px !important;
-    padding: 2px 8px !important;
+    min-width: 0 !important;
+    height: 18px !important;
+    min-height: 18px !important;
+    padding: 0 7px !important;
     font-size: 6px !important;
   }
 

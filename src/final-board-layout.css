@@ -6,7 +6,7 @@
     --field-card-h: clamp(128px, 17vh, 176px);
     position: relative !important;
     display: grid !important;
-    grid-template-rows: 24px 138px minmax(0, 1fr) 154px 50px !important;
+    grid-template-rows: 24px 138px minmax(0, 1fr) 154px !important;
     width: 100vw !important;
     max-width: none !important;
     padding: 0 !important;
@@ -230,22 +230,24 @@
   }
 
   body.in-battle .battle-footer {
-    width: var(--duel-axis-width) !important;
-    max-width: var(--duel-axis-width) !important;
-    margin: 0 auto !important;
-    justify-self: center !important;
+    position: fixed !important;
+    right: max(14px, env(safe-area-inset-right)) !important;
+    bottom: max(14px, env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
   }
 
   body.in-battle .battle-footer .end-turn {
-    position: fixed !important;
-    left: calc(50% + min(410px, 31vw) + 14px) !important;
+    position: relative !important;
+    left: auto !important;
     right: auto !important;
-    top: 50% !important;
+    top: auto !important;
     bottom: auto !important;
-    transform: translateY(-50%) !important;
-    width: clamp(170px, 12vw, 230px) !important;
-    height: 38px !important;
-    z-index: 50 !important;
+    transform: none !important;
+    width: auto !important;
+    min-width: 0 !important;
+    height: 34px !important;
   }
 }
 
