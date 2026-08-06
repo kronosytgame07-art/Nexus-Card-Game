@@ -8,6 +8,7 @@ import './combat-enhancements.css';
 import './card-piles.css';
 import './mobile-fixes.css';
 import './symmetric-opponent.css';
+import './battle-actions.css';
 import './combat-enhancements';
 
 const isInteractiveGameElement = (target: EventTarget | null) =>
