@@ -15,7 +15,7 @@
 
   body.in-battle .battle {
     --mobile-axis: min(620px, calc(100vw - 92px));
-    --mobile-card-w: clamp(36px, min(6.4vw, 9.2dvh), 58px);
+    --mobile-card-w: clamp(36px, min(7vw, 10.5dvh), 66px);
     --mobile-card-h: calc(var(--mobile-card-w) * 1.42);
     position: fixed !important;
     inset: 0 !important;
@@ -26,7 +26,7 @@
     margin: 0 !important;
     padding: max(2px, env(safe-area-inset-top)) max(4px, env(safe-area-inset-right)) max(2px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left)) !important;
     display: grid !important;
-    grid-template-rows: 14px 90px minmax(0, 1fr) 34px !important;
+    grid-template-rows: 14px 58px minmax(0, 1fr) 34px !important;
     gap: 1px !important;
     overflow: hidden !important;
     box-sizing: border-box !important;
@@ -45,7 +45,7 @@
     grid-row: 2 !important;
     position: relative !important;
     width: 100% !important;
-    height: 90px !important;
+    height: 58px !important;
     min-height: 0 !important;
     margin: 0 !important;
     display: block !important;
@@ -85,13 +85,13 @@
     left: 50% !important;
     top: 0 !important;
     width: var(--mobile-axis) !important;
-    height: 90px !important;
+    height: 58px !important;
     padding: 0 !important;
     transform: translateX(-50%) !important;
     display: flex !important;
     align-items: flex-start !important;
     justify-content: center !important;
-    overflow: visible !important;
+    overflow: hidden !important;
     z-index: 20 !important;
   }
 
@@ -342,13 +342,14 @@
 
   body.in-battle .hand {
     grid-row: 4 !important;
-    position: relative !important;
-    inset: auto !important;
+    position: absolute !important;
+    left: 50% !important;
+    bottom: 0 !important;
     width: var(--mobile-axis) !important;
     max-width: var(--mobile-axis) !important;
     height: 34px !important;
     min-height: 34px !important;
-    margin: 0 auto !important;
+    margin: 0 !important;
     padding: 2px 4px 5px !important;
     display: flex !important;
     align-items: flex-end !important;
@@ -356,12 +357,12 @@
     gap: 0 !important;
     overflow: visible !important;
     pointer-events: none !important;
-    transform: translateY(44px) !important;
+    transform: translateX(-50%) translateY(44px) !important;
     transition: transform .22s ease-out !important;
   }
 
   body.in-battle .hand.open {
-    transform: translateY(0) !important;
+    transform: translateX(-50%) translateY(0) !important;
   }
 
   body.in-battle .hand-toggle {
@@ -413,13 +414,6 @@
     object-fit: contain !important;
   }
   body.in-battle .hand .card footer { font-size: 4px !important; }
-  body.in-battle .inspect-card {
-    width: 18px !important;
-    height: 18px !important;
-    min-width: 18px !important;
-    min-height: 18px !important;
-    font-size: 6px !important;
-  }
 
   body.in-battle .battle-footer {
     position: fixed !important;
