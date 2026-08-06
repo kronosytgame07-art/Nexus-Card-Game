@@ -10,6 +10,7 @@ import './mobile-fixes.css';
 import './symmetric-opponent.css';
 import './battle-actions.css';
 import './final-board-layout.css';
+import './mobile-duel-layout.css';
 import './combat-enhancements';
 import './duel-phase-guard';
 import './hand-confirmation';
