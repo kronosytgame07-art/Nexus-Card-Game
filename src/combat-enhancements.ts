@@ -1,6 +1,5 @@
 import { activateUnitEffect, declareAttack, evolveUnit } from './engine/engine';
-
-type AnyState = Record<string, any>;
+import type { GameState } from './engine/types';
 
 const INSPECTOR_ID = 'nexus-card-inspector';
 const EFFECT_TOAST_ID = 'nexus-effect-toast';
@@ -36,21 +35,27 @@ function combatFiber(): any {
   return null;
 }
 
-function matchHook(): { state: AnyState; dispatch: (next: AnyState) => void } | null {
+function isGameState(value: unknown): value is GameState {
+  if (!value || typeof value !== 'object') return false;
+  const state = value as Partial<GameState>;
+  return Boolean(state.player && state.enemy && state.activePlayer && typeof state.turn === 'number');
+}
+
+function matchHook(): { state: GameState; dispatch: (next: GameState) => void } | null {
   const fiber = combatFiber();
   let hook = fiber?.memoizedState;
   while (hook) {
-    const state = hook.memoizedState;
-    if (state && typeof state === 'object' && state.player && state.enemy && state.activePlayer) {
+    const state: unknown = hook.memoizedState;
+    if (isGameState(state)) {
       const dispatch = hook.queue?.dispatch;
-      if (typeof dispatch === 'function') return { state, dispatch };
+      if (typeof dispatch === 'function') return { state, dispatch: dispatch as (next: GameState) => void };
     }
     hook = hook.next;
   }
   return null;
 }
 
-function setMatch(next: AnyState) {
+function setMatch(next: GameState) {
   const hook = matchHook();
   if (!hook || next === hook.state) return false;
   hook.dispatch(next);
@@ -67,7 +72,7 @@ function selectForAttack(card: HTMLElement) {
   const id = card.dataset.instanceId;
   if (!id) return;
   const hook = matchHook();
-  const unit = hook?.state?.player?.field?.find((entry: AnyState) => entry.instanceId === id);
+  const unit = hook?.state.player.field.find((entry) => entry.instanceId === id);
   if (!unit?.canAttack || unit.stunnedTurns > 0) {
     showEffectToast('Cette unité ne peut pas attaquer maintenant.');
     return;
@@ -123,7 +128,7 @@ function showInspector(card: HTMLElement) {
   const isFieldCard = card.classList.contains('field-card');
   const isEnemy = !!card.closest('.enemy-zone');
   const hook = matchHook();
-  const unit = instanceId ? hook?.state?.player?.field?.find((entry: AnyState) => entry.instanceId === instanceId) : null;
+  const unit = instanceId ? hook?.state.player.field.find((entry) => entry.instanceId === instanceId) : null;
   const canAttack = !!unit?.canAttack && unit.stunnedTurns <= 0;
 
   const panel = document.createElement('div');
