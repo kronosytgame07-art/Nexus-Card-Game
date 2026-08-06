@@ -10,7 +10,7 @@ export const MAIN_DECK_MIN = 30;
 export const MAIN_DECK_MAX = 40;
 export const EVOSPHERE_MAX = 20;
 
-export type Language = 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt';
+export type Language = 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh';
 export type VisualQuality = 'eco' | 'balanced' | 'high';
 export type AnimationMode = 'full' | 'reduced' | 'off';
 export type InterfaceScale = 'small' | 'normal' | 'large';
@@ -46,6 +46,11 @@ interface GameMeta {
   glowEffects: boolean;
   screenShake: boolean;
   interfaceScale: InterfaceScale;
+  musicVolume: number;
+  sfxVolume: number;
+  showFps: boolean;
+  batterySaver: boolean;
+  vibrationEnabled: boolean;
   addCard: (id: string) => void;
   saveDeck: (deck: string[]) => void;
   createDeck: (name: string, faction: Faction) => string;
@@ -62,6 +67,12 @@ interface GameMeta {
   setGlowEffects: (enabled: boolean) => void;
   setScreenShake: (enabled: boolean) => void;
   setInterfaceScale: (scale: InterfaceScale) => void;
+  setMusicVolume: (value: number) => void;
+  setSfxVolume: (value: number) => void;
+  setShowFps: (enabled: boolean) => void;
+  setBatterySaver: (enabled: boolean) => void;
+  setVibrationEnabled: (enabled: boolean) => void;
+  resetSettings: () => void;
   record: (win: boolean) => void;
   addGold: (amount: number) => void;
   addXp: (amount: number) => void;
@@ -128,6 +139,11 @@ export const useGame = create<GameMeta>()(
       glowEffects: true,
       screenShake: true,
       interfaceScale: 'normal',
+      musicVolume: 45,
+      sfxVolume: 70,
+      showFps: false,
+      batterySaver: false,
+      vibrationEnabled: true,
       addCard: (id) => set((s) => ({ owned: [...new Set([...s.owned, id])] })),
       saveDeck: (deck) => set({ deck }),
       createDeck: (name, faction) => {
@@ -191,6 +207,26 @@ export const useGame = create<GameMeta>()(
       setGlowEffects: (glowEffects) => set({ glowEffects }),
       setScreenShake: (screenShake) => set({ screenShake }),
       setInterfaceScale: (interfaceScale) => set({ interfaceScale }),
+      setMusicVolume: (musicVolume) => set({ musicVolume: Math.min(100, Math.max(0, musicVolume)) }),
+      setSfxVolume: (sfxVolume) => set({ sfxVolume: Math.min(100, Math.max(0, sfxVolume)) }),
+      setShowFps: (showFps) => set({ showFps }),
+      setBatterySaver: (batterySaver) => set({ batterySaver }),
+      setVibrationEnabled: (vibrationEnabled) => set({ vibrationEnabled }),
+      resetSettings: () =>
+        set({
+          musicEnabled: false,
+          musicVolume: 45,
+          sfxVolume: 70,
+          visualQuality: 'balanced',
+          animationMode: 'full',
+          glowEffects: true,
+          screenShake: true,
+          interfaceScale: 'normal',
+          showFps: false,
+          batterySaver: false,
+          vibrationEnabled: true,
+          language: 'fr',
+        }),
       record: (win) =>
         set((s) => {
           const progression = applyXp(s.level, s.xp, s.gems, win ? 40 : 15);

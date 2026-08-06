@@ -1,21 +1,21 @@
 /* Plateau final PC : symétrique, centré et lisible. */
 @media (min-width: 901px) {
-  body:has(.battle) .battle {
+  body.in-battle .battle {
     --duel-axis-width: min(1040px, 72vw);
     --field-card-w: clamp(92px, 6.8vw, 128px);
     --field-card-h: clamp(128px, 17vh, 176px);
     position: relative !important;
     display: grid !important;
-    grid-template-rows: 24px 138px minmax(0, 1fr) 154px 50px !important;
+    grid-template-rows: 24px 138px minmax(0, 1fr) 154px !important;
     width: 100vw !important;
     max-width: none !important;
     padding: 0 !important;
     overflow: hidden !important;
   }
 
-  body:has(.battle) .battle-meta { padding: 4px 2.5% !important; }
+  body.in-battle .battle-meta { padding: 4px 2.5% !important; }
 
-  body:has(.battle) .battle-top {
+  body.in-battle .battle-top {
     position: relative !important;
     width: 100vw !important;
     max-width: none !important;
@@ -23,7 +23,7 @@
     display: block !important;
   }
 
-  body:has(.battle) .combatant.enemy-combatant {
+  body.in-battle .combatant.enemy-combatant {
     position: relative !important;
     width: 100vw !important;
     height: 100% !important;
@@ -39,7 +39,7 @@
     gap: 10px !important;
   }
 
-  body:has(.battle) .enemy-hand-row {
+  body.in-battle .enemy-hand-row {
     position: absolute !important;
     left: 50% !important;
     top: 2px !important;
@@ -54,7 +54,7 @@
     z-index: 12 !important;
   }
 
-  body:has(.battle) .enemy-hand-row::after {
+  body.in-battle .enemy-hand-row::after {
     content: attr(data-count) " cartes";
     position: absolute;
     top: 108px;
@@ -69,7 +69,7 @@
     letter-spacing: 1px;
   }
 
-  body:has(.battle) .enemy-hand-card {
+  body.in-battle .enemy-hand-card {
     width: clamp(78px, 6.4vw, 112px) !important;
     height: clamp(108px, 9vw, 154px) !important;
     flex: 0 0 auto !important;
@@ -81,16 +81,16 @@
     transform-origin: 50% -20% !important;
     transition: transform .2s ease !important;
   }
-  body:has(.battle) .enemy-hand-card:first-child { margin-left: 0 !important; }
-  body:has(.battle) .enemy-hand-card:nth-child(1) { transform: translateY(8px) rotate(7deg) !important; }
-  body:has(.battle) .enemy-hand-card:nth-child(2) { transform: translateY(3px) rotate(4deg) !important; }
-  body:has(.battle) .enemy-hand-card:nth-child(3) { transform: rotate(1deg) !important; }
-  body:has(.battle) .enemy-hand-card:nth-child(4) { transform: rotate(-1deg) !important; }
-  body:has(.battle) .enemy-hand-card:nth-child(5) { transform: translateY(3px) rotate(-4deg) !important; }
-  body:has(.battle) .enemy-hand-card:nth-child(n+6) { transform: translateY(8px) rotate(-7deg) !important; }
-  body:has(.battle) .enemy-hand-card.enemy-card-draw { animation: enemyDrawFinal .85s ease-out !important; }
+  body.in-battle .enemy-hand-card:first-child { margin-left: 0 !important; }
+  body.in-battle .enemy-hand-card:nth-child(1) { transform: translateY(8px) rotate(7deg) !important; }
+  body.in-battle .enemy-hand-card:nth-child(2) { transform: translateY(3px) rotate(4deg) !important; }
+  body.in-battle .enemy-hand-card:nth-child(3) { transform: rotate(1deg) !important; }
+  body.in-battle .enemy-hand-card:nth-child(4) { transform: rotate(-1deg) !important; }
+  body.in-battle .enemy-hand-card:nth-child(5) { transform: translateY(3px) rotate(-4deg) !important; }
+  body.in-battle .enemy-hand-card:nth-child(n+6) { transform: translateY(8px) rotate(-7deg) !important; }
+  body.in-battle .enemy-hand-card.enemy-card-draw { animation: enemyDrawFinal .85s ease-out !important; }
 
-  body:has(.battle) .battle-main {
+  body.in-battle .battle-main {
     position: relative !important;
     width: 100vw !important;
     max-width: none !important;
@@ -104,7 +104,7 @@
     transform: none !important;
   }
 
-  body:has(.battle) .battle-center {
+  body.in-battle .battle-center {
     grid-column: 2 !important;
     width: var(--duel-axis-width) !important;
     max-width: var(--duel-axis-width) !important;
@@ -117,10 +117,10 @@
     transform: none !important;
   }
 
-  body:has(.battle) .pile-rail.left { grid-column: 1 !important; }
-  body:has(.battle) .pile-rail.right { grid-column: 3 !important; }
+  body.in-battle .pile-rail.left { grid-column: 1 !important; }
+  body.in-battle .pile-rail.right { grid-column: 3 !important; }
 
-  body:has(.battle) .zone-wrap {
+  body.in-battle .zone-wrap {
     width: var(--duel-axis-width) !important;
     max-width: var(--duel-axis-width) !important;
     margin: 0 auto !important;
@@ -128,7 +128,7 @@
     text-align: center !important;
   }
 
-  body:has(.battle) .enemy-zone {
+  body.in-battle .enemy-zone {
     display: grid !important;
     grid-template-areas:
       "title"
@@ -137,12 +137,12 @@
       "board" !important;
     align-content: end !important;
   }
-  body:has(.battle) .enemy-zone > b { grid-area: title !important; }
-  body:has(.battle) .enemy-zone > small { grid-area: supportlabel !important; }
-  body:has(.battle) .enemy-zone .support-row { grid-area: support !important; }
-  body:has(.battle) .enemy-zone .board { grid-area: board !important; }
+  body.in-battle .enemy-zone > b { grid-area: title !important; }
+  body.in-battle .enemy-zone > small { grid-area: supportlabel !important; }
+  body.in-battle .enemy-zone .support-row { grid-area: support !important; }
+  body.in-battle .enemy-zone .board { grid-area: board !important; }
 
-  body:has(.battle) .player-zone {
+  body.in-battle .player-zone {
     display: grid !important;
     grid-template-areas:
       "title"
@@ -151,13 +151,13 @@
       "supportlabel" !important;
     align-content: start !important;
   }
-  body:has(.battle) .player-zone > b { grid-area: title !important; }
-  body:has(.battle) .player-zone .board { grid-area: board !important; }
-  body:has(.battle) .player-zone .support-row { grid-area: support !important; }
-  body:has(.battle) .player-zone > small { grid-area: supportlabel !important; }
+  body.in-battle .player-zone > b { grid-area: title !important; }
+  body.in-battle .player-zone .board { grid-area: board !important; }
+  body.in-battle .player-zone .support-row { grid-area: support !important; }
+  body.in-battle .player-zone > small { grid-area: supportlabel !important; }
 
-  body:has(.battle) .board,
-  body:has(.battle) .support-row {
+  body.in-battle .board,
+  body.in-battle .support-row {
     width: max-content !important;
     margin: 4px auto !important;
     display: grid !important;
@@ -165,13 +165,13 @@
     align-items: center !important;
     gap: clamp(8px, 1vw, 16px) !important;
   }
-  body:has(.battle) .board { grid-template-columns: repeat(3, var(--field-card-w)) !important; }
-  body:has(.battle) .support-row { grid-template-columns: repeat(5, var(--field-card-w)) !important; }
+  body.in-battle .board { grid-template-columns: repeat(3, var(--field-card-w)) !important; }
+  body.in-battle .support-row { grid-template-columns: repeat(5, var(--field-card-w)) !important; }
 
-  body:has(.battle) .field-slot,
-  body:has(.battle) .field-card,
-  body:has(.battle) .support-row > div,
-  body:has(.battle) .support-card {
+  body.in-battle .field-slot,
+  body.in-battle .field-card,
+  body.in-battle .support-row > div,
+  body.in-battle .support-card {
     width: var(--field-card-w) !important;
     min-width: var(--field-card-w) !important;
     max-width: var(--field-card-w) !important;
@@ -181,8 +181,8 @@
     border-radius: 11px !important;
   }
 
-  body:has(.battle) .field-card,
-  body:has(.battle) .support-card {
+  body.in-battle .field-card,
+  body.in-battle .support-card {
     overflow: hidden !important;
     padding: 0 !important;
     background-color: #050a0b !important;
@@ -191,7 +191,7 @@
     background-repeat: no-repeat !important;
   }
 
-  body:has(.battle) .field-card img {
+  body.in-battle .field-card img {
     position: absolute !important;
     inset: 0 !important;
     width: 100% !important;
@@ -201,7 +201,7 @@
     background: #050a0b !important;
   }
 
-  body:has(.battle) .turn-strip {
+  body.in-battle .turn-strip {
     position: relative !important;
     width: min(820px, 62vw) !important;
     height: 38px !important;
@@ -210,7 +210,7 @@
     z-index: 30 !important;
   }
 
-  body:has(.battle) .hand {
+  body.in-battle .hand {
     width: var(--duel-axis-width) !important;
     max-width: var(--duel-axis-width) !important;
     height: 100% !important;
@@ -222,30 +222,32 @@
     overflow: visible !important;
   }
 
-  body:has(.battle) .hand .card {
+  body.in-battle .hand .card {
     width: clamp(94px, 6.8vw, 124px) !important;
     min-width: clamp(94px, 6.8vw, 124px) !important;
     height: clamp(132px, 18vh, 174px) !important;
     min-height: clamp(132px, 18vh, 174px) !important;
   }
 
-  body:has(.battle) .battle-footer {
-    width: var(--duel-axis-width) !important;
-    max-width: var(--duel-axis-width) !important;
-    margin: 0 auto !important;
-    justify-self: center !important;
+  body.in-battle .battle-footer {
+    position: fixed !important;
+    right: max(14px, env(safe-area-inset-right)) !important;
+    bottom: max(14px, env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
   }
 
-  body:has(.battle) .battle-footer .end-turn {
-    position: fixed !important;
-    left: calc(50% + min(410px, 31vw) + 14px) !important;
+  body.in-battle .battle-footer .end-turn {
+    position: relative !important;
+    left: auto !important;
     right: auto !important;
-    top: 50% !important;
+    top: auto !important;
     bottom: auto !important;
-    transform: translateY(-50%) !important;
-    width: clamp(170px, 12vw, 230px) !important;
-    height: 38px !important;
-    z-index: 50 !important;
+    transform: none !important;
+    width: auto !important;
+    min-width: 0 !important;
+    height: 34px !important;
   }
 }
 
