@@ -1,5 +1,7 @@
-/* Symétrie finale du duel : l'adversaire reprend la même hiérarchie visuelle que le joueur, inversée. */
+/* Correctifs desktop du duel : symétrie, dimensions cohérentes et commandes centrées. */
 body:has(.battle) .battle{
+  --arena-card-w:clamp(92px,7.1vw,132px);
+  --arena-card-h:clamp(126px,18vh,174px);
   grid-template-rows:26px 72px minmax(0,1fr) minmax(112px,156px) 48px;
 }
 
@@ -14,7 +16,7 @@ body:has(.battle) .battle-top{
 
 body:has(.battle) .combatant{
   position:relative;
-  width:min(980px,88vw);
+  width:min(980px,72vw);
   min-height:58px;
   display:flex;
   align-items:center;
@@ -25,80 +27,17 @@ body:has(.battle) .combatant{
   background:linear-gradient(180deg,rgba(34,8,18,.94),rgba(7,9,14,.94));
   box-shadow:0 8px 24px rgba(0,0,0,.38),inset 0 0 24px rgba(239,73,97,.07);
 }
-
-body:has(.battle) .enemy-combatant{
-  flex-direction:row-reverse;
-  text-align:right;
-}
-
-body:has(.battle) .enemy-combatant .avatar{
-  flex:0 0 42px;
-  width:42px;
-  height:42px;
-  display:grid;
-  place-items:center;
-  border-radius:50%;
-  border:2px solid var(--enemy);
-  color:#ffd8df;
-  background:radial-gradient(circle at 35% 25%,#7d2838,#2b0a13 70%);
-  box-shadow:0 0 18px rgba(239,73,97,.35);
-}
-
-body:has(.battle) .enemy-combatant>div:not(.enemy-hand-row){
-  min-width:130px;
-}
-
-body:has(.battle) .enemy-combatant b,
-body:has(.battle) .enemy-combatant small{
-  display:block;
-}
-
-body:has(.battle) .enemy-combatant .life,
-body:has(.battle) .enemy-combatant .mana,
-body:has(.battle) .battle-footer .life-readout,
-body:has(.battle) .battle-footer .mana-readout{
-  min-width:74px;
-  height:38px;
-  display:grid;
-  place-items:center;
-  padding:0 12px;
-  border-radius:999px;
-  border:1px solid rgba(239,201,107,.72);
-  background:radial-gradient(circle at 35% 25%,rgba(255,255,255,.12),rgba(4,8,11,.96));
-  font:700 12px "DM Mono";
-  white-space:nowrap;
-}
-
+body:has(.battle) .enemy-combatant{flex-direction:row-reverse;text-align:right}
+body:has(.battle) .enemy-combatant .avatar{flex:0 0 42px;width:42px;height:42px;display:grid;place-items:center;border-radius:50%;border:2px solid var(--enemy);color:#ffd8df;background:radial-gradient(circle at 35% 25%,#7d2838,#2b0a13 70%);box-shadow:0 0 18px rgba(239,73,97,.35)}
+body:has(.battle) .enemy-combatant>div:not(.enemy-hand-row){min-width:130px}
+body:has(.battle) .enemy-combatant b,body:has(.battle) .enemy-combatant small{display:block}
+body:has(.battle) .enemy-combatant .life,body:has(.battle) .enemy-combatant .mana,body:has(.battle) .battle-footer .life-readout,body:has(.battle) .battle-footer .mana-readout{min-width:74px;height:38px;display:grid;place-items:center;padding:0 12px;border-radius:999px;border:1px solid rgba(239,201,107,.72);background:radial-gradient(circle at 35% 25%,rgba(255,255,255,.12),rgba(4,8,11,.96));font:700 12px "DM Mono";white-space:nowrap}
 body:has(.battle) .enemy-combatant .life{color:#ff9aab;border-color:rgba(239,73,97,.78)}
 body:has(.battle) .enemy-combatant .mana{color:#d8b7ff}
 
-/* Main ennemie : même présence que la main du joueur, mais uniquement avec le dos des cartes. */
-body:has(.battle) .enemy-hand-row{
-  flex:1 1 auto;
-  min-width:0;
-  display:flex;
-  align-items:flex-end;
-  justify-content:center;
-  gap:0;
-  height:58px;
-  padding:0 16px;
-  overflow:visible;
-  direction:ltr;
-}
-
-body:has(.battle) .enemy-hand-card{
-  position:relative;
-  width:clamp(42px,4.2vw,66px);
-  height:clamp(58px,5.8vw,92px);
-  flex:0 0 auto;
-  margin-left:clamp(-17px,-1.15vw,-8px);
-  border:1px solid rgba(239,201,107,.9);
-  border-radius:8px;
-  background-size:cover;
-  background-position:center;
-  box-shadow:0 7px 14px rgba(0,0,0,.55),0 0 10px rgba(239,73,97,.15);
-  transform-origin:50% 120%;
-}
+/* Main adverse visible en éventail, toujours face verso. */
+body:has(.battle) .enemy-hand-row{flex:1 1 auto;min-width:0;display:flex;align-items:flex-end;justify-content:center;gap:0;height:58px;padding:0 16px;overflow:visible;direction:ltr}
+body:has(.battle) .enemy-hand-card{position:relative;width:clamp(42px,4.2vw,66px);height:clamp(58px,5.8vw,92px);flex:0 0 auto;margin-left:clamp(-17px,-1.15vw,-8px);border:1px solid rgba(239,201,107,.9);border-radius:8px;background-size:cover;background-position:center;box-shadow:0 7px 14px rgba(0,0,0,.55),0 0 10px rgba(239,73,97,.15);transform-origin:50% 120%}
 body:has(.battle) .enemy-hand-card:first-child{margin-left:0}
 body:has(.battle) .enemy-hand-card:nth-child(1){transform:translateY(7px) rotate(-8deg)}
 body:has(.battle) .enemy-hand-card:nth-child(2){transform:translateY(3px) rotate(-5deg)}
@@ -107,86 +46,64 @@ body:has(.battle) .enemy-hand-card:nth-child(4){transform:rotate(2deg)}
 body:has(.battle) .enemy-hand-card:nth-child(5){transform:translateY(3px) rotate(5deg)}
 body:has(.battle) .enemy-hand-card:nth-child(n+6){transform:translateY(7px) rotate(8deg)}
 
-/* Deux moitiés de terrain strictement symétriques autour de la barre de tour. */
-body:has(.battle) .battle-main{
-  min-height:0;
-}
-body:has(.battle) .battle-center{
-  height:100%;
-  display:grid;
-  grid-template-rows:minmax(0,1fr) 38px minmax(0,1fr);
-  align-items:center;
-}
-body:has(.battle) .enemy-zone,
-body:has(.battle) .player-zone{
-  width:min(920px,74vw);
-  align-self:center;
-}
-body:has(.battle) .enemy-zone{
-  display:flex;
-  flex-direction:column-reverse;
-}
+/* Le plateau utilise toute la largeur centrale au lieu de rester tassé à gauche. */
+body:has(.battle) .battle-main{display:grid!important;grid-template-columns:84px minmax(0,1fr) 84px!important;width:100%;min-width:0;min-height:0;align-items:stretch}
+body:has(.battle) .battle-center{grid-column:2;width:100%;max-width:none;height:100%;min-width:0;display:grid;grid-template-rows:minmax(0,1fr) 38px minmax(0,1fr);align-items:center;justify-items:center}
+body:has(.battle) .pile-rail.left{grid-column:1}
+body:has(.battle) .pile-rail.right{grid-column:3}
+body:has(.battle) .enemy-zone,body:has(.battle) .player-zone{width:100%;max-width:none;align-self:center;justify-self:center;margin:0 auto}
+body:has(.battle) .enemy-zone{display:flex;flex-direction:column-reverse}
 body:has(.battle) .enemy-zone>b{order:3;margin:4px 0 0}
 body:has(.battle) .enemy-zone>small{order:2;margin:0 0 4px}
 body:has(.battle) .enemy-zone .support-row{order:1}
 body:has(.battle) .enemy-zone .board{order:0}
 
-body:has(.battle) .turn-strip{
-  align-self:center;
-  width:min(840px,72vw);
-}
+/* Créatures et soutiens ont exactement la même dimension individuelle. */
+body:has(.battle) .board,body:has(.battle) .support-row{display:grid;justify-content:center;align-items:center;width:auto;margin:4px auto;gap:clamp(8px,1vw,16px)}
+body:has(.battle) .board{grid-template-columns:repeat(3,var(--arena-card-w))}
+body:has(.battle) .support-row{grid-template-columns:repeat(5,var(--arena-card-w))}
+body:has(.battle) .field-slot,body:has(.battle) .field-card,body:has(.battle) .support-row>div,body:has(.battle) .support-card{width:var(--arena-card-w)!important;min-width:var(--arena-card-w)!important;max-width:var(--arena-card-w)!important;height:var(--arena-card-h)!important;min-height:var(--arena-card-h)!important;max-height:var(--arena-card-h)!important;border-radius:10px}
 
-/* HUD joueur réduit et miroir du HUD adverse, sans grosse barre opaque. */
-body:has(.battle) .battle-footer{
-  position:relative;
-  z-index:30;
-  justify-self:center;
-  width:min(980px,88vw);
-  height:44px;
-  display:flex;
-  align-items:center;
-  justify-content:flex-start;
-  gap:12px;
-  padding:3px 12px;
-  border:1px solid rgba(65,226,179,.42);
-  border-radius:18px;
-  background:linear-gradient(0deg,rgba(5,30,25,.94),rgba(7,12,14,.94));
-  box-shadow:0 -8px 24px rgba(0,0,0,.32),inset 0 0 24px rgba(65,226,179,.06);
-}
+/* Les cartes posées conservent leur cadre complet et ne sont plus écrasées/découpées. */
+body:has(.battle) .field-card{display:block;overflow:hidden;padding:0;clip-path:none!important;transform-origin:center;box-sizing:border-box}
+body:has(.battle) .field-card img{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover;object-position:center;border:0;background:#050a0b}
+body:has(.battle) .field-card:after{inset:42% 0 0}
+body:has(.battle) .field-card-name{left:7px;right:7px;bottom:31px;font-size:11px}
+body:has(.battle) .field-card-atk,body:has(.battle) .field-card-hp{bottom:5px}
+
+body:has(.battle) .turn-strip{position:relative;align-self:center;justify-self:center;width:min(760px,52vw);height:36px;margin:0;z-index:32}
+
+/* HUD joueur compact, sans grande barre basse. */
+body:has(.battle) .battle-footer{position:relative;z-index:30;justify-self:center;width:min(980px,72vw);height:44px;display:flex;align-items:center;justify-content:flex-start;gap:12px;padding:3px 12px;border:1px solid rgba(65,226,179,.42);border-radius:18px;background:linear-gradient(0deg,rgba(5,30,25,.94),rgba(7,12,14,.94));box-shadow:0 -8px 24px rgba(0,0,0,.32),inset 0 0 24px rgba(65,226,179,.06)}
 body:has(.battle) .battle-footer .life-readout{color:#88f0d4;border-color:rgba(65,226,179,.75)}
 body:has(.battle) .battle-footer .mana-readout{margin-left:0;color:#b6ffe9}
-body:has(.battle) .battle-footer .end-turn{margin-left:auto;position:static;transform:none}
 
-/* Le bouton de fin de tour reste lié visuellement à la barre centrale sur grand écran. */
-@media (min-width:900px) and (min-height:650px){
-  body:has(.battle) .battle-footer .end-turn{
-    position:fixed;
-    right:max(4%,56px);
-    top:50%;
-    transform:translateY(-50%);
-    z-index:45;
-  }
-}
+/* Le bouton est collé à droite de la barre de tour sur PC. */
+body:has(.battle) .battle-footer .end-turn{position:fixed!important;left:calc(50% + min(380px,26vw) + 12px)!important;right:auto!important;top:50%!important;bottom:auto!important;transform:translateY(-50%)!important;width:clamp(150px,11vw,220px)!important;height:36px!important;z-index:48}
 
 @media (max-height:760px){
-  body:has(.battle) .battle{grid-template-rows:20px 54px minmax(0,1fr) 102px 42px}
+  body:has(.battle) .battle{--arena-card-w:clamp(72px,6.2vw,104px);--arena-card-h:clamp(98px,16vh,136px);grid-template-rows:20px 54px minmax(0,1fr) 102px 42px}
   body:has(.battle) .combatant{min-height:46px;padding:4px 10px}
   body:has(.battle) .enemy-combatant .avatar{width:34px;height:34px;flex-basis:34px}
   body:has(.battle) .enemy-hand-row{height:46px}
   body:has(.battle) .enemy-hand-card{width:34px;height:47px;border-radius:6px}
-  body:has(.battle) .enemy-combatant .life,
-  body:has(.battle) .enemy-combatant .mana,
-  body:has(.battle) .battle-footer .life-readout,
-  body:has(.battle) .battle-footer .mana-readout{height:32px;min-width:62px;font-size:10px}
+  body:has(.battle) .enemy-combatant .life,body:has(.battle) .enemy-combatant .mana,body:has(.battle) .battle-footer .life-readout,body:has(.battle) .battle-footer .mana-readout{height:32px;min-width:62px;font-size:10px}
+}
+
+@media (max-width:1100px){
+  body:has(.battle) .battle{--arena-card-w:clamp(64px,8vw,92px);--arena-card-h:clamp(88px,14vh,126px)}
+  body:has(.battle) .battle-main{grid-template-columns:60px minmax(0,1fr) 60px!important}
+  body:has(.battle) .combatant,body:has(.battle) .battle-footer{width:88vw}
+  body:has(.battle) .turn-strip{width:min(650px,62vw)}
+  body:has(.battle) .battle-footer .end-turn{left:auto!important;right:4%!important}
 }
 
 @media (max-width:900px){
-  body:has(.battle) .combatant,
-  body:has(.battle) .battle-footer{width:94vw}
+  body:has(.battle) .combatant,body:has(.battle) .battle-footer{width:94vw}
   body:has(.battle) .enemy-combatant{gap:7px;padding-inline:9px}
   body:has(.battle) .enemy-combatant>div:not(.enemy-hand-row){min-width:88px}
-  body:has(.battle) .enemy-combatant .life,
-  body:has(.battle) .enemy-combatant .mana{min-width:58px;padding:0 7px}
+  body:has(.battle) .enemy-combatant .life,body:has(.battle) .enemy-combatant .mana{min-width:58px;padding:0 7px}
   body:has(.battle) .enemy-hand-row{padding-inline:4px}
   body:has(.battle) .enemy-hand-card{width:34px;height:48px}
+  body:has(.battle) .battle-footer .end-turn{position:static!important;transform:none!important;margin-left:auto;width:170px!important}
 }
