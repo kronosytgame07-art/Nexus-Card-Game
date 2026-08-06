@@ -3,8 +3,14 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './styles.css';
-import './duel.css';
+import './arena.css';
+import './card-piles.css';
+import './symmetric-opponent.css';
+import './battle-actions.css';
+import './final-board-layout.css';
+import './mobile-duel-layout.css';
 import './mobile-fixes.css';
+import './hand-confirmation';
 
 const isInteractiveGameElement = (target: EventTarget | null) =>
   target instanceof Element &&
