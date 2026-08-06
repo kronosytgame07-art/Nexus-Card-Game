@@ -107,3 +107,48 @@ body:has(.battle) .battle-footer .end-turn{position:fixed!important;left:calc(50
   body:has(.battle) .enemy-hand-card{width:34px;height:48px}
   body:has(.battle) .battle-footer .end-turn{position:static!important;transform:none!important;margin-left:auto;width:170px!important}
 }
+
+/* Verrouillage final PC : les anciennes règles d'arène donnaient encore une largeur maximale
+   et un alignement à gauche à battle-main. Ces règles prennent la priorité en dernier. */
+@media (min-width:1101px){
+  body:has(.battle) .battle-main{
+    grid-row:3!important;
+    grid-column:1 / -1!important;
+    justify-self:stretch!important;
+    align-self:stretch!important;
+    position:relative!important;
+    inset:auto!important;
+    left:auto!important;
+    right:auto!important;
+    width:calc(100vw - 6vw)!important;
+    max-width:none!important;
+    margin:0!important;
+    padding:0!important;
+    transform:none!important;
+  }
+  body:has(.battle) .battle-center{
+    grid-column:2!important;
+    justify-self:stretch!important;
+    width:100%!important;
+    max-width:none!important;
+    margin:0!important;
+    transform:none!important;
+  }
+  body:has(.battle) .enemy-zone,
+  body:has(.battle) .player-zone{
+    justify-self:center!important;
+    width:100%!important;
+    max-width:none!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
+    transform:none!important;
+  }
+  body:has(.battle) .enemy-zone .board,
+  body:has(.battle) .enemy-zone .support-row,
+  body:has(.battle) .player-zone .board,
+  body:has(.battle) .player-zone .support-row{
+    justify-self:center!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
+  }
+}
