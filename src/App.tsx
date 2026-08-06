@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ALL_CARDS, AnimationMode, copiesInDeck, InterfaceScale, Language, maxCopiesAllowed, UNLOCK_SECOND_FACTION_AT, useGame, VisualQuality, XP_PER_LEVEL } from './store/game';
+import { ALL_CARDS, AnimationMode, copiesInDeck, EVOSPHERE_MAX, InterfaceScale, Language, MAIN_DECK_MAX, MAIN_DECK_MIN, maxCopiesAllowed, UNLOCK_SECOND_FACTION_AT, useGame, VisualQuality, XP_PER_LEVEL } from './store/game';
 import { cardsByFaction, getCard } from './engine/cards';
 import { CardDef, Faction, FieldUnit, GameState, SupportCard } from './engine/types';
 import { CHAPTERS, chapterById } from './engine/campaign';
@@ -124,7 +124,144 @@ function Campaign() { const s = useGame(); const go = useNavigate(); return <sec
 
 function Collection() { const [query, setQuery] = useState(''); const owned = useGame((s) => s.owned); const unlockedFactions = useGame((s) => s.unlockedFactions); const visibleCards = ALL_CARDS.filter((c) => unlockedFactions.includes(c.faction)); const filtered = visibleCards.filter((c) => c.name.toLowerCase().includes(query.toLowerCase())); const lockedFaction = (['Meute', 'Chevalier'] as Faction[]).find((f) => !unlockedFactions.includes(f)); return <section><h2>Collection</h2><input placeholder="Rechercher une carte…" value={query} onChange={(e) => setQuery(e.target.value)} /><div className="grid">{filtered.map((c) => <CardView key={c.id} card={c} badge={owned.includes(c.id) ? undefined : 'Non possédée'} />)}</div><p className="hint">{owned.length}/{visibleCards.filter((c) => c.level === 1).length} cartes de base possédées</p>{lockedFaction && <p className="hint">🔒 Les cartes {lockedFaction} restent cachées tant que la faction n'est pas débloquée — gagne {UNLOCK_SECOND_FACTION_AT} chapitres de campagne.</p>}</section>; }
 
-function Decks() { const s = useGame(); const pool = cardsByFaction(s.faction).filter((c) => c.level === 1); const add = (id: string) => { if (copiesInDeck(s.deck, id) < maxCopiesAllowed(id)) s.saveDeck([...s.deck, id]); }; const removeAt = (i: number) => s.saveDeck(s.deck.filter((_, n) => n !== i)); return <section><h2>Constructeur de decks</h2><p className="hint">{s.deck.length}/40 cartes · faction {s.faction} · minimum 20 pour jouer</p><div className="builder"><div><h3>Deck {s.faction}</h3>{s.deck.map((id, i) => { const c = pool.find((card) => card.id === id); return <button className="deck-row" key={i} onClick={() => removeAt(i)}>{c?.name ?? id} <span>×</span></button>; })}</div><div className="grid">{pool.map((c) => <CardView key={c.id} card={c} badge={`${copiesInDeck(s.deck, c.id)}/${maxCopiesAllowed(c.id)}`} disabled={copiesInDeck(s.deck, c.id) >= maxCopiesAllowed(c.id)} onClick={() => add(c.id)} />)}</div></div></section>; }
+function DeckMenu({ onEdit }: { onEdit: (id: string) => void }) {
+  const s = useGame();
+  const [creatingFaction, setCreatingFaction] = useState<Faction | null>(null);
+  const [newName, setNewName] = useState('');
+
+  const startCreate = (faction: Faction) => {
+    setCreatingFaction(faction);
+    setNewName(`Deck ${faction} ${s.decks.filter((d) => d.faction === faction).length + 1}`);
+  };
+  const confirmCreate = () => {
+    if (!creatingFaction) return;
+    const id = s.createDeck(newName, creatingFaction);
+    setCreatingFaction(null);
+    onEdit(id);
+  };
+
+  return (
+    <section>
+      <h2>Mes decks</h2>
+      {s.decks.length === 0 ? (
+        <p className="hint">Aucun deck pour le moment.</p>
+      ) : (
+        <div className="deck-menu-list">
+          {s.decks.map((d) => {
+            const count = d.main.length;
+            const status = count < MAIN_DECK_MIN ? 'incomplet' : count > MAIN_DECK_MAX ? 'trop plein' : 'prêt';
+            return (
+              <article key={d.id} className={'deck-menu-row' + (s.activeDeckId === d.id ? ' active' : '')}>
+                <div>
+                  <b>{d.name}</b>
+                  <small>{d.faction} · {count}/{MAIN_DECK_MAX} cartes · {status}</small>
+                </div>
+                <div className="deck-menu-actions">
+                  <button className="secondary" onClick={() => onEdit(d.id)}>Modifier</button>
+                  <button className="secondary" onClick={() => s.setActiveDeck(d.id)} disabled={s.activeDeckId === d.id}>
+                    {s.activeDeckId === d.id ? 'Actif' : 'Utiliser'}
+                  </button>
+                  <button className="secondary danger" onClick={() => { if (confirm(`Supprimer "${d.name}" ?`)) s.deleteDeck(d.id); }}>
+                    Supprimer
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+
+      <h3>Créer un nouveau deck</h3>
+      {creatingFaction ? (
+        <div className="deck-create-form">
+          <input value={newName} maxLength={30} onChange={(e) => setNewName(e.target.value)} placeholder="Nom du deck" />
+          <button className="primary" onClick={confirmCreate}>Créer {creatingFaction}</button>
+          <button className="secondary" onClick={() => setCreatingFaction(null)}>Annuler</button>
+        </div>
+      ) : (
+        <div className="faction-pick compact">
+          {(['Meute', 'Chevalier'] as Faction[]).map((f) => {
+            const unlocked = s.unlockedFactions.includes(f);
+            return (
+              <button
+                key={f}
+                className={'faction-button' + (unlocked ? '' : ' locked')}
+                disabled={!unlocked}
+                title={unlocked ? undefined : `Verrouillé — gagne ${UNLOCK_SECOND_FACTION_AT} chapitres de campagne`}
+                onClick={() => startCreate(f)}
+              >
+                {unlocked ? `+ ${f}` : `🔒 ${f}`}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <p className="hint">Règles : {MAIN_DECK_MIN} à {MAIN_DECK_MAX} cartes par deck · pas d'Extra Deck · l'Évosphère (max {EVOSPHERE_MAX}) se remplit automatiquement avec les évolutions des cartes de ton deck · aucun craft, uniquement les cartes déjà possédées.</p>
+    </section>
+  );
+}
+
+function DeckEditor({ deckId, onBack }: { deckId: string; onBack: () => void }) {
+  const s = useGame();
+  const savedDeck = s.decks.find((d) => d.id === deckId);
+  const pool = savedDeck ? cardsByFaction(savedDeck.faction).filter((c) => c.level === 1) : [];
+  if (!savedDeck) return <section><h2>Deck introuvable</h2><button className="secondary" onClick={onBack}>Retour</button></section>;
+
+  const main = savedDeck.main;
+  const count = main.length;
+  const add = (id: string) => {
+    if (count >= MAIN_DECK_MAX) return;
+    if (copiesInDeck(main, id) < maxCopiesAllowed(id)) s.setDeckCards(deckId, [...main, id]);
+  };
+  const removeAt = (i: number) => s.setDeckCards(deckId, main.filter((_, n) => n !== i));
+  const statusClass = count < MAIN_DECK_MIN ? 'warn' : count > MAIN_DECK_MAX ? 'danger' : 'ok';
+
+  return (
+    <section>
+      <div className="deck-editor-head">
+        <button className="secondary" onClick={onBack}>← Menu des decks</button>
+        <h2>{savedDeck.name}</h2>
+      </div>
+      <p className={'hint deck-count ' + statusClass}>
+        {count}/{MAIN_DECK_MAX} cartes ({MAIN_DECK_MIN} minimum pour jouer) · faction {savedDeck.faction}
+      </p>
+      <div className="builder">
+        <div>
+          <h3>Composition</h3>
+          {main.length === 0 && <p className="hint">Deck vide — ajoute des cartes ci-contre.</p>}
+          {main.map((id, i) => {
+            const c = pool.find((card) => card.id === id);
+            return (
+              <button className="deck-row" key={i} onClick={() => removeAt(i)}>
+                {c?.name ?? id} <span>×</span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="grid">
+          {pool.map((c) => (
+            <CardView
+              key={c.id}
+              card={c}
+              badge={`${copiesInDeck(main, c.id)}/${maxCopiesAllowed(c.id)}`}
+              disabled={copiesInDeck(main, c.id) >= maxCopiesAllowed(c.id) || count >= MAIN_DECK_MAX}
+              onClick={() => add(c.id)}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Decks() {
+  const s = useGame();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  useEffect(() => {
+    if (editingId && !s.decks.some((d) => d.id === editingId)) setEditingId(null);
+  }, [editingId, s.decks]);
+  return editingId ? <DeckEditor deckId={editingId} onBack={() => setEditingId(null)} /> : <DeckMenu onEdit={setEditingId} />;
+}
 
 type BattleFx = { type: 'summon'; side: 'player' | 'enemy'; instanceId?: string } | { type: 'attack'; side: 'player' | 'enemy'; instanceId: string } | { type: 'evolution'; side: 'player' | 'enemy'; cardName: string } | null;
 

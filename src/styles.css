@@ -96,3 +96,15 @@ main{flex:1;min-width:0;min-height:0;padding:55px;overflow-y:auto;-webkit-overfl
 .chapter small{color:#b1c3bc}
 .chapter button{border:0;background:#56dab8;color:#06201c;border-radius:7px;padding:8px 12px;font-weight:bold;cursor:pointer}
 .chapter.locked{opacity:.45}
+.deck-menu-list{display:flex;flex-direction:column;gap:10px;margin:16px 0}
+.deck-menu-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;border:1px solid #ffffff16;border-radius:12px;background:#ffffff08}
+.deck-menu-row.active{border-color:#56dab8;background:#56dab814}
+.deck-menu-row b{display:block;font:700 15px "Playfair Display"}
+.deck-menu-row small{color:#9db3ac;font:11px "DM Mono"}
+.deck-menu-actions{display:flex;gap:8px;flex-wrap:wrap}
+.deck-create-form{display:flex;gap:10px;align-items:center;margin:12px 0;flex-wrap:wrap}
+.deck-create-form input{padding:10px;background:#ffffff0e;color:white;border:1px solid #ffffff2d;border-radius:8px}
+.deck-editor-head{display:flex;align-items:center;gap:16px;margin-bottom:4px}
+.deck-count.warn{color:#f2c56a}
+.deck-count.ok{color:#7ff0d0}
+.deck-count.danger{color:#ff8d8d}

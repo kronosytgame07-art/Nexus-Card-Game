@@ -28,7 +28,7 @@ function shuffle<T>(arr: T[]): T[] {
   return copy;
 }
 
-const MIN_PLAYABLE_DECK = 20;
+const MIN_PLAYABLE_DECK = 30;
 
 function makePlayer(id: PlayerId, faction: Faction, customDeck?: string[], lifeBonus = 0): PlayerState {
   const source = customDeck && customDeck.length >= MIN_PLAYABLE_DECK ? customDeck : starterDeck(faction);

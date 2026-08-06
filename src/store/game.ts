@@ -6,11 +6,21 @@ import { Faction } from '../engine/types';
 /** Nombre de chapitres de campagne à remporter pour débloquer la seconde faction. */
 export const UNLOCK_SECOND_FACTION_AT = 3;
 export const XP_PER_LEVEL = 100;
+export const MAIN_DECK_MIN = 30;
+export const MAIN_DECK_MAX = 40;
+export const EVOSPHERE_MAX = 20;
 
 export type Language = 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt';
 export type VisualQuality = 'eco' | 'balanced' | 'high';
 export type AnimationMode = 'full' | 'reduced' | 'off';
 export type InterfaceScale = 'small' | 'normal' | 'large';
+
+export interface SavedDeck {
+  id: string;
+  name: string;
+  faction: Faction;
+  main: string[];
+}
 
 interface GameMeta {
   gold: number;
@@ -22,6 +32,8 @@ interface GameMeta {
   faction: Faction;
   owned: string[];
   deck: string[];
+  decks: SavedDeck[];
+  activeDeckId: string | null;
   campaignChapter: number;
   musicEnabled: boolean;
   language: Language;
@@ -36,6 +48,11 @@ interface GameMeta {
   interfaceScale: InterfaceScale;
   addCard: (id: string) => void;
   saveDeck: (deck: string[]) => void;
+  createDeck: (name: string, faction: Faction) => string;
+  renameDeck: (id: string, name: string) => void;
+  deleteDeck: (id: string) => void;
+  setDeckCards: (id: string, main: string[]) => void;
+  setActiveDeck: (id: string) => void;
   chooseStartingFaction: (faction: Faction) => void;
   setFaction: (faction: Faction) => void;
   setPlayerName: (name: string) => void;
@@ -79,6 +96,12 @@ function applyXp(level: number, xp: number, gems: number, amount: number) {
   return { level: nextLevel, xp: nextXp, gems: nextGems };
 }
 
+function makeStarterDeck(faction: Faction, existingNames: string[]): SavedDeck {
+  let n = 1;
+  while (existingNames.includes(`Deck ${faction} ${n}`)) n += 1;
+  return { id: `deck-${faction}-${Date.now()}`, name: `Deck ${faction} ${n}`, faction, main: starterDeck(faction) };
+}
+
 export const useGame = create<GameMeta>()(
   persist(
     (set) => ({
@@ -91,6 +114,8 @@ export const useGame = create<GameMeta>()(
       faction: 'Meute',
       owned: [],
       deck: [],
+      decks: [],
+      activeDeckId: null,
       campaignChapter: 0,
       musicEnabled: false,
       language: 'fr',
@@ -105,17 +130,60 @@ export const useGame = create<GameMeta>()(
       interfaceScale: 'normal',
       addCard: (id) => set((s) => ({ owned: [...new Set([...s.owned, id])] })),
       saveDeck: (deck) => set({ deck }),
-      chooseStartingFaction: (faction) =>
+      createDeck: (name, faction) => {
+        const id = `deck-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        const trimmed = name.trim().slice(0, 30) || `Deck ${faction}`;
+        set((s) => ({ decks: [...s.decks, { id, name: trimmed, faction, main: [] }] }));
+        return id;
+      },
+      renameDeck: (id, name) =>
         set((s) => ({
-          factionChosen: true,
-          faction,
-          unlockedFactions: [faction],
-          owned: startingOwnedFor(faction),
-          deck: starterDeck(faction),
-          avatarCardId: s.avatarCardId || defaultAvatarFor(faction),
+          decks: s.decks.map((d) => (d.id === id ? { ...d, name: name.trim().slice(0, 30) || d.name } : d)),
         })),
+      deleteDeck: (id) =>
+        set((s) => {
+          const decks = s.decks.filter((d) => d.id !== id);
+          if (s.activeDeckId !== id) return { decks };
+          const fallback = decks.find((d) => d.faction === s.faction) ?? decks[0];
+          return {
+            decks,
+            activeDeckId: fallback?.id ?? null,
+            deck: fallback?.main ?? [],
+            faction: fallback?.faction ?? s.faction,
+          };
+        }),
+      setDeckCards: (id, main) =>
+        set((s) => ({
+          decks: s.decks.map((d) => (d.id === id ? { ...d, main } : d)),
+          deck: s.activeDeckId === id ? main : s.deck,
+        })),
+      setActiveDeck: (id) =>
+        set((s) => {
+          const target = s.decks.find((d) => d.id === id);
+          if (!target || !s.unlockedFactions.includes(target.faction)) return {};
+          return { activeDeckId: id, faction: target.faction, deck: target.main };
+        }),
+      chooseStartingFaction: (faction) =>
+        set((s) => {
+          const starter = makeStarterDeck(faction, []);
+          return {
+            factionChosen: true,
+            faction,
+            unlockedFactions: [faction],
+            owned: startingOwnedFor(faction),
+            deck: starter.main,
+            decks: [starter],
+            activeDeckId: starter.id,
+            avatarCardId: s.avatarCardId || defaultAvatarFor(faction),
+          };
+        }),
       setFaction: (faction) =>
-        set((s) => (s.unlockedFactions.includes(faction) ? { faction, deck: starterDeck(faction) } : {})),
+        set((s) => {
+          if (!s.unlockedFactions.includes(faction)) return {};
+          const existing = s.decks.find((d) => d.faction === faction);
+          if (existing) return { faction, activeDeckId: existing.id, deck: existing.main };
+          return { faction, deck: starterDeck(faction) };
+        }),
       setPlayerName: (name) => set({ playerName: name.trim().slice(0, 20) || 'Chronos' }),
       setAvatarCardId: (cardId) => set({ avatarCardId: cardId }),
       setVisualQuality: (visualQuality) => set({ visualQuality }),
@@ -137,10 +205,12 @@ export const useGame = create<GameMeta>()(
           const campaignChapter = chapterId >= s.campaignChapter ? chapterId + 1 : s.campaignChapter;
           const missing = (['Meute', 'Chevalier'] as Faction[]).find((f) => !s.unlockedFactions.includes(f));
           if (campaignChapter >= UNLOCK_SECOND_FACTION_AT && missing) {
+            const starter = makeStarterDeck(missing, s.decks.map((d) => d.name));
             return {
               campaignChapter,
               unlockedFactions: [...s.unlockedFactions, missing],
               owned: [...new Set([...s.owned, ...startingOwnedFor(missing)])],
+              decks: [...s.decks, starter],
             };
           }
           return { campaignChapter };
@@ -158,6 +228,8 @@ export const useGame = create<GameMeta>()(
           faction: 'Meute',
           owned: [],
           deck: [],
+          decks: [],
+          activeDeckId: null,
           campaignChapter: 0,
           factionChosen: false,
           unlockedFactions: [],
@@ -165,7 +237,18 @@ export const useGame = create<GameMeta>()(
           avatarCardId: '',
         }),
     }),
-    { name: 'nexus-save' }
+    {
+      name: 'nexus-save',
+      onRehydrateStorage: () => (state) => {
+        // Migration douce pour les joueurs qui avaient un unique deck avant l'ajout du
+        // gestionnaire multi-decks : on l'enveloppe dans un SavedDeck plutôt que de le perdre.
+        if (state && state.decks.length === 0 && state.deck.length > 0) {
+          const wrapped: SavedDeck = { id: 'deck-migrated', name: `Deck ${state.faction} 1`, faction: state.faction, main: state.deck };
+          state.decks = [wrapped];
+          state.activeDeckId = wrapped.id;
+        }
+      },
+    }
   )
 );
 
