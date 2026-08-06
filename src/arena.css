@@ -86,8 +86,8 @@ body.in-battle{margin:0;background:#020708;overflow:hidden}body.in-battle #root{
 .field-card:after{clip-path:polygon(22% 0,78% 0,100% 22%,100% 78%,78% 100%,22% 100%,0 78%,0 22%)}
 
 .pile-rail{display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;z-index:15}
-.unit-actions{position:fixed;top:50%;right:max(14px,env(safe-area-inset-right));transform:translateY(-50%);z-index:220;width:min(300px,90vw);max-height:88dvh;min-height:0;display:flex;flex-direction:column;overflow:hidden;border:1px solid #e6bd6355;border-radius:14px;background:linear-gradient(180deg,rgba(9,15,17,.97),rgba(4,9,10,.98));box-shadow:0 20px 50px rgba(0,0,0,.5)}
-.unit-actions-art{width:100%;height:min(38vh,220px);flex:0 0 auto;object-fit:cover;display:block;border-bottom:1px solid #e6bd6355;background:#04090b}
+.unit-actions{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:max(60px,calc(env(safe-area-inset-bottom) + 54px));top:auto;transform:none;z-index:70;width:min(300px,90vw);max-height:min(52vh,360px);min-height:0;display:flex;flex-direction:column;overflow:hidden;border:1px solid #e6bd6355;border-radius:14px;background:linear-gradient(180deg,rgba(9,15,17,.97),rgba(4,9,10,.98));box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.unit-actions-art{width:100%;height:min(38vh,220px);flex:0 0 auto;object-fit:contain;display:block;border-bottom:1px solid #e6bd6355;background:#04090b}
 .unit-actions-body{display:flex;flex-direction:column;gap:8px;padding:14px 16px;min-height:0;flex:1 1 auto;overflow-y:auto}
 .unit-actions-body b{font:700 15px "Playfair Display";color:var(--gold)}
 .unit-actions-stats{font:700 12px "DM Mono";color:#83efd3}

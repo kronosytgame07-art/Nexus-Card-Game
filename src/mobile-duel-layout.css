@@ -15,7 +15,7 @@
 
   body.in-battle .battle {
     --mobile-axis: min(620px, calc(100vw - 92px));
-    --mobile-card-w: clamp(42px, 6.4vw, 58px);
+    --mobile-card-w: clamp(36px, min(6.4vw, 9.2dvh), 58px);
     --mobile-card-h: calc(var(--mobile-card-w) * 1.42);
     position: fixed !important;
     inset: 0 !important;
@@ -479,11 +479,12 @@
 
   body.in-battle .unit-actions {
     width: min(220px, 62vw) !important;
-    max-height: 90dvh !important;
+    max-height: min(58vh, 250px) !important;
     right: max(6px, env(safe-area-inset-right)) !important;
+    bottom: max(40px, calc(env(safe-area-inset-bottom) + 34px)) !important;
   }
 
-  body.in-battle .unit-actions-art { height: min(24vh, 110px) !important; }
+  body.in-battle .unit-actions-art { height: min(20vh, 90px) !important; }
   body.in-battle .unit-actions-body { padding: 8px 10px !important; gap: 5px !important; }
   body.in-battle .unit-actions-body b { font-size: 11px !important; }
   body.in-battle .unit-actions-stats { font-size: 8px !important; }
