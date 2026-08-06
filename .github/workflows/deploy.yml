@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -94,16 +94,9 @@ jobs:
           cp "ChatGPT Image 6 août 2026, 04_35_11.png" dist/cards/reliquaire-du-roi.png
           cp "ChatGPT Image 6 août 2026, 04_36_37.png" dist/cards/serment-de-garde.png
           cp "ChatGPT Image 6 août 2026, 04_44_24.png" dist/cards/voie-du-paladin.png
-      - uses: actions/upload-pages-artifact@v3
+      - name: Déployer sur la branche gh-pages
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          path: dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          force_orphan: true
