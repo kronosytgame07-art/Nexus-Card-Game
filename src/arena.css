@@ -22,8 +22,11 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
   --support-w: clamp(88px, 7vw, 132px);
   --support-h: clamp(88px, 13vh, 120px);
   --axis-w: min(1120px, 94vw);
-  --enemy-hand-h: clamp(58px, 8vh, 92px);
+  --enemy-hand-h: clamp(40px, 6.5vh, 64px);
   --rail-w: clamp(50px, 6vw, 82px);
+  --hand-h: clamp(150px, 26vh, 220px);
+  --hand-peek: calc(var(--hand-h) * .3);
+  --player-bar-h: 58px;
 
   position: relative;
   width: 100%;
@@ -32,7 +35,7 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
   height: 100dvh;
   min-height: 0;
   display: grid;
-  grid-template-rows: 24px auto minmax(0, 1fr);
+  grid-template-rows: 24px auto minmax(0, 1fr) auto;
   row-gap: clamp(2px, .8vh, 8px);
   padding: 0 clamp(10px, 3vw, 32px);
   overflow: hidden;
@@ -80,6 +83,9 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 
 /* ---------- Barre du haut : profil adverse + PV/mana + main adverse ------ */
 .battle-top { position: relative; z-index: 22; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+/* Barre du joueur : occupe sa propre ligne de grille en bas, exactement
+   comme .battle-top en haut — jamais de chevauchement avec le plateau. */
+.battle-bottom { position: relative; z-index: 22; display: flex; justify-content: center; }
 .combatant {
   position: relative;
   width: var(--axis-w);
@@ -111,21 +117,20 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 .hero-dmg.player { order: 99; }
 @keyframes heroHit { 0%, 100% { filter: none; } 30% { filter: drop-shadow(0 0 10px rgba(255, 60, 80, .9)) brightness(1.4); } }
 
-/* Main adverse : tiroir inversé — seule la moitié haute des cartes dépasse,
-   toujours face cachée, jamais posée sur le profil/PV/mana. */
+/* Main adverse : petites cartes face cachée, entièrement visibles (jamais
+   coupées), en éventail centré, toujours sous le profil/PV/mana. */
 .enemy-hand-row {
   position: relative;
   width: var(--axis-w);
-  height: calc(var(--enemy-hand-h) * .5);
+  height: var(--enemy-hand-h);
   margin: 0 auto;
-  overflow: hidden;
   display: flex;
   justify-content: center;
 }
 .enemy-hand-inner {
   position: relative;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
 }
 .enemy-hand-card {
@@ -142,9 +147,9 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 }
 .enemy-hand-card:first-child { margin-left: 0; }
 .enemy-hand-card:nth-child(1) { transform: rotate(-9deg); }
-.enemy-hand-card:nth-child(2) { transform: rotate(-5deg) translateY(-2px); }
-.enemy-hand-card:nth-child(3) { transform: rotate(-1deg) translateY(-3px); }
-.enemy-hand-card:nth-child(4) { transform: rotate(3deg) translateY(-2px); }
+.enemy-hand-card:nth-child(2) { transform: rotate(-5deg); }
+.enemy-hand-card:nth-child(3) { transform: rotate(-1deg); }
+.enemy-hand-card:nth-child(4) { transform: rotate(3deg); }
 .enemy-hand-card:nth-child(5) { transform: rotate(7deg); }
 .enemy-hand-card:nth-child(n+6) { transform: rotate(9deg); }
 .enemy-hand-card.enemy-card-draw { animation: enemyDrawPulse .7s ease-out; }
@@ -160,7 +165,7 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
   align-items: stretch;
   min-height: 0;
   width: 100%;
-  padding-bottom: clamp(84px, 11.5vh, 112px);
+  padding-bottom: calc(var(--hand-peek) + 16px);
   box-sizing: border-box;
 }
 
@@ -326,28 +331,27 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 /* ---------- HUD flottant du joueur (PV/Mana/Tour) -------------------------- */
 .battle-footer { position: fixed; right: max(10px, env(safe-area-inset-right)); bottom: max(10px, env(safe-area-inset-bottom)); z-index: 45; display: flex; align-items: center; gap: 6px; }
 .hud-pill { display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(239, 201, 107, .5); background: rgba(4, 10, 11, .92); color: var(--gold); font: 700 11px "DM Mono"; white-space: nowrap; box-shadow: 0 6px 16px rgba(0, 0, 0, .4); }
-.hud-pill.mana-readout { color: #83efd3; border-color: rgba(131, 239, 211, .5); }
-.hud-pill.life-readout { color: #ff9aab; border-color: rgba(239, 73, 97, .5); }
 
-/* Profil joueur flottant, en miroir du profil adverse. */
-.player-profile-float { position: fixed; left: max(10px, env(safe-area-inset-left)); bottom: max(10px, env(safe-area-inset-bottom)); z-index: 45; padding: 6px 14px 6px 6px; border-radius: 999px; border: 1px solid rgba(65, 226, 179, .45); background: rgba(4, 10, 11, .92); box-shadow: 0 6px 16px rgba(0, 0, 0, .4); }
-.player-profile-float .duel-profile-avatar { width: 30px; height: 30px; border-color: var(--ally); }
+/* La barre de profil du joueur (.player-combatant) réutilise .combatant
+   tel quel : elle vit dans .battle-bottom, sa propre ligne de grille en
+   bas de l'écran, exactement comme .combatant.enemy-combatant vit dans
+   .battle-top en haut — même composant, même style, symétrique. */
 
 /* ---------- Main du joueur : tiroir, position fixed, parfaitement centrée -- */
 .hand {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: var(--player-bar-h);
   z-index: 20;
   display: flex;
   align-items: flex-end;
   justify-content: center;
   gap: 10px;
   padding: 0 0 max(16px, env(safe-area-inset-bottom));
-  height: clamp(150px, 26vh, 220px);
+  height: var(--hand-h);
   pointer-events: none;
-  transform: translateY(70%);
+  transform: translateY(calc(var(--hand-h) - var(--hand-peek)));
   transition: transform .22s ease-out;
 }
 .hand.open { transform: translateY(0); }
@@ -421,7 +425,9 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
     --support-h: clamp(64px, 17vh, 106px);
     --rail-w: clamp(30px, 8vw, 42px);
     --axis-w: min(700px, calc(100vw - 2 * var(--rail-w) - 32px));
-    --enemy-hand-h: clamp(44px, 9vh, 68px);
+    --enemy-hand-h: clamp(32px, 7vh, 48px);
+    --hand-h: clamp(96px, 20vh, 140px);
+    --player-bar-h: 44px;
     padding: 0 8px;
     grid-template-rows: 16px auto minmax(0, 1fr);
   }
