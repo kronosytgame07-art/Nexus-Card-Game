@@ -446,6 +446,7 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 .hand-preview-actions { display: flex; gap: 10px; width: 100%; margin-top: 4px; }
 .hand-preview-actions button { flex: 1; margin: 0; }
 .hand-preview-warn { color: #ff9aab; font: 700 10px "DM Mono"; }
+.hand-preview-warn.spell { color: #9db3ac; }
 
 /* Invite à activer l'effet d'une créature juste après son invocation, au
    lieu d'obliger à la retoucher ensuite pour trouver le bouton. */
