@@ -75,6 +75,45 @@ const knightRows: Row[] = [
   ['renfort-du-royaume', 'Renfort du Royaume', 5, 0, 0, { kind: 'summon', target: 'Chevalier' }, true],
 ];
 
+// Troisième faction : la Horde Orc, un archétype berserker/agressif — sa
+// mécanique d'archétype (Fureur Sauvage, voir applyPackBonuses/declareAttack
+// dans engine.ts) récompense le fait de laisser ses unités descendre sous la
+// moitié de leurs points de vie plutôt que la synergie de terrain (Meute) ou
+// la réduction de coût (Chevalier). Courbe de coût/stats calquée sur celle,
+// déjà équilibrée, de la Meute pour garantir la parité compétitive.
+const orcRows: Row[] = [
+  ['brute-des-tourbieres', 'Brute des Tourbières', 1, 2, 3, { kind: 'protect' }],
+  ['eclaireur-vert-de-gris', 'Éclaireur Vert-de-Gris', 1, 2, 2, { kind: 'search', target: 'Orc' }],
+  ['jeune-massacreur', 'Jeune Massacreur', 1, 3, 1, undefined],
+  ['guerrier-ecumant', 'Guerrier Écumant', 2, 3, 3, { kind: 'stun', value: 1 }],
+  ['chasseuse-de-cranes', 'Chasseuse de Crânes', 2, 3, 4, undefined],
+  ['berserker-des-cendres', 'Berserker des Cendres', 2, 2, 5, { kind: 'stun', value: 1 }],
+  ['chaman-de-guerre', 'Chaman de Guerre', 3, 5, 3, { kind: 'draw', value: 1 }],
+  ['garde-sanglant', 'Garde Sanglant', 3, 4, 5, { kind: 'protect' }],
+  ['hurleur-de-guerre', 'Hurleur de Guerre', 3, 5, 4, { kind: 'buff', value: 1 }],
+  ['chef-de-guerre', 'Chef de Guerre', 4, 6, 5, undefined],
+  ['ralliement-du-clan', 'Ralliement du Clan', 2, 0, 0, { kind: 'summon', target: 'Orc' }],
+  ['appel-des-tambours', 'Appel des Tambours', 2, 0, 0, { kind: 'search', target: 'Orc' }],
+  ['instinct-brutal', 'Instinct Brutal', 1, 0, 0, { kind: 'protect' }],
+  ['coup-de-hache', 'Coup de Hache', 2, 0, 0, { kind: 'damage', value: 3 }],
+  ['terre-de-sang', 'Terre de Sang', 3, 0, 0, { kind: 'buff', value: 1 }],
+  ['joug-du-clan', 'Joug du Clan', 3, 0, 0, { kind: 'stun', value: 1 }],
+  ['lune-sanglante', 'Lune Sanglante', 4, 0, 0, { kind: 'buff', value: 2 }],
+  ['totem-de-guerre', 'Totem de Guerre', 2, 0, 4, { kind: 'buff', value: 1 }],
+  ['pacte-du-sang', 'Pacte du Sang', 1, 0, 0, { kind: 'draw', value: 1 }],
+  ['derniere-charge', 'Dernière Charge', 2, 0, 0, { kind: 'search', target: 'Orc' }],
+
+  // --- Cartes de booster (obtenues uniquement en ouvrant un Booster Orc) ---
+  // Renforcent l'identité de l'archétype : agressivité et tempo, sans
+  // utiliser de mécanique nouvelle — cohérent avec les boosters Meute/Chevalier.
+  ['eclaireuse-des-cendres', 'Éclaireuse des Cendres', 1, 2, 2, { kind: 'draw', value: 1 }, true],
+  ['chasseuse-des-tourbieres', 'Chasseuse des Tourbières', 2, 3, 2, { kind: 'protect' }, true],
+  ['horde-dechainee', 'Horde Déchaînée', 3, 4, 2, { kind: 'buff', value: 2 }, true],
+  ['piege-a-ours', 'Piège à Ours', 1, 0, 0, { kind: 'stun', value: 2 }, true],
+  ['rage-sanguinaire', 'Rage Sanguinaire', 3, 0, 0, { kind: 'damage', value: 5 }, true],
+  ['cri-de-guerre-orc', 'Cri de Guerre Orc', 4, 0, 0, { kind: 'summon', target: 'Orc' }, true],
+];
+
 const evolutionNames: Record<Faction, string[]> = {
   Meute: [
     'Alpha des Brumes', 'Traqueur Lunaire', 'Croc du Premier Sang', 'Spectre de la Meute',
@@ -85,6 +124,11 @@ const evolutionNames: Record<Faction, string[]> = {
     "Chevalier d'Or", 'Paladin du Serment', "Lame de l'Aube", 'Rempart Royal',
     'Flamme du Royaume', 'Croisé Azur', 'Maréchal des Bannières', 'Gardien du Trône',
     'Champion de la Couronne', 'Seigneur du Royaume',
+  ],
+  Orc: [
+    'Brute Sanguinaire', 'Traqueur des Cendres', 'Massacreur Ivre de Sang', 'Guerrier Déchaîné',
+    'Collectionneuse de Crânes', 'Berserker Infernal', 'Grand Chaman de Guerre', 'Garde du Chef de Guerre',
+    'Hurleur des Enfers', 'Seigneur de Guerre',
   ],
 };
 
@@ -166,6 +210,7 @@ function describeEffect(effect?: EffectDef): string {
 export const CARDS: CardDef[] = [
   ...buildFaction('Meute', wolfRows),
   ...buildFaction('Chevalier', knightRows),
+  ...buildFaction('Orc', orcRows),
 ];
 
 export const CARD_DB: Map<string, CardDef> = new Map(CARDS.map((c) => [c.id, c]));

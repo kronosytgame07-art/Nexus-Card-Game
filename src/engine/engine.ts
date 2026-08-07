@@ -145,6 +145,9 @@ function removeDead(state: GameState, id: PlayerId) {
  *    delta (packBonus stocké) pour ne jamais dupliquer le bonus.
  *  - Chevalier (Rang Sacré) : jouer un chevalier coûte 1 mana de moins pour chaque
  *    chevalier déjà présent sur le terrain (minimum 1 mana). Voir chevalierPlayCost().
+ *  - Orc (Fureur Sauvage) : une créature Orc passée sous la moitié de ses PV max
+ *    frappe pour +2 ATQ (attaque comme contre-attaque). Récompense la prise de
+ *    risque plutôt que la synergie de terrain ou le coût — voir effectiveAttack().
  */
 function applyPackBonuses(state: GameState) {
   for (const id of ['player', 'enemy'] as PlayerId[]) {
@@ -169,6 +172,17 @@ function effectivePlayCost(def: CardDef, owner: PlayerState): number {
   if (def.faction !== 'Chevalier' || def.type !== 'unit') return def.cost;
   const knightsOnField = owner.field.filter((u) => getCard(u.cardId).faction === 'Chevalier').length;
   return Math.max(1, def.cost - knightsOnField);
+}
+
+const ORC_RAGE_BONUS = 2;
+
+/** Puissance de frappe réelle d'une unité, Fureur Sauvage des Orcs incluse
+    (voir le commentaire de mécaniques d'archétype ci-dessus). Calculée à
+    partir des PV AVANT l'échange de coups, pour que les deux belligérants
+    d'un même combat soient jugés sur leur état au moment de frapper. */
+function effectiveAttack(unit: FieldUnit, def: CardDef): number {
+  if (def.faction !== 'Orc' || unit.health > unit.maxHealth / 2) return unit.attack;
+  return unit.attack + ORC_RAGE_BONUS;
 }
 
 function checkWinner(state: GameState) {
@@ -403,18 +417,21 @@ export function declareAttack(
   }
 
   attacker.canAttack = false;
+  const attackerDmg = effectiveAttack(attacker, attackerDef);
 
   if (!targetInstanceId) {
-    opponent.life -= attacker.attack;
-    pushLog(state, `${getCard(attacker.cardId).name} frappe directement : ${attacker.attack} dégâts.`);
+    opponent.life -= attackerDmg;
+    pushLog(state, `${attackerDef.name} frappe directement : ${attackerDmg} dégâts.`);
   } else {
     const target = findUnit(opponent, targetInstanceId);
     if (!target) return state;
-    target.health -= attacker.attack;
-    attacker.health -= target.attack;
+    const targetDef = getCard(target.cardId);
+    const targetDmg = effectiveAttack(target, targetDef);
+    target.health -= attackerDmg;
+    attacker.health -= targetDmg;
     pushLog(
       state,
-      `${getCard(attacker.cardId).name} (${attacker.attack}) affronte ${getCard(target.cardId).name} (${target.attack}).`
+      `${attackerDef.name} (${attackerDmg}) affronte ${targetDef.name} (${targetDmg}).`
     );
   }
 
@@ -617,7 +634,7 @@ export function aiPrepareBattlePlan(rawState: GameState): AiBattlePlan {
   const lethal =
     difficulty === 'maitre' &&
     rawState.player.field.filter((u) => u.taunt).length === 0 &&
-    attackers.reduce((sum, u) => sum + u.attack, 0) >= rawState.player.life;
+    attackers.reduce((sum, u) => sum + effectiveAttack(u, getCard(u.cardId)), 0) >= rawState.player.life;
 
   // "maitre" à faible vie : on garde la meilleure unité en défense plutôt que de l'engager.
   const keepBackId =

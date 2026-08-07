@@ -10,7 +10,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 
 export type BurstPreset = 'summon' | 'evolution' | 'attack' | 'draw' | 'crack';
 
-export type DashTone = 'fire' | 'frost';
+export type DashTone = 'fire' | 'frost' | 'blood';
 
 export type VfxHandle = {
   spawnBurst: (x: number, y: number, preset: BurstPreset) => void;
@@ -155,6 +155,7 @@ const PRESETS: Record<BurstPreset, { count: number; speed: [number, number]; lif
 const DASH_COLORS: Record<DashTone, [number, number, number][]> = {
   fire: [[1, 0.55, 0.15], [1, 0.75, 0.3], [1, 0.35, 0.1]],
   frost: [[0.4, 0.75, 1], [0.7, 0.9, 1], [0.55, 0.85, 1]],
+  blood: [[0.85, 0.1, 0.15], [0.6, 0.05, 0.1], [0.95, 0.35, 0.15]],
 };
 const TRAIL_PARTICLES = 26;
 

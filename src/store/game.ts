@@ -5,6 +5,10 @@ import { CardDef, Faction, GameState, Rarity } from '../engine/types';
 
 /** Nombre de chapitres de campagne à remporter pour débloquer la seconde faction. */
 export const UNLOCK_SECOND_FACTION_AT = 3;
+/** Nombre de chapitres de campagne à remporter pour débloquer la Horde Orc
+    (récompense narrative après avoir vaincu le clan aux chapitres 8 et 9). */
+export const UNLOCK_THIRD_FACTION_AT = 9;
+export const ALL_FACTIONS: Faction[] = ['Meute', 'Chevalier', 'Orc'];
 export const XP_PER_LEVEL = 100;
 export const MAIN_DECK_MIN = 30;
 export const MAIN_DECK_MAX = 40;
@@ -37,6 +41,7 @@ export interface SavedDeck {
 export interface SavedReplay {
   id: string;
   date: number;
+  playerFaction: Faction;
   opponentFaction: Faction;
   result: 'win' | 'loss';
   turns: number;
@@ -142,7 +147,7 @@ function startingOwnedFor(faction: Faction): string[] {
     .map((c) => c.id);
 }
 
-function defaultAvatarFor(faction: Faction): string {
+export function defaultAvatarFor(faction: Faction): string {
   const unit = cardsByFaction(faction).find((c) => c.type === 'unit' && c.level === 1);
   return unit?.id ?? '';
 }
@@ -414,20 +419,23 @@ export const useGame = create<GameMeta>()(
       completeChapter: (chapterId) =>
         set((s) => {
           const campaignChapter = chapterId >= s.campaignChapter ? chapterId + 1 : s.campaignChapter;
-          const missing = (['Meute', 'Chevalier'] as Faction[]).find((f) => !s.unlockedFactions.includes(f));
-          if (campaignChapter >= UNLOCK_SECOND_FACTION_AT && missing) {
-            const starter = makeStarterDeck(missing, s.decks.map((d) => d.name));
-            const inventory = { ...s.inventory };
-            for (const id of startingOwnedFor(missing)) inventory[id] = Math.max(inventory[id] ?? 0, 3);
-            return {
-              campaignChapter,
-              unlockedFactions: [...s.unlockedFactions, missing],
-              inventory,
-              owned: ownedFromInventory(inventory, s.foilInventory),
-              decks: [...s.decks, starter],
-            };
+          const toUnlock: Faction[] = [];
+          const missingStarter = (['Meute', 'Chevalier'] as Faction[]).find((f) => !s.unlockedFactions.includes(f));
+          if (campaignChapter >= UNLOCK_SECOND_FACTION_AT && missingStarter) toUnlock.push(missingStarter);
+          if (campaignChapter >= UNLOCK_THIRD_FACTION_AT && !s.unlockedFactions.includes('Orc')) toUnlock.push('Orc');
+          if (toUnlock.length === 0) return { campaignChapter };
+          const existingNames = s.decks.map((d) => d.name);
+          const inventory = { ...s.inventory };
+          for (const f of toUnlock) {
+            for (const id of startingOwnedFor(f)) inventory[id] = Math.max(inventory[id] ?? 0, 3);
           }
-          return { campaignChapter };
+          return {
+            campaignChapter,
+            unlockedFactions: [...s.unlockedFactions, ...toUnlock],
+            inventory,
+            owned: ownedFromInventory(inventory, s.foilInventory),
+            decks: [...s.decks, ...toUnlock.map((f) => makeStarterDeck(f, existingNames))],
+          };
         }),
       setMusicEnabled: (enabled) => set({ musicEnabled: enabled }),
       setLanguage: (language) => set({ language }),
