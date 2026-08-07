@@ -1,6 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import App from './App';
 import './styles.css';
 import './arena.css';
@@ -33,7 +34,10 @@ createRoot(document.getElementById('root')!).render(
   </React.StrictMode>
 );
 
-if ('serviceWorker' in navigator) {
+// Le service worker sert le mode PWA installable sur le web — inutile dans
+// l'app Capacitor (iOS/Android), dont les fichiers sont déjà embarqués dans
+// le bundle natif et dont les mises à jour passent par l'App/Play Store.
+if ('serviceWorker' in navigator && !Capacitor.isNativePlatform()) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {
       // L'installation en PWA reste optionnelle : le jeu fonctionne très bien sans.

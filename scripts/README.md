@@ -1,3 +1,11 @@
+## copy-card-art.sh (actif)
+
+Copie les illustrations de cartes (fichiers PNG/JPEG en vrac à la racine du
+dépôt) vers un dossier `cards/` de build. Appelé par le déploiement GitHub
+Pages (`deploy.yml`) et par `npm run build:capacitor`, pour ne garder la
+liste des ~60 fichiers qu'à un seul endroit. Usage :
+`bash scripts/copy-card-art.sh dist/cards`.
+
 # Scripts de patch (archivés, non actifs)
 
 Ces scripts (`patch-arena.mjs`, `patch-gameplay.mjs`, `patch-combat-rules.mjs`,
