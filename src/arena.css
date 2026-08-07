@@ -519,13 +519,48 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
   .zone-wrap > b, .zone-wrap > small { font-size: 6px; }
   .turn-strip { height: 24px; padding: 2px 8px; gap: 6px; }
   .nexus-phases button, .attack-face { height: 18px; padding: 0 6px; font-size: 6px; }
-  .card-pile { width: 36px; height: 36px; }
-  .card-pile .pile-icon { font-size: 11px; }
-  .card-pile b { font-size: 7px; }
-  .card-pile em { font-size: 6px; }
+  /* Le nom (FOSSE/ÉVOSPHÈRE/DECK) ne tient jamais dans un cercle de cette
+     taille sans se couper en plusieurs lignes qui chevauchent l'icône —
+     l'icône + le compteur suffisent, le nom complet reste dispo au clic
+     long via l'attribut title. */
+  .card-pile { width: 40px; height: 40px; overflow: hidden; }
+  .card-pile b { display: none; }
+  .card-pile .pile-icon { font-size: 15px; }
+  .card-pile em { font-size: 8px; }
   .hud-pill { height: 22px; padding: 0 8px; font-size: 8px; }
   .enemy-hand-row { top: 16px; gap: 4px; }
   .hand { gap: 4px; padding-bottom: max(6px, env(safe-area-inset-bottom)); }
   .unit-actions { bottom: calc(env(safe-area-inset-bottom) + 40px); padding: 8px; }
   .draw-pile-stack { width: clamp(80px, 22vw, 110px); height: clamp(112px, 30vw, 154px); }
+}
+
+/* En paysage sur téléphone, la hauteur disponible tombe souvent sous les
+   400px : les planchers de --creature-h-budget/--hand-h pensés pour le
+   portrait ne rentrent plus (chevauchement du bandeau de tour, des piles,
+   des mains). Ce palier resserre tout ce qui est vertical spécifiquement
+   pour ce cas, sans toucher au reste du bloc mobile ni au bureau. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .battle {
+    --creature-h-budget: clamp(46px, 15vh, 76px);
+    --hand-h: clamp(58px, 15vh, 96px);
+    --hand-card-w: clamp(40px, 9vw, 60px);
+    --hand-card-h: clamp(56px, 15vh, 90px);
+    row-gap: 1px;
+  }
+  /* Les libellés ADVERSAIRE / TON TERRAIN / SOUTIEN sont décoratifs — le
+     haut/bas de l'écran suffit à distinguer les deux camps ici, et ces
+     quelques px de texte font la différence entre un plateau qui tient
+     et un qui déborde sur le bandeau de tour. */
+  .zone-wrap > b, .zone-wrap > small { display: none; }
+  .board, .support-row { gap: 4px; margin: 2px auto; }
+  .turn-strip { height: 20px; padding: 1px 8px; }
+  .battle-main { padding-top: calc(var(--hand-peek) + 30px); padding-bottom: calc(var(--hand-peek) + 30px); }
+  .card-pile { width: 30px; height: 30px; gap: 0; }
+  .card-pile .pile-icon { font-size: 12px; }
+  .card-pile em { font-size: 7px; }
+  .pile-rail { gap: 6px; }
+  .profile-float { padding: 3px 8px 3px 3px; gap: 5px; }
+  .profile-float .duel-profile-avatar { width: 18px; height: 18px; }
+  .profile-float.enemy { top: max(4px, env(safe-area-inset-top)); }
+  .profile-float.player { bottom: max(4px, env(safe-area-inset-bottom)); }
 }
