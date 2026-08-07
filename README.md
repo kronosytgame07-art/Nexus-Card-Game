@@ -16,6 +16,35 @@ npm run preview     # sert le build de prod en local
 Le déploiement sur `https://<user>.github.io/Nexus-Card-Game/` se fait
 automatiquement à chaque push sur `main` (voir `.github/workflows/deploy.yml`).
 
+## Configurer Firebase pour les échanges
+
+L'écran **Échanges** (proposer/accepter des échanges de cartes entre joueurs via un code ami)
+a besoin d'un projet Firebase. Le jeu reste 100% jouable en solo sans cette configuration —
+l'écran Échanges affiche simplement un message d'indisponibilité tant qu'elle manque.
+
+1. Crée un projet sur [console.firebase.google.com](https://console.firebase.google.com/)
+   (gratuit sur le plan Spark, largement suffisant pour ce jeu).
+2. **Authentication** → onglet *Sign-in method* → active le fournisseur **Anonyme**.
+3. **Firestore Database** → crée une base (mode production), puis dans l'onglet *Règles*,
+   colle le contenu de [`firestore.rules`](firestore.rules) (déjà écrit et prêt à l'emploi) et
+   publie.
+4. **Paramètres du projet** (⚙️) → *Général* → section *Vos applications* → ajoute une
+   application **Web** (</>) → copie les valeurs de configuration affichées.
+5. En local : copie `.env.example` en `.env.local` (déjà ignoré par git) et renseigne les
+   valeurs copiées à l'étape précédente.
+6. En production (GitHub Pages + builds Capacitor) : dans les réglages du dépôt GitHub,
+   **Settings → Secrets and variables → Actions**, ajoute un secret par variable
+   (`VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`,
+   `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`,
+   `VITE_FIREBASE_APP_ID`) — les workflows (`deploy.yml`, `build-android.yml`,
+   `build-ios.yml`) les injectent déjà automatiquement au build.
+
+**Limite connue** : v1 fait confiance à chaque client pour appliquer localement le résultat
+d'un échange accepté (l'inventaire de cartes n'est pas stocké côté serveur, seules les offres
+le sont) — adapté à des échanges entre joueurs qui se connaissent, pas une garantie anti-triche
+à 100 %. Un renforcement futur possible : une Cloud Function transactionnelle qui déplacerait
+l'inventaire lui-même côté serveur.
+
 ## App mobile (iOS / Android via Capacitor)
 
 Le jeu tourne aussi en app native grâce à Capacitor, qui embarque le même
