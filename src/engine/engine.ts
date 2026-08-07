@@ -34,6 +34,7 @@ const MIN_PLAYABLE_DECK = 30;
 function makePlayer(id: PlayerId, faction: Faction, customDeck?: string[], lifeBonus = 0): PlayerState {
   const source = customDeck && customDeck.length >= MIN_PLAYABLE_DECK ? customDeck : starterDeck(faction);
   const deck = shuffle(source).slice(0, MAIN_DECK_SIZE);
+  const deckList = [...deck];
   const hand = deck.splice(0, STARTING_HAND_SIZE);
   const life = STARTING_LIFE + lifeBonus;
   const evolutionIds = [...new Set(
@@ -52,6 +53,7 @@ function makePlayer(id: PlayerId, faction: Faction, customDeck?: string[], lifeB
     mana: 1,
     maxMana: 1,
     deck,
+    deckList,
     hand,
     field: [],
     support: [],
@@ -283,9 +285,13 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
         succeeded = false;
         break;
       }
-      const pool = [...CARD_DB.values()].filter(
-        (c) => c.level === 1 && c.type === 'unit' && (!effect.target || c.faction === effect.target)
-      );
+      // Uniquement parmi les cartes réellement présentes dans le deck de
+      // départ du joueur — jamais une carte qu'il ne possède pas (issue
+      // d'un booster jamais ouvert, par exemple).
+      const ownedUnitIds = [...new Set(owner.deckList)];
+      const pool = ownedUnitIds
+        .map((id) => getCard(id))
+        .filter((c) => c.level === 1 && c.type === 'unit' && (!effect.target || c.faction === effect.target));
       const pick = pool[Math.floor(Math.random() * pool.length)];
       if (pick) {
         owner.field.push({
