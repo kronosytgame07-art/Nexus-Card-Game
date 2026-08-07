@@ -458,6 +458,14 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 .effect-prompt-actions { display: flex; gap: 10px; width: 100%; margin-top: 4px; }
 .effect-prompt-actions button { flex: 1; margin: 0; }
 
+/* Révélation d'un soutien face cachée au moment de son activation — la
+   carte se retourne, se dévoile et une étiquette d'activation apparaît,
+   avant que le soutien ne disparaisse réellement du terrain. */
+.support-reveal-overlay { position: fixed; inset: 0; z-index: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; background: rgba(1, 5, 8, .78); backdrop-filter: blur(6px); }
+.support-reveal-card { width: min(220px, 55vw); border-radius: 14px; overflow: hidden; border: 3px solid var(--gold); box-shadow: 0 0 60px rgba(230, 189, 99, .75), 0 24px 44px rgba(0, 0, 0, .6); }
+.support-reveal-card img { display: block; width: 100%; height: auto; }
+.support-reveal-label { font: 900 clamp(16px, 2.6vw, 26px) "Space Grotesk"; letter-spacing: 2px; color: var(--gold); text-shadow: 0 0 20px rgba(239, 201, 107, .8); text-align: center; padding: 0 20px; }
+
 .pile-modal { position: fixed; inset: 0; z-index: 200; display: flex; justify-content: flex-end; background: rgba(2, 6, 7, .6); }
 .pile-modal-content { width: min(380px, 90vw); height: 100%; background: #071316; border-left: 1px solid #e6bd6355; box-shadow: -24px 0 50px rgba(0, 0, 0, .55); display: flex; flex-direction: column; overflow: hidden; }
 .pile-modal-content header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid #ffffff14; flex: 0 0 auto; }
