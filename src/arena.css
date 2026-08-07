@@ -17,16 +17,16 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
   --enemy: #ef4961;
   --ally: #41e2b3;
   --gold: #efc96b;
-  --creature-w: clamp(100px, 8vw, 160px);
-  --creature-h: clamp(112px, 17vh, 160px);
-  --support-w: clamp(88px, 7vw, 132px);
-  --support-h: clamp(88px, 13vh, 120px);
+  --creature-w: clamp(108px, 8.6vw, 170px);
+  --creature-h: clamp(130px, 19vh, 185px);
+  --support-w: clamp(92px, 7.4vw, 138px);
+  --support-h: clamp(100px, 15vh, 135px);
   --axis-w: min(1120px, 94vw);
-  --enemy-hand-h: clamp(40px, 6.5vh, 64px);
   --rail-w: clamp(50px, 6vw, 82px);
   --hand-h: clamp(150px, 26vh, 220px);
   --hand-peek: calc(var(--hand-h) * .3);
-  --player-bar-h: 58px;
+  --hand-card-w: clamp(100px, 7.6vw, 138px);
+  --hand-card-h: clamp(140px, 21vh, 190px);
 
   position: relative;
   width: 100%;
@@ -35,7 +35,7 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
   height: 100dvh;
   min-height: 0;
   display: grid;
-  grid-template-rows: 24px auto minmax(0, 1fr) auto;
+  grid-template-rows: 24px minmax(0, 1fr);
   row-gap: clamp(2px, .8vh, 8px);
   padding: 0 clamp(10px, 3vw, 32px);
   overflow: hidden;
@@ -57,7 +57,14 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
     radial-gradient(ellipse at 50% 92%, rgba(65, 226, 179, .14), transparent 42%);
 }
 
-.battle-meta { display: flex; justify-content: space-between; font: 10px "DM Mono"; color: #9db3ac; }
+/* Fond animé de l'arène. En avant des piles (Fosse/Évosphère/Deck) pour
+   laisser les embrasements passer par-dessus sans casser l'ambiance,
+   mais toujours sous le plateau/la main/les profils (.battle-center a
+   son propre z-index:10) pour ne jamais gêner la lisibilité du jeu.
+   pointer-events:none : les piles restent cliquables en dessous. */
+.battle-bg-video { position: absolute; inset: 0; z-index: 6; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+
+.battle-meta { position: relative; z-index: 10; display: flex; justify-content: space-between; font: 10px "DM Mono"; color: #9db3ac; }
 
 /* ---------- Profil (avatar rond + nom/deck), commun aux deux camps -------- */
 .duel-profile { display: flex; align-items: center; gap: 10px; }
@@ -79,28 +86,6 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 .duel-profile-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .duel-profile-text b { font: 700 13px "Space Grotesk"; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .duel-profile-text small { font: 8px "DM Mono"; color: #9db3ac; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.enemy-combatant .duel-profile { flex-direction: row-reverse; text-align: right; }
-
-/* ---------- Barre du haut : profil adverse + PV/mana + main adverse ------ */
-.battle-top { position: relative; z-index: 22; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-/* Barre du joueur : occupe sa propre ligne de grille en bas, exactement
-   comme .battle-top en haut — jamais de chevauchement avec le plateau. */
-.battle-bottom { position: relative; z-index: 22; display: flex; justify-content: center; }
-.combatant {
-  position: relative;
-  width: var(--axis-w);
-  max-width: var(--axis-w);
-  min-height: 52px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 6px 16px;
-  border: 1px solid color-mix(in srgb, var(--enemy) 45%, transparent);
-  border-radius: 18px;
-  background: linear-gradient(180deg, rgba(34, 8, 18, .94), rgba(7, 9, 14, .94));
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .38);
-}
-.enemy-combatant { flex-direction: row-reverse; }
 
 .life, .mana {
   display: inline-flex;
@@ -114,48 +99,54 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 .life { border: 2px solid #ef6c6c; background: radial-gradient(circle at 30% 20%, #4a1620, #170609); color: #ffb3b3; }
 .mana { border: 2px solid var(--gold); background: radial-gradient(circle at 30% 20%, #3a2f10, #100c04); color: #ffe9a8; }
 .hero-dmg { position: relative; color: #ff5468; font: 800 12px "DM Mono"; animation: heroHit .5s ease-out; }
-.hero-dmg.player { order: 99; }
 @keyframes heroHit { 0%, 100% { filter: none; } 30% { filter: drop-shadow(0 0 10px rgba(255, 60, 80, .9)) brightness(1.4); } }
 
-/* Main adverse : petites cartes face cachée, entièrement visibles (jamais
-   coupées), en éventail centré, toujours sous le profil/PV/mana. */
-.enemy-hand-row {
-  position: relative;
-  width: var(--axis-w);
-  height: var(--enemy-hand-h);
-  margin: 0 auto;
-  display: flex;
-  justify-content: center;
-}
-.enemy-hand-inner {
-  position: relative;
+/* ---------- Profils compacts en coin, identiques des deux côtés ----------- */
+.profile-float {
+  position: fixed;
+  z-index: 25;
+  left: max(10px, env(safe-area-inset-left));
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
+  padding: 5px 12px 5px 5px;
+  border-radius: 999px;
+  border: 1px solid rgba(239, 201, 107, .4);
+  background: rgba(4, 10, 11, .92);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .4);
 }
+.profile-float .duel-profile-avatar { width: 32px; height: 32px; }
+.profile-float .life, .profile-float .mana { padding: 3px 8px; font-size: 10px; }
+.profile-float.enemy { top: max(30px, calc(env(safe-area-inset-top) + 26px)); border-color: rgba(239, 73, 97, .45); }
+.profile-float.player { bottom: max(10px, env(safe-area-inset-bottom)); border-color: rgba(65, 226, 179, .45); }
+
+/* Main adverse : mêmes cartes, même taille que la main du joueur, en
+   tiroir inversé qui pointe depuis le haut de l'écran (moitié hors
+   champ), jamais de chevauchement avec le profil (qui reste sur le côté). */
+.enemy-hand-row {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 24px;
+  z-index: 20;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 10px;
+  height: var(--hand-h);
+  pointer-events: none;
+  transform: translateY(calc(-1 * (var(--hand-h) - var(--hand-peek))));
+}
+.enemy-hand-inner { display: contents; }
 .enemy-hand-card {
-  position: relative;
-  width: calc(var(--enemy-hand-h) * .72);
-  height: var(--enemy-hand-h);
+  width: var(--hand-card-w);
+  height: var(--hand-card-h);
   flex: 0 0 auto;
-  margin-left: clamp(-22px, -1.6vw, -10px);
-  border: 1px solid rgba(239, 201, 107, .85);
-  border-radius: 8px;
+  border: 2px solid rgba(239, 201, 107, .85);
+  border-radius: 12px;
   background-size: cover;
   background-position: center;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, .55);
-}
-.enemy-hand-card:first-child { margin-left: 0; }
-.enemy-hand-card:nth-child(1) { transform: rotate(-9deg); }
-.enemy-hand-card:nth-child(2) { transform: rotate(-5deg); }
-.enemy-hand-card:nth-child(3) { transform: rotate(-1deg); }
-.enemy-hand-card:nth-child(4) { transform: rotate(3deg); }
-.enemy-hand-card:nth-child(5) { transform: rotate(7deg); }
-.enemy-hand-card:nth-child(n+6) { transform: rotate(9deg); }
-.enemy-hand-card.enemy-card-draw { animation: enemyDrawPulse .7s ease-out; }
-@keyframes enemyDrawPulse {
-  0% { opacity: 0; transform: translateY(-14px) scale(.6); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .42);
 }
 
 /* ---------- Corps : piles + plateau symétrique ---------------------------- */
@@ -165,6 +156,7 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
   align-items: stretch;
   min-height: 0;
   width: 100%;
+  padding-top: calc(var(--hand-peek) + 16px);
   padding-bottom: calc(var(--hand-peek) + 16px);
   box-sizing: border-box;
 }
@@ -192,6 +184,8 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 .card-pile em { font-style: normal; font-size: clamp(7px, .8vw, 9px); color: #9db3ac; }
 
 .battle-center {
+  position: relative;
+  z-index: 10;
   min-width: 0;
   min-height: 0;
   display: grid;
@@ -332,17 +326,12 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 .battle-footer { position: fixed; right: max(10px, env(safe-area-inset-right)); bottom: max(10px, env(safe-area-inset-bottom)); z-index: 45; display: flex; align-items: center; gap: 6px; }
 .hud-pill { display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(239, 201, 107, .5); background: rgba(4, 10, 11, .92); color: var(--gold); font: 700 11px "DM Mono"; white-space: nowrap; box-shadow: 0 6px 16px rgba(0, 0, 0, .4); }
 
-/* La barre de profil du joueur (.player-combatant) réutilise .combatant
-   tel quel : elle vit dans .battle-bottom, sa propre ligne de grille en
-   bas de l'écran, exactement comme .combatant.enemy-combatant vit dans
-   .battle-top en haut — même composant, même style, symétrique. */
-
 /* ---------- Main du joueur : tiroir, position fixed, parfaitement centrée -- */
 .hand {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: var(--player-bar-h);
+  bottom: 0;
   z-index: 20;
   display: flex;
   align-items: flex-end;
@@ -357,11 +346,21 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 .hand.open { transform: translateY(0); }
 .hand-card-wrap { pointer-events: auto; }
 .hand .card {
-  width: clamp(100px, 7.6vw, 138px);
-  min-width: clamp(100px, 7.6vw, 138px);
-  height: clamp(140px, 21vh, 190px);
-  min-height: clamp(140px, 21vh, 190px);
+  width: var(--hand-card-w);
+  min-width: var(--hand-card-w);
+  height: var(--hand-card-h);
+  min-height: var(--hand-card-h);
 }
+
+/* ---------- Pile de pioche interactive (centrée, milieu de tour) ---------- */
+.draw-pile-overlay { position: fixed; inset: 0; z-index: 500; display: grid; place-items: center; background: rgba(1, 5, 8, .72); backdrop-filter: blur(6px); }
+.draw-pile { display: flex; flex-direction: column; align-items: center; gap: 12px; background: none; border: 0; cursor: pointer; padding: 0; }
+.draw-pile-stack { position: relative; width: clamp(110px, 12vw, 150px); height: clamp(154px, 17vw, 210px); border-radius: 14px; border: 2px solid var(--gold); background-size: cover; background-position: center; box-shadow: 0 0 34px rgba(239, 201, 107, .45), 0 24px 44px rgba(0, 0, 0, .6); animation: draw-pile-bob 1.6s ease-in-out infinite; }
+@keyframes draw-pile-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+.draw-pile b { color: var(--gold); font: 700 18px "Playfair Display"; }
+.draw-pile small { color: #9db3ac; font: 10px "DM Mono"; letter-spacing: 1.5px; }
+.draw-reveal-overlay { position: fixed; inset: 0; z-index: 500; display: grid; place-items: center; background: rgba(1, 5, 8, .72); backdrop-filter: blur(6px); pointer-events: none; }
+.draw-reveal-card { width: min(220px, 60vw); border-radius: 14px; box-shadow: 0 0 50px rgba(239, 201, 107, .55), 0 24px 44px rgba(0, 0, 0, .6); }
 
 .dmg-float, .battle-log { pointer-events: none; }
 
@@ -425,17 +424,18 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
     --support-h: clamp(64px, 17vh, 106px);
     --rail-w: clamp(30px, 8vw, 42px);
     --axis-w: min(700px, calc(100vw - 2 * var(--rail-w) - 32px));
-    --enemy-hand-h: clamp(32px, 7vh, 48px);
     --hand-h: clamp(96px, 20vh, 140px);
-    --player-bar-h: 44px;
+    --hand-card-w: clamp(58px, 15vw, 82px);
+    --hand-card-h: clamp(82px, 20vh, 114px);
     padding: 0 8px;
-    grid-template-rows: 16px auto minmax(0, 1fr);
+    grid-template-rows: 16px minmax(0, 1fr);
   }
-  .combatant { min-height: 40px; padding: 4px 10px; gap: 8px; }
-  .duel-profile-avatar { width: 28px; height: 28px; font-size: 11px; }
+  .profile-float { padding: 4px 10px 4px 4px; gap: 6px; }
+  .profile-float .duel-profile-avatar { width: 24px; height: 24px; }
+  .profile-float.enemy { top: max(22px, calc(env(safe-area-inset-top) + 18px)); }
   .duel-profile-text b { font-size: 10px; }
   .duel-profile-text small { font-size: 6px; }
-  .life, .mana { padding: 3px 8px; font-size: 8px; }
+  .profile-float .life, .profile-float .mana { padding: 2px 6px; font-size: 7px; }
   .zone-wrap > b, .zone-wrap > small { font-size: 6px; }
   .turn-strip { height: 24px; padding: 2px 8px; gap: 6px; }
   .nexus-phases button, .attack-face { height: 18px; padding: 0 6px; font-size: 6px; }
@@ -444,11 +444,8 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
   .card-pile b { font-size: 7px; }
   .card-pile em { font-size: 6px; }
   .hud-pill { height: 22px; padding: 0 8px; font-size: 8px; }
-  .player-profile-float { padding: 4px 10px 4px 4px; }
-  .player-profile-float .duel-profile-avatar { width: 22px; height: 22px; }
-  .player-profile-float .duel-profile-text b { font-size: 8px; }
-  .player-profile-float .duel-profile-text small { font-size: 6px; }
-  .hand { height: clamp(96px, 20vh, 140px); gap: 4px; padding-bottom: max(6px, env(safe-area-inset-bottom)); }
-  .hand .card { width: clamp(58px, 15vw, 82px); min-width: clamp(58px, 15vw, 82px); height: clamp(82px, 20vh, 114px); min-height: clamp(82px, 20vh, 114px); }
+  .enemy-hand-row { top: 16px; gap: 4px; }
+  .hand { gap: 4px; padding-bottom: max(6px, env(safe-area-inset-bottom)); }
   .unit-actions { bottom: calc(env(safe-area-inset-bottom) + 40px); padding: 8px; }
+  .draw-pile-stack { width: clamp(80px, 22vw, 110px); height: clamp(112px, 30vw, 154px); }
 }
