@@ -1,20 +1,35 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ALL_CARDS, AnimationMode, copiesInDeck, EVOSPHERE_MAX, InterfaceScale, Language, MAIN_DECK_MAX, MAIN_DECK_MIN, maxCopiesAllowed, UNLOCK_SECOND_FACTION_AT, useGame, VisualQuality, XP_PER_LEVEL } from './store/game';
+import { ALL_CARDS, ALL_FACTIONS, AnimationMode, copiesInDeck, defaultAvatarFor, EVOSPHERE_MAX, InterfaceScale, Language, MAIN_DECK_MAX, MAIN_DECK_MIN, maxCopiesAllowed, UNLOCK_SECOND_FACTION_AT, UNLOCK_THIRD_FACTION_AT, useGame, VisualQuality, XP_PER_LEVEL } from './store/game';
 import { cardsByFaction, getCard } from './engine/cards';
 import { CardDef, Faction, FieldUnit, GameState, SupportCard } from './engine/types';
 import { CHAPTERS, chapterById } from './engine/campaign';
 import { activateSupportCard, activateUnitEffect, aiDrawPhase, aiEndPhase, aiMainPhase, aiPrepareBattlePlan, aiResolveOneAttack, declareAttack, evolveUnit, newGame, playCard } from './engine/engine';
 import cardBack from './assets/cards/nexus-card-back.jpg';
 import ArenaBackground, { ArenaBackgroundHandle } from './components/ArenaBackground';
-import VfxLayer, { VfxHandle } from './components/VfxLayer';
+import VfxLayer, { DashTone, VfxHandle } from './components/VfxLayer';
 import HomeSparkles from './components/HomeSparkles';
 
 const nav = ['Jouer', 'Campagne', 'Collection', 'Decks', 'Profil', 'Classement', 'Boutique', 'Tutoriel', 'Paramètres'];
 const path = (x: string) => (x === 'Jouer' ? '/' : '/' + x.toLowerCase());
 const CARD_BACK_URL = `${import.meta.env.BASE_URL}cards/card-back.jpg`;
 const LOGO_URL = `${import.meta.env.BASE_URL}icons/logo-mark.png`;
+
+/** Faction adverse pour un duel rapide : rotation stable (pas aléatoire, pour
+    ne pas changer à chaque rendu) parmi les DEUX AUTRES factions du jeu. */
+function rivalFactionFor(faction: Faction): Faction {
+  const others = ALL_FACTIONS.filter((f) => f !== faction);
+  return others[0] ?? faction;
+}
+
+/** Teinte de la traînée d'attaque WebGL selon la faction — chaque archétype
+    a sa propre signature visuelle (givre Meute, feu Chevalier, sang Orc). */
+function dashToneFor(faction: Faction): DashTone {
+  if (faction === 'Meute') return 'frost';
+  if (faction === 'Orc') return 'blood';
+  return 'fire';
+}
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -144,7 +159,7 @@ const CardView = ({ card, onClick, disabled, badge, fullArt }: { card: CardDef; 
 
 function Home() {
   const go = useNavigate(); const s = useGame(); const { available: canInstall, install } = useInstallPrompt();
-  const opponentFaction: Faction = s.faction === 'Meute' ? 'Chevalier' : 'Meute';
+  const opponentFaction: Faction = rivalFactionFor(s.faction);
   const heroBg = `${import.meta.env.BASE_URL}backgrounds/home-hero.jpg`;
   const heroVideo = `${import.meta.env.BASE_URL}backgrounds/home-hero.mp4`;
   const reduceMotion = s.animationMode !== 'full';
@@ -152,12 +167,12 @@ function Home() {
   const bgVideoRef = useRef<HTMLVideoElement>(null);
   useEffect(() => { const video = bgVideoRef.current; if (!video) return; if (s.animationMode === 'off' || s.batterySaver) video.pause(); else video.play().catch(() => {}); }, [s.animationMode, s.batterySaver]);
   useEffect(() => { document.body.classList.add('on-home'); return () => document.body.classList.remove('on-home'); }, []);
-  return <section className="home-hero"><video className="home-hero-bg" ref={bgVideoRef} autoPlay loop muted playsInline poster={heroBg}><source src={heroVideo} type="video/mp4" /></video><div className="home-glow a" /><div className="home-glow b" /><HomeSparkles className="home-sparkles" paused={s.animationMode === 'off' || s.batterySaver} /><motion.header className="home-topbar" {...fadeUp(0)}><div className="home-logo"><span className="home-logo-mark"><img src={LOGO_URL} alt="Nexus Arena" /></span><div><b>NEXUS</b><small>CARD ARENA</small></div></div>{canInstall && <button className="install-button" onClick={install}>↓ Installer</button>}</motion.header><motion.div className="home-showcase" {...fadeUp(0.12)}><div className="home-copy"><p className="eyebrow">LE SERMENT ET LA MEUTE</p><h2>Entre dans<br /><em>l'Évosphère</em></h2><p>Construis ton héritage, affronte les gardiens de Nexus et découvre ce que la Reine a effacé.</p><div className="faction-pick compact">{(['Meute', 'Chevalier'] as Faction[]).map((f) => { const unlocked = s.unlockedFactions.includes(f); return <button key={f} className={'faction-button' + (s.faction === f ? ' active' : '') + (unlocked ? '' : ' locked')} disabled={!unlocked} title={unlocked ? undefined : `Verrouillé — gagne ${UNLOCK_SECOND_FACTION_AT} chapitres de campagne pour débloquer`} onClick={() => s.setFaction(f)}>{unlocked ? f : `🔒 ${f}`}</button>; })}</div></div></motion.div><motion.div className="menu-cards" {...fadeUp(0.24)}><button className="menu-card" onClick={() => go('/campagne')}><span className="menu-card-icon gold">✦</span><span className="menu-card-body"><small>HISTOIRE</small><b>Mode Campagne</b><em>{s.campaignChapter}/{CHAPTERS.length} chapitres terminés</em></span><span className="menu-card-arrow">→</span></button><button className="menu-card" onClick={() => go('/combat')}><span className="menu-card-icon teal">⚔</span><span className="menu-card-body"><small>ENTRAÎNEMENT</small><b>Duel rapide</b><em>Main mélangée · contre {opponentFaction}</em></span><span className="menu-card-arrow">→</span></button><button className="menu-card" onClick={() => go('/paramètres')}><span className="menu-card-icon violet">⚙</span><span className="menu-card-body"><small>NEXUS</small><b>Options</b><em>Graphismes · Langue · Audio</em></span><span className="menu-card-arrow">→</span></button></motion.div><motion.div className="stats" {...fadeUp(0.36)}><b>{s.playerName} · Niveau {s.level}</b><span>{s.xp}/{XP_PER_LEVEL} XP · {s.wins} victoires · {s.losses} défaites</span><span>💎 {s.gems} · {s.gold} ✦</span></motion.div></section>;
+  return <section className="home-hero"><video className="home-hero-bg" ref={bgVideoRef} autoPlay loop muted playsInline poster={heroBg}><source src={heroVideo} type="video/mp4" /></video><div className="home-glow a" /><div className="home-glow b" /><HomeSparkles className="home-sparkles" paused={s.animationMode === 'off' || s.batterySaver} /><motion.header className="home-topbar" {...fadeUp(0)}><div className="home-logo"><span className="home-logo-mark"><img src={LOGO_URL} alt="Nexus Arena" /></span><div><b>NEXUS</b><small>CARD ARENA</small></div></div>{canInstall && <button className="install-button" onClick={install}>↓ Installer</button>}</motion.header><motion.div className="home-showcase" {...fadeUp(0.12)}><div className="home-copy"><p className="eyebrow">LE SERMENT ET LA MEUTE</p><h2>Entre dans<br /><em>l'Évosphère</em></h2><p>Construis ton héritage, affronte les gardiens de Nexus et découvre ce que la Reine a effacé.</p><div className="faction-pick compact">{ALL_FACTIONS.map((f) => { const unlocked = s.unlockedFactions.includes(f); return <button key={f} className={'faction-button' + (s.faction === f ? ' active' : '') + (unlocked ? '' : ' locked')} disabled={!unlocked} title={unlocked ? undefined : `Verrouillé — gagne ${f === 'Orc' ? UNLOCK_THIRD_FACTION_AT : UNLOCK_SECOND_FACTION_AT} chapitres de campagne pour débloquer`} onClick={() => s.setFaction(f)}>{unlocked ? f : `🔒 ${f}`}</button>; })}</div></div></motion.div><motion.div className="menu-cards" {...fadeUp(0.24)}><button className="menu-card" onClick={() => go('/campagne')}><span className="menu-card-icon gold">✦</span><span className="menu-card-body"><small>HISTOIRE</small><b>Mode Campagne</b><em>{s.campaignChapter}/{CHAPTERS.length} chapitres terminés</em></span><span className="menu-card-arrow">→</span></button><button className="menu-card" onClick={() => go('/combat')}><span className="menu-card-icon teal">⚔</span><span className="menu-card-body"><small>ENTRAÎNEMENT</small><b>Duel rapide</b><em>Main mélangée · contre {opponentFaction}</em></span><span className="menu-card-arrow">→</span></button><button className="menu-card" onClick={() => go('/paramètres')}><span className="menu-card-icon violet">⚙</span><span className="menu-card-body"><small>NEXUS</small><b>Options</b><em>Graphismes · Langue · Audio</em></span><span className="menu-card-arrow">→</span></button></motion.div><motion.div className="stats" {...fadeUp(0.36)}><b>{s.playerName} · Niveau {s.level}</b><span>{s.xp}/{XP_PER_LEVEL} XP · {s.wins} victoires · {s.losses} défaites</span><span>💎 {s.gems} · {s.gold} ✦</span></motion.div></section>;
 }
 
 function Campaign() { const s = useGame(); const go = useNavigate(); return <section><h2>Campagne</h2><p className="hint">{s.campaignChapter} / {CHAPTERS.length} chapitres terminés</p><div className="chapter-list">{CHAPTERS.map((chapter, i) => { const locked = i > s.campaignChapter; const done = i < s.campaignChapter; return <article key={chapter.id} className={'chapter' + (locked ? ' locked' : '')}><span className="number">0{i + 1}</span><div className="chapter-body"><b>{chapter.title}</b><small>{done ? 'Victoire inscrite dans les archives' : locked ? 'Scellé par la Reine' : `Gardien ${chapter.opponentFaction} · IA ${chapter.aiDifficulty}`}</small></div>{!locked && <button onClick={() => go('/combat', { state: { chapterId: chapter.id } })}>{done ? 'Rejouer' : 'Jouer'}</button>}{locked && <span>◌</span>}</article>; })}</div></section>; }
 
-function Collection() { const [query, setQuery] = useState(''); const owned = useGame((s) => s.owned); const unlockedFactions = useGame((s) => s.unlockedFactions); const visibleCards = ALL_CARDS.filter((c) => unlockedFactions.includes(c.faction)); const filtered = visibleCards.filter((c) => c.name.toLowerCase().includes(query.toLowerCase())); const lockedFaction = (['Meute', 'Chevalier'] as Faction[]).find((f) => !unlockedFactions.includes(f)); return <section><h2>Collection</h2><input placeholder="Rechercher une carte…" value={query} onChange={(e) => setQuery(e.target.value)} /><div className="grid">{filtered.map((c) => <CardView key={c.id} card={c} badge={owned.includes(c.id) ? undefined : 'Non possédée'} />)}</div><p className="hint">{owned.length}/{visibleCards.filter((c) => c.level === 1).length} cartes de base possédées</p>{lockedFaction && <p className="hint">🔒 Les cartes {lockedFaction} restent cachées tant que la faction n'est pas débloquée — gagne {UNLOCK_SECOND_FACTION_AT} chapitres de campagne.</p>}</section>; }
+function Collection() { const [query, setQuery] = useState(''); const owned = useGame((s) => s.owned); const unlockedFactions = useGame((s) => s.unlockedFactions); const visibleCards = ALL_CARDS.filter((c) => unlockedFactions.includes(c.faction)); const filtered = visibleCards.filter((c) => c.name.toLowerCase().includes(query.toLowerCase())); const lockedFactions = ALL_FACTIONS.filter((f) => !unlockedFactions.includes(f)); return <section><h2>Collection</h2><input placeholder="Rechercher une carte…" value={query} onChange={(e) => setQuery(e.target.value)} /><div className="grid">{filtered.map((c) => <CardView key={c.id} card={c} badge={owned.includes(c.id) ? undefined : 'Non possédée'} />)}</div><p className="hint">{owned.length}/{visibleCards.filter((c) => c.level === 1).length} cartes de base possédées</p>{lockedFactions.length > 0 && <p className="hint">🔒 Les cartes {lockedFactions.join(' et ')} restent cachées tant que ces factions ne sont pas débloquées — progresse dans la campagne.</p>}</section>; }
 
 function DeckMenu({ onEdit }: { onEdit: (id: string) => void }) {
   const s = useGame();
@@ -215,14 +230,14 @@ function DeckMenu({ onEdit }: { onEdit: (id: string) => void }) {
         </div>
       ) : (
         <div className="faction-pick compact">
-          {(['Meute', 'Chevalier'] as Faction[]).map((f) => {
+          {ALL_FACTIONS.map((f) => {
             const unlocked = s.unlockedFactions.includes(f);
             return (
               <button
                 key={f}
                 className={'faction-button' + (unlocked ? '' : ' locked')}
                 disabled={!unlocked}
-                title={unlocked ? undefined : `Verrouillé — gagne ${UNLOCK_SECOND_FACTION_AT} chapitres de campagne`}
+                title={unlocked ? undefined : `Verrouillé — gagne ${f === 'Orc' ? UNLOCK_THIRD_FACTION_AT : UNLOCK_SECOND_FACTION_AT} chapitres de campagne`}
                 onClick={() => startCreate(f)}
               >
                 {unlocked ? `+ ${f}` : `🔒 ${f}`}
@@ -393,8 +408,8 @@ function Combat() {
   const arenaBgPaused = s.animationMode === 'off' || s.batterySaver;
   const chapterId = (location.state as { chapterId?: number } | null)?.chapterId;
   const chapter = chapterId !== undefined ? chapterById(chapterId) : undefined;
-  const opponentFaction = chapter ? chapter.opponentFaction : s.faction === 'Meute' ? 'Chevalier' : 'Meute';
-  const opponentAvatarImage = getCard(opponentFaction === 'Chevalier' ? 'capitaine-du-royaume' : 'croc-de-fer').image;
+  const opponentFaction = chapter ? chapter.opponentFaction : rivalFactionFor(s.faction);
+  const opponentAvatarImage = getCard(defaultAvatarFor(opponentFaction)).image;
   const playerAvatarCard = ALL_CARDS.find((c) => c.id === s.avatarCardId) ?? ALL_CARDS.find((c) => c.type === 'unit' && c.level === 1 && c.faction === s.faction);
   const activeDeck = s.decks.find((d) => d.id === s.activeDeckId);
   const activeDeckName = activeDeck?.name ?? s.faction;
@@ -416,7 +431,7 @@ function Combat() {
   const openHandCard = (id: string) => { if (match.activePlayer !== 'player' || match.winner) return; if (!handOpen) { setHandOpen(true); return; } setInspectedUnit(null); setPreviewCardId(id); };
   const confirmPlay = (id: string) => { if (match.activePlayer !== 'player' || match.winner) return; if (phase !== 'main') { showHint('Passe en Main Phase pour jouer une carte.'); setPreviewCardId(null); return; } const card = ALL_CARDS.find((entry) => entry.id === id); const before = match; const next = playCard(match, 'player', id); setPreviewCardId(null); if (!stateChanged(match, next)) return; updateMatch(next); setHandOpen(false); pulseFromDiff(before, next); if (card?.type === 'unit') { const newest = next.player.field[next.player.field.length - 1]; triggerFx({ type: 'summon', side: 'player', instanceId: newest?.instanceId }, 720); if (newest) { const id = newest.instanceId; requestAnimationFrame(() => requestAnimationFrame(() => { const el = cardRefs.current[id]; if (el) { const r = el.getBoundingClientRect(); vfxRef.current?.spawnBurst(r.left + r.width / 2, r.top + r.height / 2, 'summon'); } })); } if (newest && effectMaxUses(card) > 0) { const promptId = newest.instanceId; window.setTimeout(() => setEffectPrompt(promptId), 760); } } };
   const selectAttacker = (id: string) => { setHandOpen(false); setPreviewCardId(null); setInspectedUnit((current) => current === id ? null : id); if (match.activePlayer !== 'player' || match.winner || attackLockRef.current) return; if (phase !== 'battle') { showHint('Passe en Battle Phase pour attaquer.'); return; } const unit = match.player.field.find((entry) => entry.instanceId === id); if (!unit || !unit.canAttack || unit.stunnedTurns > 0) return; setSelectedAttacker((current) => current === id ? null : id); };
-  const resolveStrike = (attackerId: string, targetId: string | null) => { const measured = measureStrike('player', attackerId, targetId); const { dx, dy } = measured ?? { dx: 0, dy: 0 }; attackLockRef.current = true; triggerFx({ type: 'attack', side: 'player', instanceId: attackerId, dx, dy }, 640); if (measured) { const attackerUnit = match.player.field.find((entry) => entry.instanceId === attackerId); const def = attackerUnit && getCard(attackerUnit.cardId); const tone = def?.faction === 'Meute' ? 'frost' : 'fire'; vfxRef.current?.spawnDashTrail(measured.x1, measured.y1, measured.x2, measured.y2, 0.3, tone); } window.setTimeout(() => { const before = match; const next = declareAttack(before, 'player', attackerId, targetId); updateMatch(next); pulseFromDiff(before, next); attackLockRef.current = false; }, 300); };
+  const resolveStrike = (attackerId: string, targetId: string | null) => { const measured = measureStrike('player', attackerId, targetId); const { dx, dy } = measured ?? { dx: 0, dy: 0 }; attackLockRef.current = true; triggerFx({ type: 'attack', side: 'player', instanceId: attackerId, dx, dy }, 640); if (measured) { const attackerUnit = match.player.field.find((entry) => entry.instanceId === attackerId); const def = attackerUnit && getCard(attackerUnit.cardId); const tone = dashToneFor(def?.faction ?? 'Chevalier'); vfxRef.current?.spawnDashTrail(measured.x1, measured.y1, measured.x2, measured.y2, 0.3, tone); } window.setTimeout(() => { const before = match; const next = declareAttack(before, 'player', attackerId, targetId); updateMatch(next); pulseFromDiff(before, next); attackLockRef.current = false; }, 300); };
   const attackUnit = (targetId: string) => { setHandOpen(false); setPreviewCardId(null); if (!selectedAttacker || phase !== 'battle' || attackLockRef.current) return; resolveStrike(selectedAttacker, targetId); setSelectedAttacker(null); };
   const attackHero = () => { setHandOpen(false); setPreviewCardId(null); if (!selectedAttacker || phase !== 'battle' || attackLockRef.current) return; resolveStrike(selectedAttacker, null); setSelectedAttacker(null); };
   const evolve = (instanceId: string) => {
@@ -462,7 +477,7 @@ function Combat() {
       triggerFx({ type: 'attack', side: 'enemy', instanceId: attackerId, dx: measured.dx, dy: measured.dy }, 640);
       const attackerUnit = state.enemy.field.find((entry) => entry.instanceId === attackerId);
       const attackerDef = attackerUnit && getCard(attackerUnit.cardId);
-      const tone = attackerDef?.faction === 'Meute' ? 'frost' : 'fire';
+      const tone = dashToneFor(attackerDef?.faction ?? 'Chevalier');
       vfxRef.current?.spawnDashTrail(measured.x1, measured.y1, measured.x2, measured.y2, 0.3, tone);
     }
     window.setTimeout(() => {
@@ -512,7 +527,7 @@ function Combat() {
   const goToPhase = (target: 'draw' | 'main' | 'battle' | 'end') => { if (match.activePlayer !== 'player' || match.winner) return; if (PHASE_ORDER.indexOf(target) < PHASE_ORDER.indexOf(phase)) return; if (target === 'end') { nextTurn(); return; } setPhase(target); };
   const restart = () => { turnTokenRef.current++; attackLockRef.current = false; const fresh = startMatch(); setMatch(fresh); replaySnapshots.current = [stripForReplay(fresh)]; setReplaySaved(false); setReported(false); setSelectedAttacker(null); setEffectHint(''); setInspectedUnit(null); setUnitPulses({}); setHeroPulses({}); setHandOpen(false); setPreviewCardId(null); setPhase('draw'); setDrawStage('idle'); setPauseOpen(false); setAiTurnStage('idle'); setAiDrawCount(0); setEffectPrompt(null); setSupportReveal(null); setSupportPreview(null); setEvoSeq(null); };
   const forfeitMatch = () => { if (!window.confirm('Abandonner cette partie ? Elle comptera comme une défaite.')) return; if (!match.winner) s.record(false); go('/'); };
-  const saveReplay = () => { if (!match.winner || replaySaved) return; s.saveReplay({ opponentFaction, result: match.winner === 'player' ? 'win' : 'loss', turns: match.turn, label: chapter ? chapter.title : `Duel rapide vs ${opponentFaction}`, snapshots: replaySnapshots.current }); setReplaySaved(true); };
+  const saveReplay = () => { if (!match.winner || replaySaved) return; s.saveReplay({ playerFaction: s.faction, opponentFaction, result: match.winner === 'player' ? 'win' : 'loss', turns: match.turn, label: chapter ? chapter.title : `Duel rapide vs ${opponentFaction}`, snapshots: replaySnapshots.current }); setReplaySaved(true); };
   useEffect(() => { const onKey = (event: KeyboardEvent) => { if (event.key !== 'Escape') return; setInspectedUnit(null); setSelectedAttacker(null); setPreviewCardId(null); setEffectPrompt(null); }; document.addEventListener('keydown', onKey); return () => document.removeEventListener('keydown', onKey); }, []);
   const enemyHasTaunt = match.enemy.field.some((unit) => unit.taunt); const activePlayerUnit = inspectedUnit ? match.player.field.find((unit) => unit.instanceId === inspectedUnit) : undefined;
   const pileCards: CardDef[] = pileOpen === 'grave' ? match.player.graveyard.map((id: string) => getCard(id)) : pileOpen === 'evo' ? match.player.evosphere.map((id: string) => getCard(id)) : [];
@@ -602,6 +617,7 @@ function Tutorial() {
 const BOOSTERS: { id: Faction; name: string; price: number; blurb: string }[] = [
   { id: 'Meute', name: 'Booster Meute', price: 150, blurb: 'Nouvelles cartes Meute, pensées pour renforcer les decks qui possèdent déjà les 3 exemplaires maximum de chaque carte actuelle.' },
   { id: 'Chevalier', name: 'Booster Chevalier', price: 150, blurb: 'Nouvelles cartes Chevalier, pensées pour renforcer les decks qui possèdent déjà les 3 exemplaires maximum de chaque carte actuelle.' },
+  { id: 'Orc', name: 'Booster Orc', price: 150, blurb: 'Nouvelles cartes Orc, pensées pour renforcer les decks qui possèdent déjà les 3 exemplaires maximum de chaque carte actuelle.' },
 ];
 
 function Shop() {
@@ -632,8 +648,10 @@ function Replay() {
   }, [playing, step, replay, total]);
   if (!replay) return <section><h2>Replay introuvable</h2><p className="hint">Il a peut-être été supprimé.</p><button className="secondary" onClick={() => go('/profil')}>← Retour au profil</button></section>;
   const snap = replay.snapshots[Math.min(step, total - 1)];
-  const opponentAvatarImage = getCard(replay.opponentFaction === 'Chevalier' ? 'capitaine-du-royaume' : 'croc-de-fer').image;
-  const playerFaction: Faction = replay.opponentFaction === 'Chevalier' ? 'Meute' : 'Chevalier';
+  const opponentAvatarImage = getCard(defaultAvatarFor(replay.opponentFaction)).image;
+  // Anciens replays (avant l'ajout de la 3e faction) n'ont pas playerFaction
+  // enregistré — on retombe alors sur l'ancienne inférence binaire.
+  const playerFaction: Faction = replay.playerFaction ?? rivalFactionFor(replay.opponentFaction);
   // Rejoue exactement l'écran de duel réel (même fond WebGL, mêmes zones,
   // mêmes cartes) au lieu d'une maquette séparée — juste sans interaction,
   // piloté par l'instantané du tour affiché plutôt que par une partie en cours.
@@ -666,7 +684,11 @@ function Replay() {
   </section>;
 }
 
-function FactionOnboarding() { const s = useGame(); const wolfArt = `${import.meta.env.BASE_URL}cards/evo-loup-de-givre.png`; const knightArt = getCard('capitaine-du-royaume').image; const blurbs: Record<Faction, string> = { Meute: 'Rejoins les loups des brumes. Instinct, meute et lune rouge — frappe vite, en nombre.', Chevalier: "Sers l'ordre du royaume. Discipline, provocation et lumière sacrée — tiens la ligne." }; return <div className="onboarding"><div className="onboarding-inner"><p className="eyebrow">CHOISIS TON SERMENT</p><h2>Quel camp défendras-tu ?</h2><p>Ce choix détermine ton deck de départ. L'autre faction reste verrouillée jusqu'à ce que tu remportes les {UNLOCK_SECOND_FACTION_AT} premiers chapitres de la campagne.</p><div className="onboarding-choices"><button className="onboarding-card" onClick={() => s.chooseStartingFaction('Meute')}><span className="onboarding-art" style={{ backgroundImage: `url(${wolfArt}), radial-gradient(circle at 50% 25%, #1c3a42, #050d0d 75%)` }} /><b>Meute</b><small>{blurbs.Meute}</small></button><button className="onboarding-card" onClick={() => s.chooseStartingFaction('Chevalier')}><span className="onboarding-art" style={{ backgroundImage: `url(${knightArt}), radial-gradient(circle at 50% 25%, #3a2f10, #0a0704 75%)` }} /><b>Chevalier</b><small>{blurbs.Chevalier}</small></button></div></div></div>; }
+function FactionOnboarding() { const s = useGame(); const wolfArt = `${import.meta.env.BASE_URL}cards/evo-loup-de-givre.png`; const knightArt = getCard('capitaine-du-royaume').image;
+  // Seules Meute et Chevalier se choisissent au départ — l'Orc se débloque
+  // plus tard dans la campagne (voir UNLOCK_THIRD_FACTION_AT), donc ce
+  // record n'a volontairement que ces deux clés.
+  const blurbs: Record<'Meute' | 'Chevalier', string> = { Meute: 'Rejoins les loups des brumes. Instinct, meute et lune rouge — frappe vite, en nombre.', Chevalier: "Sers l'ordre du royaume. Discipline, provocation et lumière sacrée — tiens la ligne." }; return <div className="onboarding"><div className="onboarding-inner"><p className="eyebrow">CHOISIS TON SERMENT</p><h2>Quel camp défendras-tu ?</h2><p>Ce choix détermine ton deck de départ. Les autres factions restent verrouillées jusqu'à ce que tu progresses dans la campagne.</p><div className="onboarding-choices"><button className="onboarding-card" onClick={() => s.chooseStartingFaction('Meute')}><span className="onboarding-art" style={{ backgroundImage: `url(${wolfArt}), radial-gradient(circle at 50% 25%, #1c3a42, #050d0d 75%)` }} /><b>Meute</b><small>{blurbs.Meute}</small></button><button className="onboarding-card" onClick={() => s.chooseStartingFaction('Chevalier')}><span className="onboarding-art" style={{ backgroundImage: `url(${knightArt}), radial-gradient(circle at 50% 25%, #3a2f10, #0a0704 75%)` }} /><b>Chevalier</b><small>{blurbs.Chevalier}</small></button></div></div></div>; }
 
 function DisplaySettingsBridge() {
   const s = useGame();

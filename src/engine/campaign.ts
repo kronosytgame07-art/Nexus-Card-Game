@@ -19,6 +19,8 @@ export const CHAPTERS: ChapterDef[] = [
   { id: 4, title: 'La tour oubliée', opponentFaction: 'Chevalier', aiDifficulty: 'veteran', enemyLifeBonus: 8, reward: 70 },
   { id: 5, title: 'Le palais sous la brume', opponentFaction: 'Meute', aiDifficulty: 'maitre', enemyLifeBonus: 10, reward: 85 },
   { id: 6, title: 'La Reine effacée', opponentFaction: 'Chevalier', aiDifficulty: 'maitre', enemyLifeBonus: 14, reward: 120 },
+  { id: 7, title: 'Les tambours de guerre', opponentFaction: 'Orc', aiDifficulty: 'maitre', enemyLifeBonus: 16, reward: 130 },
+  { id: 8, title: 'Le Chef de Guerre', opponentFaction: 'Orc', aiDifficulty: 'maitre', enemyLifeBonus: 20, reward: 150 },
 ];
 
 export function chapterById(id: number): ChapterDef {

@@ -2,7 +2,7 @@
 // Toute la logique de partie s'appuie sur ces types — aucune UI ne doit
 // dupliquer de règles, elle ne fait que lire GameState et appeler engine.ts.
 
-export type Faction = 'Meute' | 'Chevalier';
+export type Faction = 'Meute' | 'Chevalier' | 'Orc';
 
 export type EffectKind =
   | 'protect' // Provocation : les ennemis doivent attaquer cette unité en priorité
