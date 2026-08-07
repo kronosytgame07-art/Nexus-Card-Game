@@ -10,9 +10,12 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 
 export type BurstPreset = 'summon' | 'evolution' | 'attack' | 'draw' | 'crack';
 
+export type DashTone = 'fire' | 'frost';
+
 export type VfxHandle = {
   spawnBurst: (x: number, y: number, preset: BurstPreset) => void;
   spawnShatter: (x: number, y: number, width: number, height: number, imageUrl: string) => void;
+  spawnDashTrail: (x1: number, y1: number, x2: number, y2: number, durationSec: number, tone: DashTone) => void;
 };
 
 const PARTICLE_VERT = `
@@ -149,6 +152,12 @@ const PRESETS: Record<BurstPreset, { count: number; speed: [number, number]; lif
   crack: { count: 30, speed: [220, 540], life: [0.16, 0.3], size: [2, 5], gravity: 160, colors: [[1, 1, 1], [1, 0.9, 0.6]] },
 };
 
+const DASH_COLORS: Record<DashTone, [number, number, number][]> = {
+  fire: [[1, 0.55, 0.15], [1, 0.75, 0.3], [1, 0.35, 0.1]],
+  frost: [[0.4, 0.75, 1], [0.7, 0.9, 1], [0.55, 0.85, 1]],
+};
+const TRAIL_PARTICLES = 26;
+
 type ShatterEvent = {
   texture: WebGLTexture;
   buffer: WebGLBuffer;
@@ -164,10 +173,12 @@ const VfxLayer = forwardRef<VfxHandle, { active?: boolean }>(function VfxLayer({
   activeRef.current = active;
   const spawnQueue = useRef<Array<{ x: number; y: number; preset: BurstPreset }>>([]);
   const shatterQueue = useRef<Array<{ x: number; y: number; w: number; h: number; url: string }>>([]);
+  const trailQueue = useRef<Array<{ x1: number; y1: number; x2: number; y2: number; duration: number; tone: DashTone }>>([]);
 
   useImperativeHandle(ref, () => ({
     spawnBurst: (x, y, preset) => { spawnQueue.current.push({ x, y, preset }); },
     spawnShatter: (x, y, w, h, url) => { shatterQueue.current.push({ x, y, w, h, url }); },
+    spawnDashTrail: (x1, y1, x2, y2, durationSec, tone) => { trailQueue.current.push({ x1, y1, x2, y2, duration: durationSec, tone }); },
   }), []);
 
   useEffect(() => {
@@ -219,6 +230,19 @@ const VfxLayer = forwardRef<VfxHandle, { active?: boolean }>(function VfxLayer({
     let totalSpawned = 0;
     const scratch = new Float32Array(400 * FLOATS_PER_PARTICLE);
 
+    const uploadParticles = (view: Float32Array, n: number) => {
+      gl.bindBuffer(gl.ARRAY_BUFFER, particleBuffer);
+      const spaceToEnd = MAX_PARTICLES - writeCursor;
+      if (n <= spaceToEnd) {
+        gl.bufferSubData(gl.ARRAY_BUFFER, writeCursor * STRIDE, view);
+      } else {
+        gl.bufferSubData(gl.ARRAY_BUFFER, writeCursor * STRIDE, view.subarray(0, spaceToEnd * FLOATS_PER_PARTICLE));
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, view.subarray(spaceToEnd * FLOATS_PER_PARTICLE));
+      }
+      writeCursor = (writeCursor + n) % MAX_PARTICLES;
+      totalSpawned += n;
+    };
+
     const consumeSpawnQueue = (elapsed: number) => {
       const queue = spawnQueue.current;
       if (!queue.length) return;
@@ -246,17 +270,49 @@ const VfxLayer = forwardRef<VfxHandle, { active?: boolean }>(function VfxLayer({
           scratch[off + 10] = color[2];
           scratch[off + 11] = Math.random();
         }
-        const view = scratch.subarray(0, n * FLOATS_PER_PARTICLE);
-        gl.bindBuffer(gl.ARRAY_BUFFER, particleBuffer);
-        const spaceToEnd = MAX_PARTICLES - writeCursor;
-        if (n <= spaceToEnd) {
-          gl.bufferSubData(gl.ARRAY_BUFFER, writeCursor * STRIDE, view);
-        } else {
-          gl.bufferSubData(gl.ARRAY_BUFFER, writeCursor * STRIDE, view.subarray(0, spaceToEnd * FLOATS_PER_PARTICLE));
-          gl.bufferSubData(gl.ARRAY_BUFFER, 0, view.subarray(spaceToEnd * FLOATS_PER_PARTICLE));
+        uploadParticles(scratch.subarray(0, n * FLOATS_PER_PARTICLE), n);
+      }
+    };
+
+    // Traînée d'attaque : au lieu d'une explosion isotrope, des étincelles
+    // réparties le long du trajet attaquant → cible, chacune allumée à un
+    // instant décalé proportionnel à sa position sur le chemin — elles
+    // s'illuminent donc en séquence, comme une comète qui prend de la
+    // vitesse, en phase avec la propre animation de saut de la carte.
+    const trailScratch = new Float32Array(TRAIL_PARTICLES * FLOATS_PER_PARTICLE);
+    const consumeTrailQueue = (elapsed: number) => {
+      const queue = trailQueue.current;
+      if (!queue.length) return;
+      trailQueue.current = [];
+      for (const job of queue) {
+        const colors = DASH_COLORS[job.tone];
+        const dx = job.x2 - job.x1;
+        const dy = job.y2 - job.y1;
+        const len = Math.hypot(dx, dy) || 1;
+        const nx = -dy / len;
+        const ny = dx / len;
+        for (let i = 0; i < TRAIL_PARTICLES; i++) {
+          const frac = i / (TRAIL_PARTICLES - 1);
+          const jitter = (Math.random() - 0.5) * 12;
+          const px = job.x1 + dx * frac + nx * jitter;
+          const py = job.y1 + dy * frac + ny * jitter;
+          const jitterAngle = Math.random() * Math.PI * 2;
+          const color = colors[Math.floor(Math.random() * colors.length)];
+          const off = i * FLOATS_PER_PARTICLE;
+          trailScratch[off + 0] = px;
+          trailScratch[off + 1] = py;
+          trailScratch[off + 2] = Math.cos(jitterAngle) * 22;
+          trailScratch[off + 3] = Math.sin(jitterAngle) * 22;
+          trailScratch[off + 4] = -30;
+          trailScratch[off + 5] = 0.26 + Math.random() * 0.18;
+          trailScratch[off + 6] = elapsed + frac * job.duration * 0.82;
+          trailScratch[off + 7] = 4 + Math.random() * 5 * (1 - frac * 0.35);
+          trailScratch[off + 8] = color[0];
+          trailScratch[off + 9] = color[1];
+          trailScratch[off + 10] = color[2];
+          trailScratch[off + 11] = Math.random();
         }
-        writeCursor = (writeCursor + n) % MAX_PARTICLES;
-        totalSpawned += n;
+        uploadParticles(trailScratch, TRAIL_PARTICLES);
       }
     };
 
@@ -364,6 +420,7 @@ const VfxLayer = forwardRef<VfxHandle, { active?: boolean }>(function VfxLayer({
       elapsed += dt;
 
       consumeSpawnQueue(elapsed);
+      consumeTrailQueue(elapsed);
       consumeShatterQueue(elapsed);
       shatterEvents = shatterEvents.filter((event) => {
         if (elapsed - event.startTime > SHATTER_LIFE) {
