@@ -80,6 +80,10 @@ export interface PlayerState {
   mana: number;
   maxMana: number;
   deck: string[];
+  /** Composition figée du deck de départ (30 cartes) — sert de réserve pour
+   *  les effets qui invoquent/piochent "au hasard dans ton deck", pour ne
+   *  jamais tirer une carte que le joueur ne possède pas. */
+  deckList: string[];
   hand: string[];
   field: FieldUnit[];
   /** Sorts posés face cachée en zone Soutien, en attente d'activation (5 emplacements). */

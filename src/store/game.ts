@@ -22,6 +22,9 @@ export interface SavedDeck {
   name: string;
   faction: Faction;
   main: string[];
+  /** Sélection manuelle de l'évosphère par le joueur ; si absente ou vide,
+      elle est dérivée automatiquement des évolutions du deck principal. */
+  evosphere?: string[];
 }
 
 /** Replay local d'un duel terminé : une suite d'instantanés de GameState,
@@ -72,6 +75,7 @@ interface GameMeta {
   renameDeck: (id: string, name: string) => void;
   deleteDeck: (id: string) => void;
   setDeckCards: (id: string, main: string[]) => void;
+  setDeckEvosphere: (id: string, evosphere: string[]) => void;
   setActiveDeck: (id: string) => void;
   chooseStartingFaction: (faction: Faction) => void;
   setFaction: (faction: Faction) => void;
@@ -191,6 +195,10 @@ export const useGame = create<GameMeta>()(
         set((s) => ({
           decks: s.decks.map((d) => (d.id === id ? { ...d, main } : d)),
           deck: s.activeDeckId === id ? main : s.deck,
+        })),
+      setDeckEvosphere: (id, evosphere) =>
+        set((s) => ({
+          decks: s.decks.map((d) => (d.id === id ? { ...d, evosphere } : d)),
         })),
       setActiveDeck: (id) =>
         set((s) => {
