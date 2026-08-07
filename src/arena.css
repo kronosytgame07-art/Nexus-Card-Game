@@ -17,11 +17,18 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
   --enemy: #ef4961;
   --ally: #41e2b3;
   --gold: #efc96b;
-  --creature-w: clamp(108px, 8.6vw, 170px);
-  --creature-h: clamp(118px, 16.5vh, 165px);
+  /* Les illustrations de carte sont portrait (~0.7 large/haut). La case
+     doit avoir le même ratio, sinon object-fit:contain laisse un grand
+     bandeau noir sur les côtés. La largeur se déduit donc de la hauteur
+     (bornée par le budget vertical ET par le rail à 5 colonnes du soutien,
+     pour ne jamais déborder). */
+  --card-ratio: .7;
+  --creature-h-budget: clamp(118px, 16.5vh, 165px);
+  --axis-w: min(1120px, 94vw);
+  --creature-w: min(calc((var(--axis-w) - 4 * 8px) / 5), calc(var(--creature-h-budget) * var(--card-ratio)));
+  --creature-h: calc(var(--creature-w) / var(--card-ratio));
   --support-w: var(--creature-w);
   --support-h: var(--creature-h);
-  --axis-w: min(1120px, 94vw);
   --rail-w: clamp(50px, 6vw, 82px);
   --hand-h: clamp(150px, 26vh, 220px);
   --hand-peek: calc(var(--hand-h) * .3);
@@ -109,8 +116,20 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 }
 .life { border: 2px solid #ef6c6c; background: radial-gradient(circle at 30% 20%, #4a1620, #170609); color: #ffb3b3; }
 .mana { border: 2px solid var(--gold); background: radial-gradient(circle at 30% 20%, #3a2f10, #100c04); color: #ffe9a8; }
-.hero-dmg { position: relative; color: #ff5468; font: 800 12px "DM Mono"; animation: heroHit .5s ease-out; }
-@keyframes heroHit { 0%, 100% { filter: none; } 30% { filter: drop-shadow(0 0 10px rgba(255, 60, 80, .9)) brightness(1.4); } }
+/* Gros nombre de dégâts qui flotte au-dessus du profil touché — doit être
+   impossible à manquer, même en jetant un oeil rapide au plateau. */
+.hero-dmg {
+  position: absolute;
+  left: 50%;
+  top: -6px;
+  transform: translate(-50%, -100%);
+  z-index: 30;
+  font: 900 clamp(26px, 4.4vw, 46px) "Space Grotesk";
+  color: #ff2d4e;
+  text-shadow: 0 0 10px rgba(255, 45, 78, .95), 0 0 34px rgba(255, 45, 78, .7);
+  pointer-events: none;
+  white-space: nowrap;
+}
 
 /* ---------- Profils compacts en coin, identiques des deux côtés ----------- */
 .profile-float {
@@ -337,6 +356,10 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 }
 .turn-strip b { white-space: nowrap; }
 .turn-strip > span { color: #83efd3; white-space: nowrap; }
+/* Teinte rouge le temps du tour de l'IA, pour qu'on sente vraiment que ce
+   n'est plus notre tour même sans lire le texte. */
+.turn-strip.ai-turn { border-color: rgba(239, 73, 97, .55); background: rgba(28, 4, 8, .95); box-shadow: 0 0 14px rgba(239, 73, 97, .3); }
+.turn-strip.ai-turn b { color: #ff9aab; }
 
 .nexus-phases { display: flex; align-items: center; gap: 5px; margin-left: auto; }
 .nexus-phases button { height: 24px; padding: 0 9px; border: 1px solid rgba(239, 201, 107, .28); border-radius: 999px; background: rgba(5, 10, 13, .9); color: #9caeaa; font: 700 8px "DM Mono"; letter-spacing: .6px; cursor: pointer; }
@@ -424,6 +447,17 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 .hand-preview-actions button { flex: 1; margin: 0; }
 .hand-preview-warn { color: #ff9aab; font: 700 10px "DM Mono"; }
 
+/* Invite à activer l'effet d'une créature juste après son invocation, au
+   lieu d'obliger à la retoucher ensuite pour trouver le bouton. */
+.effect-prompt-overlay { position: fixed; inset: 0; z-index: 500; display: grid; place-items: center; padding: 24px; background: rgba(1, 5, 8, .82); backdrop-filter: blur(10px); }
+.effect-prompt { position: relative; width: min(380px, 90vw); display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 22px; border: 1px solid rgba(239, 201, 107, .7); border-radius: 18px; background: linear-gradient(145deg, rgba(20, 24, 34, .99), rgba(4, 13, 15, .99)); box-shadow: 0 30px 90px rgba(0, 0, 0, .72); text-align: center; }
+.effect-prompt-art { width: min(140px, 40vw); border-radius: 12px; display: block; filter: drop-shadow(0 14px 20px rgba(0, 0, 0, .55)); }
+.effect-prompt b { font: 700 18px "Playfair Display"; color: var(--gold); }
+.effect-prompt-question { margin: 0; color: #ffe9a8; font: 700 12px "DM Mono"; }
+.effect-prompt-text { margin: 0; color: #c1d0cb; font-size: 12px; line-height: 1.4; }
+.effect-prompt-actions { display: flex; gap: 10px; width: 100%; margin-top: 4px; }
+.effect-prompt-actions button { flex: 1; margin: 0; }
+
 .pile-modal { position: fixed; inset: 0; z-index: 200; display: flex; justify-content: flex-end; background: rgba(2, 6, 7, .6); }
 .pile-modal-content { width: min(380px, 90vw); height: 100%; background: #071316; border-left: 1px solid #e6bd6355; box-shadow: -24px 0 50px rgba(0, 0, 0, .55); display: flex; flex-direction: column; overflow: hidden; }
 .pile-modal-content header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid #ffffff14; flex: 0 0 auto; }
@@ -456,8 +490,9 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
   .battle {
     --rail-w: clamp(30px, 8vw, 42px);
     --axis-w: min(700px, calc(100vw - 2 * var(--rail-w) - 32px));
-    --creature-w: calc((var(--axis-w) - 4 * 8px) / 5);
-    --creature-h: clamp(90px, 26vh, 180px);
+    --creature-h-budget: clamp(90px, 24vh, 160px);
+    --creature-w: min(calc((var(--axis-w) - 4 * 8px) / 5), calc(var(--creature-h-budget) * var(--card-ratio)));
+    --creature-h: calc(var(--creature-w) / var(--card-ratio));
     --support-w: var(--creature-w);
     --support-h: var(--creature-h);
     --hand-h: clamp(96px, 20vh, 140px);

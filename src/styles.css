@@ -105,3 +105,11 @@ main{flex:1;min-width:0;min-height:0;padding:55px;overflow-y:auto;-webkit-overfl
 .deck-count.warn{color:#f2c56a}
 .deck-count.ok{color:#7ff0d0}
 .deck-count.danger{color:#ff8d8d}
+.reset-confirm-overlay{position:fixed;inset:0;z-index:500;display:grid;place-items:center;padding:24px;background:rgba(1,5,8,.82);backdrop-filter:blur(10px)}
+.reset-confirm{width:min(420px,90vw);display:flex;flex-direction:column;gap:12px;padding:24px;border:1px solid #ef6c6c88;border-radius:18px;background:linear-gradient(145deg,rgba(30,14,14,.99),rgba(10,5,5,.99));box-shadow:0 30px 90px rgba(0,0,0,.72)}
+.reset-confirm b{font:700 18px "Playfair Display";color:#ffb3b3}
+.reset-confirm p{margin:0;color:#e3c9c9;font-size:13px;line-height:1.5}
+.reset-confirm .reset-confirm-hint{color:#ffe9a8}
+.reset-confirm input{width:100%}
+.reset-confirm-actions{display:flex;gap:10px;margin-top:4px}
+.reset-confirm-actions button{flex:1;margin:0}
