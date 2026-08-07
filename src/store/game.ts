@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { CARDS, cardsByFaction, getCard, starterDeck } from '../engine/cards';
-import { Faction } from '../engine/types';
+import { Faction, GameState } from '../engine/types';
 
 /** Nombre de chapitres de campagne à remporter pour débloquer la seconde faction. */
 export const UNLOCK_SECOND_FACTION_AT = 3;
@@ -9,6 +9,8 @@ export const XP_PER_LEVEL = 100;
 export const MAIN_DECK_MIN = 30;
 export const MAIN_DECK_MAX = 40;
 export const EVOSPHERE_MAX = 20;
+/** Nombre maximum de replays conservés localement (les plus anciens sont supprimés). */
+export const MAX_REPLAYS = 12;
 
 export type Language = 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh';
 export type VisualQuality = 'eco' | 'balanced' | 'high';
@@ -20,6 +22,19 @@ export interface SavedDeck {
   name: string;
   faction: Faction;
   main: string[];
+}
+
+/** Replay local d'un duel terminé : une suite d'instantanés de GameState,
+    rejouable pas à pas depuis le profil du joueur. Aucun serveur partagé
+    n'existe dans ce projet — ces replays restent sur l'appareil. */
+export interface SavedReplay {
+  id: string;
+  date: number;
+  opponentFaction: Faction;
+  result: 'win' | 'loss';
+  turns: number;
+  label: string;
+  snapshots: GameState[];
 }
 
 interface GameMeta {
@@ -80,6 +95,9 @@ interface GameMeta {
   setMusicEnabled: (enabled: boolean) => void;
   setLanguage: (language: Language) => void;
   resetProgress: () => void;
+  replays: SavedReplay[];
+  saveReplay: (replay: Omit<SavedReplay, 'id' | 'date'>) => void;
+  deleteReplay: (id: string) => void;
 }
 
 function startingOwnedFor(faction: Faction): string[] {
@@ -144,6 +162,7 @@ export const useGame = create<GameMeta>()(
       showFps: false,
       batterySaver: false,
       vibrationEnabled: true,
+      replays: [],
       addCard: (id) => set((s) => ({ owned: [...new Set([...s.owned, id])] })),
       saveDeck: (deck) => set({ deck }),
       createDeck: (name, faction) => {
@@ -271,7 +290,13 @@ export const useGame = create<GameMeta>()(
           unlockedFactions: [],
           playerName: 'Chronos',
           avatarCardId: '',
+          replays: [],
         }),
+      saveReplay: (replay) =>
+        set((s) => ({
+          replays: [{ ...replay, id: `replay-${Date.now()}-${Math.floor(Math.random() * 1000)}`, date: Date.now() }, ...s.replays].slice(0, MAX_REPLAYS),
+        })),
+      deleteReplay: (id) => set((s) => ({ replays: s.replays.filter((r) => r.id !== id) })),
     }),
     {
       name: 'nexus-save',

@@ -155,8 +155,11 @@ function applyPackBonuses(state: GameState) {
   }
 }
 
-/** Coût réel pour jouer une carte, en tenant compte du Rang Sacré des chevaliers. */
+/** Coût réel pour jouer une carte, en tenant compte du Rang Sacré des chevaliers.
+    Les sorts/enchantements se posent toujours gratuitement face cachée en
+    Soutien — seule leur activation coûte des runes (voir activateSupportCard). */
 function effectivePlayCost(def: CardDef, owner: PlayerState): number {
+  if (def.type === 'spell') return 0;
   if (def.faction !== 'Chevalier' || def.type !== 'unit') return def.cost;
   const knightsOnField = owner.field.filter((u) => getCard(u.cardId).faction === 'Chevalier').length;
   return Math.max(1, def.cost - knightsOnField);
@@ -664,9 +667,14 @@ export function activateSupportCard(rawState: GameState, playerId: PlayerId, sup
   const support = p.support[idx];
   const def = getCard(support.cardId);
   if (!def.effect) return state;
+  if (def.cost > p.mana) {
+    pushLog(state, `${def.name} reste face cachée : pas assez de runes pour l'activer (${def.cost}◆).`);
+    return state;
+  }
 
   const succeeded = resolveEffect(state, playerId, def.effect);
   if (succeeded) {
+    p.mana -= def.cost;
     p.support.splice(idx, 1);
     p.graveyard.push(def.id);
     pushLog(state, `${def.name} se révèle et son effet s'active.`);
