@@ -492,8 +492,27 @@ export function endTurn(rawState: GameState): GameState {
   checkWinner(state);
 
   if (!state.winner && next === 'enemy') {
-    state = runAiTurn(state);
+    state = aiMainPhase(state);
+    state = aiBattlePhase(state);
+    state = aiEndPhase(state);
   }
+  return state;
+}
+
+// --- Tour de l'IA, découpé en phases -------------------------------------
+// Chaque fonction est un pas autonome (pioche / main / combat / fin) que
+// l'interface peut appliquer l'une après l'autre avec une pause visuelle
+// entre chacune, au lieu de tout résoudre d'un bloc et de ne montrer le
+// résultat qu'à la toute fin.
+
+// Pioche + mana de l'IA — équivalent du début d'endTurn pour le camp adverse.
+export function aiDrawPhase(rawState: GameState): GameState {
+  const state = clone(rawState);
+  if (state.winner) return state;
+  state.activePlayer = 'enemy';
+  state.phase = 'main';
+  startTurn(state, 'enemy');
+  checkWinner(state);
   return state;
 }
 
@@ -531,13 +550,13 @@ function bestTradeTarget(attacker: FieldUnit, enemyField: FieldUnit[]): { target
   return best;
 }
 
-export function runAiTurn(rawState: GameState): GameState {
+// Main phase de l'IA : évolutions, pose de cartes (la plus chère d'abord),
+// puis activation des effets/soutiens déjà en jeu.
+export function aiMainPhase(rawState: GameState): GameState {
   let state = clone(rawState);
   if (state.winner || state.activePlayer !== 'enemy') return state;
-  const difficulty = state.aiDifficulty;
   state = evolveAiUnits(state);
 
-  // Phase principale : jouer autant de cartes que possible, la plus chère d'abord.
   let playedSomething = true;
   while (playedSomething) {
     playedSomething = false;
@@ -568,8 +587,14 @@ export function runAiTurn(rawState: GameState): GameState {
   for (const s of [...state.enemy.support]) {
     state = activateSupportCard(state, 'enemy', s.instanceId);
   }
+  return state;
+}
 
-  // Phase de combat.
+// Battle phase de l'IA : décide et résout toutes ses attaques.
+export function aiBattlePhase(rawState: GameState): GameState {
+  let state = clone(rawState);
+  if (state.winner || state.activePlayer !== 'enemy') return state;
+  const difficulty = state.aiDifficulty;
   const attackers = state.enemy.field.filter((u) => u.canAttack && u.stunnedTurns === 0);
 
   // "maitre" : si la somme des attaques disponibles peut achever le joueur, on fonce tout au visage.
@@ -621,7 +646,12 @@ export function runAiTurn(rawState: GameState): GameState {
     }
     if (state.winner) break;
   }
+  return state;
+}
 
+// Fin du tour de l'IA : bascule la main au joueur.
+export function aiEndPhase(rawState: GameState): GameState {
+  const state = clone(rawState);
   pushLog(state, "L'adversaire termine son tour.");
   const next = clone(state);
   next.activePlayer = 'player';
@@ -630,6 +660,14 @@ export function runAiTurn(rawState: GameState): GameState {
   startTurn(next, 'player');
   checkWinner(next);
   return next;
+}
+
+export function runAiTurn(rawState: GameState): GameState {
+  let state = clone(rawState);
+  if (state.winner || state.activePlayer !== 'enemy') return state;
+  state = aiMainPhase(state);
+  state = aiBattlePhase(state);
+  return aiEndPhase(state);
 }
 
 
