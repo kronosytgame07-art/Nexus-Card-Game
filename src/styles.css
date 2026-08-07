@@ -112,6 +112,8 @@ progress{accent-color:#56dab8}.faction-pick{display:flex;gap:10px;margin:18px 0}
 .deck-create-form{display:flex;gap:10px;align-items:center;margin:12px 0;flex-wrap:wrap}
 .deck-create-form input{padding:10px;background:#ffffff0e;color:white;border:1px solid #ffffff2d;border-radius:8px}
 .deck-editor-head{display:flex;align-items:center;gap:16px;margin-bottom:4px}
+.deck-editor-evo-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:28px 0 4px}
+.deck-editor-evo-head h3{margin:0}
 .deck-count.warn{color:#f2c56a}
 .deck-count.ok{color:#7ff0d0}
 .deck-count.danger{color:#ff8d8d}

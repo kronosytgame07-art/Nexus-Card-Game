@@ -31,7 +31,7 @@ function shuffle<T>(arr: T[]): T[] {
 
 const MIN_PLAYABLE_DECK = 30;
 
-function makePlayer(id: PlayerId, faction: Faction, customDeck?: string[], lifeBonus = 0): PlayerState {
+function makePlayer(id: PlayerId, faction: Faction, customDeck?: string[], lifeBonus = 0, customEvosphere?: string[]): PlayerState {
   const source = customDeck && customDeck.length >= MIN_PLAYABLE_DECK ? customDeck : starterDeck(faction);
   const deck = shuffle(source).slice(0, MAIN_DECK_SIZE);
   const deckList = [...deck];
@@ -42,9 +42,12 @@ function makePlayer(id: PlayerId, faction: Faction, customDeck?: string[], lifeB
       .map((id) => getCard(id).evolvesTo)
       .filter((id): id is string => Boolean(id))
   )];
-  const evosphere = evolutionIds
-    .flatMap((id) => [id, id, id])
-    .slice(0, 20);
+  // Le joueur peut choisir lui-même le contenu de son évosphère dans le
+  // deck-builder ; sinon on garde l'ancien comportement automatique
+  // (chaque évolution possible x3, jusqu'à 20 emplacements).
+  const evosphere = customEvosphere && customEvosphere.length
+    ? customEvosphere.slice(0, 20)
+    : evolutionIds.flatMap((id) => [id, id, id]).slice(0, 20);
   return {
     id,
     faction,
@@ -68,13 +71,14 @@ export function newGame(
   enemyFaction: Faction,
   aiDifficulty: GameState['aiDifficulty'] = 'novice',
   playerDeck?: string[],
-  enemyLifeBonus = 0
+  enemyLifeBonus = 0,
+  playerEvosphere?: string[]
 ): GameState {
   const state: GameState = {
     turn: 1,
     activePlayer: 'player',
     phase: 'main',
-    player: makePlayer('player', playerFaction, playerDeck),
+    player: makePlayer('player', playerFaction, playerDeck, 0, playerEvosphere),
     enemy: makePlayer('enemy', enemyFaction, undefined, enemyLifeBonus),
     log: ['La partie commence. À toi de jouer.'],
     aiDifficulty,

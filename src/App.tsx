@@ -240,6 +240,13 @@ function DeckEditor({ deckId, onBack }: { deckId: string; onBack: () => void }) 
   const s = useGame();
   const savedDeck = s.decks.find((d) => d.id === deckId);
   const pool = savedDeck ? cardsByFaction(savedDeck.faction).filter((c) => c.level === 1 && s.owned.includes(c.id)) : [];
+  // Cartes d'évolution que le joueur possède réellement (la carte de base
+  // dont elles évoluent fait partie de sa collection) — jamais limité aux
+  // 20 emplacements de l'ancienne dérivation automatique.
+  const evoPool = savedDeck
+    ? cardsByFaction(savedDeck.faction).filter((c) => c.level === 2 && c.evolvesFrom && s.owned.includes(c.evolvesFrom))
+    : [];
+  const [customizingEvo, setCustomizingEvo] = useState(false);
   if (!savedDeck) return <section><h2>Deck introuvable</h2><button className="secondary" onClick={onBack}>Retour</button></section>;
 
   const main = savedDeck.main;
@@ -250,6 +257,16 @@ function DeckEditor({ deckId, onBack }: { deckId: string; onBack: () => void }) 
   };
   const removeAt = (i: number) => s.setDeckCards(deckId, main.filter((_, n) => n !== i));
   const statusClass = count < MAIN_DECK_MIN ? 'warn' : count > MAIN_DECK_MAX ? 'danger' : 'ok';
+
+  const evosphere = savedDeck.evosphere ?? [];
+  const evoIsCustom = !!savedDeck.evosphere && savedDeck.evosphere.length > 0;
+  const evoCount = evosphere.length;
+  const addEvo = (id: string) => {
+    if (evoCount >= EVOSPHERE_MAX) return;
+    if (copiesInDeck(evosphere, id) < maxCopiesAllowed(id)) s.setDeckEvosphere(deckId, [...evosphere, id]);
+  };
+  const removeEvoAt = (i: number) => s.setDeckEvosphere(deckId, evosphere.filter((_, n) => n !== i));
+  const resetEvo = () => s.setDeckEvosphere(deckId, []);
 
   return (
     <section>
@@ -285,6 +302,51 @@ function DeckEditor({ deckId, onBack }: { deckId: string; onBack: () => void }) 
           ))}
         </div>
       </div>
+
+      <div className="deck-editor-evo-head">
+        <h3>Évosphère {evoIsCustom ? `(${evoCount}/${EVOSPHERE_MAX})` : '(automatique)'}</h3>
+        <button className="secondary" onClick={() => setCustomizingEvo((v) => !v)}>
+          {customizingEvo ? 'Fermer' : 'Personnaliser'}
+        </button>
+      </div>
+      {!customizingEvo && (
+        <p className="hint">
+          {evoIsCustom
+            ? `Sélection manuelle active — ${evoCount} carte(s) dans l'évosphère.`
+            : "Se remplit automatiquement avec les évolutions de ton deck (jusqu'à 20 emplacements). Clique sur Personnaliser pour choisir toi-même."}
+        </p>
+      )}
+      {customizingEvo && (
+        <>
+          <p className="hint">Choisis les évolutions à mettre dans ton évosphère (max {EVOSPHERE_MAX}, 3 exemplaires max par carte).</p>
+          <div className="builder">
+            <div>
+              <h3>Sélection</h3>
+              {evosphere.length === 0 && <p className="hint">Aucune sélection — l'évosphère automatique sera utilisée tant que tu n'ajoutes rien ici.</p>}
+              {evosphere.map((id, i) => {
+                const c = evoPool.find((card) => card.id === id);
+                return (
+                  <button className="deck-row" key={i} onClick={() => removeEvoAt(i)}>
+                    {c?.name ?? id} <span>×</span>
+                  </button>
+                );
+              })}
+              {evoIsCustom && <button className="secondary" onClick={resetEvo}>↺ Revenir à l'automatique</button>}
+            </div>
+            <div className="grid">
+              {evoPool.map((c) => (
+                <CardView
+                  key={c.id}
+                  card={c}
+                  badge={`${copiesInDeck(evosphere, c.id)}/${maxCopiesAllowed(c.id)}`}
+                  disabled={copiesInDeck(evosphere, c.id) >= maxCopiesAllowed(c.id) || evoCount >= EVOSPHERE_MAX}
+                  onClick={() => addEvo(c.id)}
+                />
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </section>
   );
 }
@@ -334,12 +396,14 @@ function Combat() {
   const opponentFaction = chapter ? chapter.opponentFaction : s.faction === 'Meute' ? 'Chevalier' : 'Meute';
   const opponentAvatarImage = getCard(opponentFaction === 'Chevalier' ? 'capitaine-du-royaume' : 'croc-de-fer').image;
   const playerAvatarCard = ALL_CARDS.find((c) => c.id === s.avatarCardId) ?? ALL_CARDS.find((c) => c.type === 'unit' && c.level === 1 && c.faction === s.faction);
-  const activeDeckName = s.decks.find((d) => d.id === s.activeDeckId)?.name ?? s.faction;
+  const activeDeck = s.decks.find((d) => d.id === s.activeDeckId);
+  const activeDeckName = activeDeck?.name ?? s.faction;
   const aiDifficulty = chapter ? chapter.aiDifficulty : 'novice'; const lifeBonus = chapter ? chapter.enemyLifeBonus : 0; const reward = chapter ? chapter.reward : 35;
   // Filet de sécurité : même si un deck sauvegardé contenait encore une
   // carte non possédée (donnée ancienne d'avant ce correctif), elle ne
   // doit jamais atterrir dans une vraie partie.
-  const startMatch = () => newGame(s.faction, opponentFaction, aiDifficulty, s.deck.filter((id) => s.owned.includes(id)), lifeBonus);
+  const customEvosphere = activeDeck?.evosphere?.filter((id) => s.owned.includes(getCard(id).evolvesFrom ?? id));
+  const startMatch = () => newGame(s.faction, opponentFaction, aiDifficulty, s.deck.filter((id) => s.owned.includes(id)), lifeBonus, customEvosphere && customEvosphere.length ? customEvosphere : undefined);
   const [match, setMatch] = useState<GameState>(startMatch); const [selectedAttacker, setSelectedAttacker] = useState<string | null>(null); const [reported, setReported] = useState(false); const [effectHint, setEffectHint] = useState(''); const [inspectedUnit, setInspectedUnit] = useState<string | null>(null); const [unitPulses, setUnitPulses] = useState<Record<string, { key: string; amount: number }>>({}); const [heroPulses, setHeroPulses] = useState<{ player?: { key: string; amount: number }; enemy?: { key: string; amount: number } }>({}); const [handOpen, setHandOpen] = useState(false); const [phase, setPhase] = useState<'draw' | 'main' | 'battle' | 'end'>('draw'); const [previewCardId, setPreviewCardId] = useState<string | null>(null); const [drawStage, setDrawStage] = useState<'idle' | 'prompt' | 'reveal'>('idle'); const [pauseOpen, setPauseOpen] = useState(false); const [aiTurnStage, setAiTurnStage] = useState<'idle' | 'draw' | 'main' | 'battle' | 'end'>('idle'); const [aiDrawCount, setAiDrawCount] = useState(0); const [effectPrompt, setEffectPrompt] = useState<string | null>(null); const [supportReveal, setSupportReveal] = useState<{ cardId: string; name: string } | null>(null); const [evoSeq, setEvoSeq] = useState<EvoSeq | null>(null);
   const PHASE_ORDER: ('draw' | 'main' | 'battle' | 'end')[] = ['draw', 'main', 'battle', 'end'];
   const pulseFromDiff = (before: GameState, after: GameState) => { const units: Record<string, { key: string; amount: number }> = {}; const heroes: { player?: { key: string; amount: number }; enemy?: { key: string; amount: number } } = {}; for (const side of ['player', 'enemy'] as const) { const beforeMap = new Map(before[side].field.map((u) => [u.instanceId, u])); const afterIds = new Set(after[side].field.map((u) => u.instanceId)); for (const u of after[side].field) { if (side === 'enemy' && !beforeMap.has(u.instanceId)) { const id = u.instanceId; requestAnimationFrame(() => requestAnimationFrame(() => { const el = cardRefs.current[id]; if (el) { const r = el.getBoundingClientRect(); vfxRef.current?.spawnBurst(r.left + r.width / 2, r.top + r.height / 2, 'summon'); } })); } const prevUnit = beforeMap.get(u.instanceId); const prevHp = prevUnit?.health; if (prevHp != null && u.health < prevHp) { units[u.instanceId] = { key: `${u.instanceId}-${Date.now()}-${Math.random()}`, amount: prevHp - u.health }; const el = cardRefs.current[u.instanceId]; if (el) { const r = el.getBoundingClientRect(); vfxRef.current?.spawnBurst(r.left + r.width / 2, r.top + r.height / 2, 'attack'); } } } for (const [id, deadUnit] of beforeMap) { if (afterIds.has(id)) continue; const el = cardRefs.current[id]; if (el) { const r = el.getBoundingClientRect(); const cx = r.left + r.width / 2; const cy = r.top + r.height / 2; const def = getCard(deadUnit.cardId); vfxRef.current?.spawnBurst(cx, cy, 'crack'); vfxRef.current?.spawnShatter(cx, cy, r.width, r.height, def.image); } delete cardRefs.current[id]; } if (after[side].life < before[side].life) { heroes[side] = { key: `${side}-${Date.now()}`, amount: before[side].life - after[side].life }; const heroEl = heroRefs.current[side]; if (heroEl) { const r = heroEl.getBoundingClientRect(); const cx = r.left + r.width / 2; const cy = r.top + r.height / 2; vfxRef.current?.spawnBurst(cx, cy, 'attack'); arenaBgRef.current?.triggerCrack(cx, cy); if (s.screenShake) triggerShake(); } } } if (Object.keys(units).length || Object.keys(heroes).length) { setUnitPulses(units); setHeroPulses(heroes); window.setTimeout(() => { setUnitPulses({}); setHeroPulses({}); }, 950); } };
