@@ -1,0 +1,36 @@
+name: Build iOS (Capacitor)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build le web app (avec les illustrations de cartes) et synchroniser la plateforme iOS
+        run: npm run build:capacitor
+      - name: Compiler pour le simulateur iOS (sans signature, aucun compte développeur Apple disponible)
+        working-directory: ios/App
+        run: |
+          xcodebuild -project App.xcodeproj -scheme App -configuration Debug \
+            -sdk iphonesimulator -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO build
+      - name: Empaqueter le build simulateur
+        working-directory: ios/App
+        run: |
+          cd "build/Build/Products/Debug-iphonesimulator"
+          zip -r "$GITHUB_WORKSPACE/NexusCardArena-ios-simulator.zip" App.app
+      - name: Publier le build comme artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-card-arena-ios-simulator
+          path: NexusCardArena-ios-simulator.zip
+          if-no-files-found: error
