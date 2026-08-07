@@ -88,6 +88,11 @@ export interface PlayerState {
   /** Réserve séparée contenant jusqu’à 20 cartes d’évolution. */
   evosphere: string[];
   fatigue: number;
+  /** Identifiants uniques des cartes réellement présentes dans le deck de ce joueur
+      au début de la partie — sert à restreindre les effets aléatoires (ex. « invoque
+      une unité ») aux seules cartes que le joueur possède vraiment, jamais à une carte
+      de toute la base (booster non ouvert, autre deck, etc.). */
+  deckPool: string[];
 }
 
 export type Phase = 'main' | 'combat' | 'end';

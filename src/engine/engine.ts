@@ -30,20 +30,34 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 const MIN_PLAYABLE_DECK = 30;
+/** Doit rester égal à EVOSPHERE_MAX côté store/game.ts (limite de la réserve d'évolutions). */
+const EVOSPHERE_MAX = 20;
 
-function makePlayer(id: PlayerId, faction: Faction, customDeck?: string[], lifeBonus = 0): PlayerState {
+/** Remplissage automatique de l'Évosphère (3 exemplaires de chaque évolution disponible
+    pour les cartes du deck) — utilisé quand aucune sélection manuelle n'est fournie
+    (deck adverse de l'IA, ou deck joueur sans Évosphère personnalisée). */
+export function autoEvosphere(deckCardIds: string[]): string[] {
+  const evolutionIds = [...new Set(
+    deckCardIds
+      .map((id) => getCard(id).evolvesTo)
+      .filter((id): id is string => Boolean(id))
+  )];
+  return evolutionIds.flatMap((id) => [id, id, id]).slice(0, EVOSPHERE_MAX);
+}
+
+function makePlayer(
+  id: PlayerId,
+  faction: Faction,
+  customDeck?: string[],
+  lifeBonus = 0,
+  customEvo?: string[]
+): PlayerState {
   const source = customDeck && customDeck.length >= MIN_PLAYABLE_DECK ? customDeck : starterDeck(faction);
   const deck = shuffle(source).slice(0, MAIN_DECK_SIZE);
   const hand = deck.splice(0, STARTING_HAND_SIZE);
   const life = STARTING_LIFE + lifeBonus;
-  const evolutionIds = [...new Set(
-    source
-      .map((id) => getCard(id).evolvesTo)
-      .filter((id): id is string => Boolean(id))
-  )];
-  const evosphere = evolutionIds
-    .flatMap((id) => [id, id, id])
-    .slice(0, 20);
+  const evosphere = customEvo && customEvo.length > 0 ? customEvo.slice(0, EVOSPHERE_MAX) : autoEvosphere(source);
+  const deckPool = [...new Set(source)];
   return {
     id,
     faction,
@@ -58,6 +72,7 @@ function makePlayer(id: PlayerId, faction: Faction, customDeck?: string[], lifeB
     graveyard: [],
     evosphere,
     fatigue: 0,
+    deckPool,
   };
 }
 
@@ -66,13 +81,14 @@ export function newGame(
   enemyFaction: Faction,
   aiDifficulty: GameState['aiDifficulty'] = 'novice',
   playerDeck?: string[],
-  enemyLifeBonus = 0
+  enemyLifeBonus = 0,
+  playerEvo?: string[]
 ): GameState {
   const state: GameState = {
     turn: 1,
     activePlayer: 'player',
     phase: 'main',
-    player: makePlayer('player', playerFaction, playerDeck),
+    player: makePlayer('player', playerFaction, playerDeck, 0, playerEvo),
     enemy: makePlayer('enemy', enemyFaction, undefined, enemyLifeBonus),
     log: ['La partie commence. À toi de jouer.'],
     aiDifficulty,
@@ -284,7 +300,11 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
         break;
       }
       const pool = [...CARD_DB.values()].filter(
-        (c) => c.level === 1 && c.type === 'unit' && (!effect.target || c.faction === effect.target)
+        (c) =>
+          c.level === 1 &&
+          c.type === 'unit' &&
+          (!effect.target || c.faction === effect.target) &&
+          owner.deckPool.includes(c.id)
       );
       const pick = pool[Math.floor(Math.random() * pool.length)];
       if (pick) {

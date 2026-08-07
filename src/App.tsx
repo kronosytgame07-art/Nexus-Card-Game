@@ -231,7 +231,7 @@ function DeckMenu({ onEdit }: { onEdit: (id: string) => void }) {
           })}
         </div>
       )}
-      <p className="hint">Règles : {MAIN_DECK_MIN} à {MAIN_DECK_MAX} cartes par deck · pas d'Extra Deck · l'Évosphère (max {EVOSPHERE_MAX}) se remplit automatiquement avec les évolutions des cartes de ton deck · aucun craft, uniquement les cartes déjà possédées.</p>
+      <p className="hint">Règles : {MAIN_DECK_MIN} à {MAIN_DECK_MAX} cartes par deck · pas d'Extra Deck · l'Évosphère (max {EVOSPHERE_MAX}) se choisit toi-même parmi les évolutions des cartes de ton deck · aucun craft, uniquement les cartes déjà possédées.</p>
     </section>
   );
 }
@@ -239,7 +239,9 @@ function DeckMenu({ onEdit }: { onEdit: (id: string) => void }) {
 function DeckEditor({ deckId, onBack }: { deckId: string; onBack: () => void }) {
   const s = useGame();
   const savedDeck = s.decks.find((d) => d.id === deckId);
-  const pool = savedDeck ? cardsByFaction(savedDeck.faction).filter((c) => c.level === 1) : [];
+  const pool = savedDeck
+    ? cardsByFaction(savedDeck.faction).filter((c) => c.level === 1 && s.owned.includes(c.id))
+    : [];
   if (!savedDeck) return <section><h2>Deck introuvable</h2><button className="secondary" onClick={onBack}>Retour</button></section>;
 
   const main = savedDeck.main;
@@ -250,6 +252,17 @@ function DeckEditor({ deckId, onBack }: { deckId: string; onBack: () => void }) 
   };
   const removeAt = (i: number) => s.setDeckCards(deckId, main.filter((_, n) => n !== i));
   const statusClass = count < MAIN_DECK_MIN ? 'warn' : count > MAIN_DECK_MAX ? 'danger' : 'ok';
+
+  const evo = savedDeck.evo;
+  const evoCount = evo.length;
+  // Une évolution n'est proposable que si la carte niveau 1 dont elle dérive est dans le deck :
+  // sans elle sur le terrain, cette évolution ne pourrait jamais être déclenchée en partie.
+  const evoPool = cardsByFaction(savedDeck.faction).filter((c) => c.level === 2 && c.evolvesFrom && main.includes(c.evolvesFrom));
+  const addEvo = (id: string) => {
+    if (evoCount >= EVOSPHERE_MAX) return;
+    if (copiesInDeck(evo, id) < maxCopiesAllowed(id)) s.setDeckEvo(deckId, [...evo, id]);
+  };
+  const removeEvoAt = (i: number) => s.setDeckEvo(deckId, evo.filter((_, n) => n !== i));
 
   return (
     <section>
@@ -281,6 +294,36 @@ function DeckEditor({ deckId, onBack }: { deckId: string; onBack: () => void }) 
               badge={`${copiesInDeck(main, c.id)}/${maxCopiesAllowed(c.id)}`}
               disabled={copiesInDeck(main, c.id) >= maxCopiesAllowed(c.id) || count >= MAIN_DECK_MAX}
               onClick={() => add(c.id)}
+            />
+          ))}
+        </div>
+      </div>
+
+      <h3>Évosphère</h3>
+      <p className={'hint deck-count ' + (evoCount > EVOSPHERE_MAX ? 'danger' : 'ok')}>
+        {evoCount}/{EVOSPHERE_MAX} cartes d'évolution · choisis celles que tu veux pouvoir jouer
+      </p>
+      <div className="builder">
+        <div>
+          {evo.length === 0 && <p className="hint">Évosphère vide — ajoute des évolutions ci-contre.</p>}
+          {evo.map((id, i) => {
+            const c = evoPool.find((card) => card.id === id) ?? cardsByFaction(savedDeck.faction).find((card) => card.id === id);
+            return (
+              <button className="deck-row" key={i} onClick={() => removeEvoAt(i)}>
+                {c?.name ?? id} <span>×</span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="grid">
+          {evoPool.length === 0 && <p className="hint">Ajoute d'abord des cartes niveau 1 évolutives à ta composition ci-dessus.</p>}
+          {evoPool.map((c) => (
+            <CardView
+              key={c.id}
+              card={c}
+              badge={`${copiesInDeck(evo, c.id)}/${maxCopiesAllowed(c.id)}`}
+              disabled={copiesInDeck(evo, c.id) >= maxCopiesAllowed(c.id) || evoCount >= EVOSPHERE_MAX}
+              onClick={() => addEvo(c.id)}
             />
           ))}
         </div>
@@ -336,7 +379,7 @@ function Combat() {
   const playerAvatarCard = ALL_CARDS.find((c) => c.id === s.avatarCardId) ?? ALL_CARDS.find((c) => c.type === 'unit' && c.level === 1 && c.faction === s.faction);
   const activeDeckName = s.decks.find((d) => d.id === s.activeDeckId)?.name ?? s.faction;
   const aiDifficulty = chapter ? chapter.aiDifficulty : 'novice'; const lifeBonus = chapter ? chapter.enemyLifeBonus : 0; const reward = chapter ? chapter.reward : 35;
-  const startMatch = () => newGame(s.faction, opponentFaction, aiDifficulty, s.deck, lifeBonus);
+  const startMatch = () => newGame(s.faction, opponentFaction, aiDifficulty, s.deck, lifeBonus, s.evo);
   const [match, setMatch] = useState<GameState>(startMatch); const [selectedAttacker, setSelectedAttacker] = useState<string | null>(null); const [reported, setReported] = useState(false); const [effectHint, setEffectHint] = useState(''); const [inspectedUnit, setInspectedUnit] = useState<string | null>(null); const [unitPulses, setUnitPulses] = useState<Record<string, { key: string; amount: number }>>({}); const [heroPulses, setHeroPulses] = useState<{ player?: { key: string; amount: number }; enemy?: { key: string; amount: number } }>({}); const [handOpen, setHandOpen] = useState(false); const [phase, setPhase] = useState<'draw' | 'main' | 'battle' | 'end'>('draw'); const [previewCardId, setPreviewCardId] = useState<string | null>(null); const [drawStage, setDrawStage] = useState<'idle' | 'prompt' | 'reveal'>('idle'); const [pauseOpen, setPauseOpen] = useState(false); const [aiTurnStage, setAiTurnStage] = useState<'idle' | 'draw' | 'main' | 'battle' | 'end'>('idle'); const [aiDrawCount, setAiDrawCount] = useState(0); const [effectPrompt, setEffectPrompt] = useState<string | null>(null); const [supportReveal, setSupportReveal] = useState<{ cardId: string; name: string } | null>(null); const [evoSeq, setEvoSeq] = useState<EvoSeq | null>(null);
   const PHASE_ORDER: ('draw' | 'main' | 'battle' | 'end')[] = ['draw', 'main', 'battle', 'end'];
   const pulseFromDiff = (before: GameState, after: GameState) => { const units: Record<string, { key: string; amount: number }> = {}; const heroes: { player?: { key: string; amount: number }; enemy?: { key: string; amount: number } } = {}; for (const side of ['player', 'enemy'] as const) { const beforeMap = new Map(before[side].field.map((u) => [u.instanceId, u])); const afterIds = new Set(after[side].field.map((u) => u.instanceId)); for (const u of after[side].field) { if (side === 'enemy' && !beforeMap.has(u.instanceId)) { const id = u.instanceId; requestAnimationFrame(() => requestAnimationFrame(() => { const el = cardRefs.current[id]; if (el) { const r = el.getBoundingClientRect(); vfxRef.current?.spawnBurst(r.left + r.width / 2, r.top + r.height / 2, 'summon'); } })); } const prevUnit = beforeMap.get(u.instanceId); const prevHp = prevUnit?.health; if (prevHp != null && u.health < prevHp) { units[u.instanceId] = { key: `${u.instanceId}-${Date.now()}-${Math.random()}`, amount: prevHp - u.health }; const el = cardRefs.current[u.instanceId]; if (el) { const r = el.getBoundingClientRect(); vfxRef.current?.spawnBurst(r.left + r.width / 2, r.top + r.height / 2, 'attack'); } } } for (const [id, deadUnit] of beforeMap) { if (afterIds.has(id)) continue; const el = cardRefs.current[id]; if (el) { const r = el.getBoundingClientRect(); const cx = r.left + r.width / 2; const cy = r.top + r.height / 2; const def = getCard(deadUnit.cardId); vfxRef.current?.spawnBurst(cx, cy, 'crack'); vfxRef.current?.spawnShatter(cx, cy, r.width, r.height, def.image); } delete cardRefs.current[id]; } if (after[side].life < before[side].life) { heroes[side] = { key: `${side}-${Date.now()}`, amount: before[side].life - after[side].life }; const heroEl = heroRefs.current[side]; if (heroEl) { const r = heroEl.getBoundingClientRect(); const cx = r.left + r.width / 2; const cy = r.top + r.height / 2; vfxRef.current?.spawnBurst(cx, cy, 'attack'); arenaBgRef.current?.triggerCrack(cx, cy); if (s.screenShake) triggerShake(); } } } if (Object.keys(units).length || Object.keys(heroes).length) { setUnitPulses(units); setHeroPulses(heroes); window.setTimeout(() => { setUnitPulses({}); setHeroPulses({}); }, 950); } };
@@ -347,7 +390,7 @@ function Combat() {
   useEffect(() => { if (!match.winner || reported) return; const won = match.winner === 'player'; s.record(won); if (won) { s.addGold(reward); if (chapter) s.completeChapter(chapter.id); } setReported(true); }, [match.winner, reported, reward, chapter, s]);
   const showHint = (message: string, duration = 2000) => { setEffectHint(message); window.setTimeout(() => setEffectHint(''), duration); };
   const openHandCard = (id: string) => { if (match.activePlayer !== 'player' || match.winner) return; if (!handOpen) { setHandOpen(true); return; } setInspectedUnit(null); setPreviewCardId(id); };
-  const confirmPlay = (id: string) => { if (match.activePlayer !== 'player' || match.winner) return; if (phase !== 'main') { showHint('Passe en Main Phase pour jouer une carte.'); setPreviewCardId(null); return; } const card = ALL_CARDS.find((entry) => entry.id === id); const before = match; const next = playCard(match, 'player', id); setPreviewCardId(null); if (!stateChanged(match, next)) return; updateMatch(next); setHandOpen(false); pulseFromDiff(before, next); if (card?.type === 'unit') { const newest = next.player.field[next.player.field.length - 1]; triggerFx({ type: 'summon', side: 'player', instanceId: newest?.instanceId }, 720); if (newest) { const id = newest.instanceId; requestAnimationFrame(() => requestAnimationFrame(() => { const el = cardRefs.current[id]; if (el) { const r = el.getBoundingClientRect(); vfxRef.current?.spawnBurst(r.left + r.width / 2, r.top + r.height / 2, 'summon'); } })); } if (newest && effectMaxUses(card) > 0) setEffectPrompt(newest.instanceId); } };
+  const confirmPlay = (id: string) => { if (match.activePlayer !== 'player' || match.winner) return; if (phase !== 'main') { showHint('Passe en Main Phase pour jouer une carte.'); setPreviewCardId(null); return; } const card = ALL_CARDS.find((entry) => entry.id === id); const before = match; const next = playCard(match, 'player', id); setPreviewCardId(null); if (!stateChanged(match, next)) return; updateMatch(next); setHandOpen(false); pulseFromDiff(before, next); const newest = next.player.field[next.player.field.length - 1]; const summonedUnit = next.player.field.length > before.player.field.length; if (summonedUnit) { triggerFx({ type: 'summon', side: 'player', instanceId: newest?.instanceId }, 720); if (newest) { const newestId = newest.instanceId; requestAnimationFrame(() => requestAnimationFrame(() => { const el = cardRefs.current[newestId]; if (el) { const r = el.getBoundingClientRect(); vfxRef.current?.spawnBurst(r.left + r.width / 2, r.top + r.height / 2, 'summon'); } })); } } if (card?.type === 'unit' && newest && effectMaxUses(card) > 0) setEffectPrompt(newest.instanceId); };
   const selectAttacker = (id: string) => { setHandOpen(false); setPreviewCardId(null); setInspectedUnit((current) => current === id ? null : id); if (match.activePlayer !== 'player' || match.winner || attackLockRef.current) return; if (phase !== 'battle') { showHint('Passe en Battle Phase pour attaquer.'); return; } const unit = match.player.field.find((entry) => entry.instanceId === id); if (!unit || !unit.canAttack || unit.stunnedTurns > 0) return; setSelectedAttacker((current) => current === id ? null : id); };
   const resolveStrike = (attackerId: string, targetId: string | null) => { const measured = measureStrike('player', attackerId, targetId); const { dx, dy } = measured ?? { dx: 0, dy: 0 }; attackLockRef.current = true; triggerFx({ type: 'attack', side: 'player', instanceId: attackerId, dx, dy }, 640); if (measured) { const attackerUnit = match.player.field.find((entry) => entry.instanceId === attackerId); const def = attackerUnit && getCard(attackerUnit.cardId); const tone = def?.faction === 'Meute' ? 'frost' : 'fire'; vfxRef.current?.spawnDashTrail(measured.x1, measured.y1, measured.x2, measured.y2, 0.3, tone); } window.setTimeout(() => { const before = match; const next = declareAttack(before, 'player', attackerId, targetId); updateMatch(next); pulseFromDiff(before, next); attackLockRef.current = false; }, 300); };
   const attackUnit = (targetId: string) => { setHandOpen(false); setPreviewCardId(null); if (!selectedAttacker || phase !== 'battle' || attackLockRef.current) return; resolveStrike(selectedAttacker, targetId); setSelectedAttacker(null); };
@@ -383,7 +426,7 @@ function Combat() {
   const activateEffect = (instanceId: string) => { setHandOpen(false); setPreviewCardId(null); if (phase !== 'main') { showHint('Passe en Main Phase pour activer un effet.'); return; } const before = match; const unit = before.player.field.find((entry) => entry.instanceId === instanceId); if (!unit) return; const card = ALL_CARDS.find((entry) => entry.id === unit.cardId); const next = activateUnitEffect(before, 'player', instanceId); if (!stateChanged(before, next)) { showHint('Cet effet ne peut pas être activé maintenant.'); return; } updateMatch(next); pulseFromDiff(before, next); showHint(card ? `Effet de ${card.name} activé !` : 'Effet activé !'); };
   const [supportPreview, setSupportPreview] = useState<string | null>(null);
   const openSupportPreview = (instanceId: string) => { setHandOpen(false); setPreviewCardId(null); setSupportPreview(instanceId); };
-  const activateSupport = (instanceId: string) => { setHandOpen(false); setPreviewCardId(null); if (phase !== 'main') { showHint('Passe en Main Phase pour activer un soutien.'); return; } const before = match; const item = before.player.support.find((entry) => entry.instanceId === instanceId); if (!item) return; const card = getCard(item.cardId); const next = activateSupportCard(before, 'player', instanceId); if (!stateChanged(before, next)) { showHint(`${card.name} ne peut pas être activé maintenant.`); return; } setSupportReveal({ cardId: card.id, name: card.name }); window.setTimeout(() => { updateMatch(next); pulseFromDiff(before, next); setSupportReveal(null); showHint(`${card.name} activé !`); }, 950); };
+  const activateSupport = (instanceId: string) => { setHandOpen(false); setPreviewCardId(null); if (phase !== 'main') { showHint('Passe en Main Phase pour activer un soutien.'); return; } const before = match; const item = before.player.support.find((entry) => entry.instanceId === instanceId); if (!item) return; const card = getCard(item.cardId); const next = activateSupportCard(before, 'player', instanceId); if (!stateChanged(before, next)) { showHint(`${card.name} ne peut pas être activé maintenant.`); return; } setSupportReveal({ cardId: card.id, name: card.name }); window.setTimeout(() => { updateMatch(next); pulseFromDiff(before, next); const newest = next.player.field[next.player.field.length - 1]; if (next.player.field.length > before.player.field.length) { triggerFx({ type: 'summon', side: 'player', instanceId: newest?.instanceId }, 720); if (newest) { const newestId = newest.instanceId; requestAnimationFrame(() => requestAnimationFrame(() => { const el = cardRefs.current[newestId]; if (el) { const r = el.getBoundingClientRect(); vfxRef.current?.spawnBurst(r.left + r.width / 2, r.top + r.height / 2, 'summon'); } })); } } setSupportReveal(null); showHint(`${card.name} activé !`); }, 950); };
   const runAiAttackStep = (token: number, state: GameState, plan: ReturnType<typeof aiPrepareBattlePlan>, index: number, onDone: (finalState: GameState) => void) => {
     if (turnTokenRef.current !== token) return;
     if (index >= plan.attackerIds.length || state.winner) { onDone(state); return; }
