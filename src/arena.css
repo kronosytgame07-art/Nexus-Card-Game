@@ -447,6 +447,10 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 .hand-preview-actions button { flex: 1; margin: 0; }
 .hand-preview-warn { color: #ff9aab; font: 700 10px "DM Mono"; }
 .hand-preview-warn.spell { color: #9db3ac; }
+/* Enveloppe transparente en bureau (les enfants restent directement dans
+   le flex .hand-preview, comme avant) — seule la mise en page mobile en
+   paysage court la transforme en vraie colonne, voir plus bas. */
+.hand-preview-body { display: contents; }
 
 /* Invite à activer l'effet d'une créature juste après son invocation, au
    lieu d'obliger à la retoucher ensuite pour trouver le bouton. */
@@ -496,6 +500,11 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 
 /* ============================== MOBILE =================================== */
 @media (max-width: 900px), (orientation: landscape) and (max-height: 600px) {
+  /* En desktop, contain montre la vidéo entière sans la rogner (voir plus
+     haut). Sur les ratios d'écran mobile, bien plus éloignés du 16:9 de la
+     vidéo, ça laisse de grandes bandes noires — sur mobile on préfère que
+     le fond remplisse l'écran quitte à rogner un peu les bords. */
+  .battle-bg-video { object-fit: cover; }
   .battle {
     --rail-w: clamp(30px, 8vw, 42px);
     --axis-w: min(700px, calc(100vw - 2 * var(--rail-w) - 32px));
@@ -517,6 +526,19 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
   .duel-profile-text small { font-size: 6px; }
   .profile-float .life, .profile-float .mana { padding: 2px 6px; font-size: 7px; }
   .zone-wrap > b, .zone-wrap > small { font-size: 6px; }
+  /* Les badges ATK/PV étaient dimensionnés/espacés d'après la largeur de
+     l'écran (vw), pas de la case réelle — sur les plus petites cases
+     mobiles (bien plus étroites que prévu par ce calcul) les deux badges
+     se chevauchaient au milieu de la carte. En dérivant tout de
+     --creature-w, ils rétrécissent avec la case et ne peuvent plus se
+     toucher, quelle que soit la taille réelle. */
+  .field-card-atk, .field-card-hp {
+    width: clamp(13px, calc(var(--creature-w) * .26), 30px);
+    height: clamp(10px, calc(var(--creature-w) * .2), 22px);
+    font-size: clamp(6px, calc(var(--creature-w) * .09), 10px);
+  }
+  .field-card-atk { left: calc(var(--creature-w) * .05); }
+  .field-card-hp { right: calc(var(--creature-w) * .05); }
   .turn-strip { height: 24px; padding: 2px 8px; gap: 6px; }
   .nexus-phases button, .attack-face { height: 18px; padding: 0 6px; font-size: 6px; }
   /* Le nom (FOSSE/ÉVOSPHÈRE/DECK) ne tient jamais dans un cercle de cette
@@ -532,6 +554,17 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
   .hand { gap: 4px; padding-bottom: max(6px, env(safe-area-inset-bottom)); }
   .unit-actions { bottom: calc(env(safe-area-inset-bottom) + 40px); padding: 8px; }
   .draw-pile-stack { width: clamp(80px, 22vw, 110px); height: clamp(112px, 30vw, 154px); }
+  /* L'aperçu d'une carte (image + nom + stats + texte + boutons) empilé
+     verticalement à taille bureau dépasse vite les 88vh et force un
+     scroll pour atteindre le bouton — resserré ici pour que ça tienne
+     dans la grande majorité des cas sans scroll. */
+  .hand-preview { padding: 14px; gap: 8px; max-height: 92vh; }
+  .hand-preview-art { width: clamp(90px, 24vh, 170px); }
+  .hand-preview b { font-size: 16px; }
+  .hand-preview-stats { font-size: 10px; gap: 6px; }
+  .hand-preview-stats span { padding: 3px 8px; }
+  .hand-preview p { font-size: 11px; line-height: 1.35; }
+  .hand-preview-actions button { height: 38px; font-size: 10px; }
 }
 
 /* En paysage sur téléphone, la hauteur disponible tombe souvent sous les
@@ -563,4 +596,14 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
   .profile-float .duel-profile-avatar { width: 18px; height: 18px; }
   .profile-float.enemy { top: max(4px, env(safe-area-inset-top)); }
   .profile-float.player { bottom: max(4px, env(safe-area-inset-bottom)); }
+  /* Même resserré, l'aperçu de carte empilé verticalement ne rentre plus
+     dans une hauteur aussi courte — bascule en image à gauche / infos à
+     droite, qui exploite la largeur généreuse du paysage au lieu de la
+     hauteur qui manque. */
+  .hand-preview-overlay { padding: 10px; }
+  .hand-preview { flex-direction: row; align-items: center; text-align: left; max-width: 96vw; max-height: 94vh; padding: 12px; gap: 12px; }
+  .hand-preview-art { flex: 0 0 auto; width: clamp(64px, 24vh, 110px); }
+  .hand-preview-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1 1 auto; }
+  .hand-preview-stats { justify-content: flex-start; }
+  .hand-preview p { max-height: 40px; overflow-y: auto; }
 }
