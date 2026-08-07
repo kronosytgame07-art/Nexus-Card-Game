@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { CARDS, cardsByFaction, getCard, starterDeck } from '../engine/cards';
-import { autoEvosphere } from '../engine/engine';
 import { CardDef, Faction, GameState, Rarity } from '../engine/types';
 
 /** Nombre de chapitres de campagne à remporter pour débloquer la seconde faction. */
@@ -27,19 +26,9 @@ export interface SavedDeck {
   name: string;
   faction: Faction;
   main: string[];
-  /** Cartes d'évolution choisies manuellement pour l'Évosphère de ce deck (max EVOSPHERE_MAX,
-      max 3 exemplaires par évolution — mêmes règles que le deck principal). Ne peut contenir
-      que des évolutions dont la carte de base est présente dans `main`. */
-  evo: string[];
-}
-
-/** Ne garde que les évolutions dont la carte de base niveau 1 est encore présente dans `main`
-    (une évolution sans sa base en deck ne pourrait jamais être déclenchée en partie). */
-function pruneEvoForMain(evo: string[], main: string[]): string[] {
-  return evo.filter((id) => {
-    const from = getCard(id).evolvesFrom;
-    return Boolean(from && main.includes(from));
-  });
+  /** Sélection manuelle de l'évosphère par le joueur ; si absente ou vide,
+      elle est dérivée automatiquement des évolutions du deck principal. */
+  evosphere?: string[];
 }
 
 /** Replay local d'un duel terminé : une suite d'instantanés de GameState,
@@ -63,7 +52,8 @@ interface GameMeta {
   losses: number;
   level: number;
   faction: Faction;
-  /** Dérivé de `inventory` : id présent dès qu'on possède au moins un exemplaire de la carte. */
+  /** Dérivé de `inventory` + `foilInventory` : id présent dès qu'on possède au moins un
+      exemplaire de la carte (normal ou foil). */
   owned: string[];
   /** Nombre d'exemplaires normaux possédés, par id de carte — source de vérité pour la
       construction de deck, le craft foil et l'échange. */
@@ -78,8 +68,6 @@ interface GameMeta {
       le même delta d'inventaire (ex. après un rechargement de page). */
   appliedTradeIds: string[];
   deck: string[];
-  /** Évosphère du deck actif — miroir de `decks[activeDeckId].evo`, comme `deck` l'est pour `main`. */
-  evo: string[];
   decks: SavedDeck[];
   activeDeckId: string | null;
   campaignChapter: number;
@@ -119,7 +107,7 @@ interface GameMeta {
   renameDeck: (id: string, name: string) => void;
   deleteDeck: (id: string) => void;
   setDeckCards: (id: string, main: string[]) => void;
-  setDeckEvo: (id: string, evo: string[]) => void;
+  setDeckEvosphere: (id: string, evosphere: string[]) => void;
   setActiveDeck: (id: string) => void;
   chooseStartingFaction: (faction: Faction) => void;
   setFaction: (faction: Faction) => void;
@@ -152,6 +140,31 @@ function startingOwnedFor(faction: Faction): string[] {
   return cardsByFaction(faction)
     .filter((c) => c.level === 1 && !c.boosterOnly)
     .map((c) => c.id);
+}
+
+function defaultAvatarFor(faction: Faction): string {
+  const unit = cardsByFaction(faction).find((c) => c.type === 'unit' && c.level === 1);
+  return unit?.id ?? '';
+}
+
+function applyXp(level: number, xp: number, gems: number, amount: number) {
+  let nextLevel = level;
+  let nextXp = xp + Math.max(0, amount);
+  let nextGems = gems;
+
+  while (nextXp >= XP_PER_LEVEL) {
+    nextXp -= XP_PER_LEVEL;
+    nextLevel += 1;
+    nextGems += nextLevel % 5 === 0 ? 500 : 100;
+  }
+
+  return { level: nextLevel, xp: nextXp, gems: nextGems };
+}
+
+function makeStarterDeck(faction: Faction, existingNames: string[]): SavedDeck {
+  let n = 1;
+  while (existingNames.includes(`Deck ${faction} ${n}`)) n += 1;
+  return { id: `deck-${faction}-${Date.now()}`, name: `Deck ${faction} ${n}`, faction, main: starterDeck(faction) };
 }
 
 /** Construit un inventaire (copies normales) donnant `copies` exemplaires à chaque id — utilisé
@@ -210,32 +223,6 @@ function weightedPick(pool: CardDef[], inventory: Record<string, number>): CardD
   return weightedRandomCard(entries);
 }
 
-function defaultAvatarFor(faction: Faction): string {
-  const unit = cardsByFaction(faction).find((c) => c.type === 'unit' && c.level === 1);
-  return unit?.id ?? '';
-}
-
-function applyXp(level: number, xp: number, gems: number, amount: number) {
-  let nextLevel = level;
-  let nextXp = xp + Math.max(0, amount);
-  let nextGems = gems;
-
-  while (nextXp >= XP_PER_LEVEL) {
-    nextXp -= XP_PER_LEVEL;
-    nextLevel += 1;
-    nextGems += nextLevel % 5 === 0 ? 500 : 100;
-  }
-
-  return { level: nextLevel, xp: nextXp, gems: nextGems };
-}
-
-function makeStarterDeck(faction: Faction, existingNames: string[]): SavedDeck {
-  let n = 1;
-  while (existingNames.includes(`Deck ${faction} ${n}`)) n += 1;
-  const main = starterDeck(faction);
-  return { id: `deck-${faction}-${Date.now()}`, name: `Deck ${faction} ${n}`, faction, main, evo: autoEvosphere(main) };
-}
-
 export const useGame = create<GameMeta>()(
   persist(
     (set) => ({
@@ -253,7 +240,6 @@ export const useGame = create<GameMeta>()(
       friendCode: null,
       appliedTradeIds: [],
       deck: [],
-      evo: [],
       decks: [],
       activeDeckId: null,
       campaignChapter: 0,
@@ -332,7 +318,7 @@ export const useGame = create<GameMeta>()(
       createDeck: (name, faction) => {
         const id = `deck-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         const trimmed = name.trim().slice(0, 30) || `Deck ${faction}`;
-        set((s) => ({ decks: [...s.decks, { id, name: trimmed, faction, main: [], evo: [] }] }));
+        set((s) => ({ decks: [...s.decks, { id, name: trimmed, faction, main: [] }] }));
         return id;
       },
       renameDeck: (id, name) =>
@@ -348,35 +334,23 @@ export const useGame = create<GameMeta>()(
             decks,
             activeDeckId: fallback?.id ?? null,
             deck: fallback?.main ?? [],
-            evo: fallback?.evo ?? [],
             faction: fallback?.faction ?? s.faction,
           };
         }),
       setDeckCards: (id, main) =>
-        set((s) => {
-          const target = s.decks.find((d) => d.id === id);
-          const evo = target ? pruneEvoForMain(target.evo, main) : [];
-          return {
-            decks: s.decks.map((d) => (d.id === id ? { ...d, main, evo } : d)),
-            deck: s.activeDeckId === id ? main : s.deck,
-            evo: s.activeDeckId === id ? evo : s.evo,
-          };
-        }),
-      setDeckEvo: (id, evo) =>
-        set((s) => {
-          const target = s.decks.find((d) => d.id === id);
-          if (!target) return {};
-          const valid = pruneEvoForMain(evo, target.main).slice(0, EVOSPHERE_MAX);
-          return {
-            decks: s.decks.map((d) => (d.id === id ? { ...d, evo: valid } : d)),
-            evo: s.activeDeckId === id ? valid : s.evo,
-          };
-        }),
+        set((s) => ({
+          decks: s.decks.map((d) => (d.id === id ? { ...d, main } : d)),
+          deck: s.activeDeckId === id ? main : s.deck,
+        })),
+      setDeckEvosphere: (id, evosphere) =>
+        set((s) => ({
+          decks: s.decks.map((d) => (d.id === id ? { ...d, evosphere } : d)),
+        })),
       setActiveDeck: (id) =>
         set((s) => {
           const target = s.decks.find((d) => d.id === id);
           if (!target || !s.unlockedFactions.includes(target.faction)) return {};
-          return { activeDeckId: id, faction: target.faction, deck: target.main, evo: target.evo };
+          return { activeDeckId: id, faction: target.faction, deck: target.main };
         }),
       chooseStartingFaction: (faction) =>
         set((s) => {
@@ -389,7 +363,6 @@ export const useGame = create<GameMeta>()(
             inventory,
             owned: ownedFromInventory(inventory),
             deck: starter.main,
-            evo: starter.evo,
             decks: [starter],
             activeDeckId: starter.id,
             avatarCardId: s.avatarCardId || defaultAvatarFor(faction),
@@ -399,9 +372,8 @@ export const useGame = create<GameMeta>()(
         set((s) => {
           if (!s.unlockedFactions.includes(faction)) return {};
           const existing = s.decks.find((d) => d.faction === faction);
-          if (existing) return { faction, activeDeckId: existing.id, deck: existing.main, evo: existing.evo };
-          const main = starterDeck(faction);
-          return { faction, deck: main, evo: autoEvosphere(main) };
+          if (existing) return { faction, activeDeckId: existing.id, deck: existing.main };
+          return { faction, deck: starterDeck(faction) };
         }),
       setPlayerName: (name) => set({ playerName: name.trim().slice(0, 20) || 'Chronos' }),
       setAvatarCardId: (cardId) => set({ avatarCardId: cardId }),
@@ -475,7 +447,6 @@ export const useGame = create<GameMeta>()(
           friendCode: null,
           appliedTradeIds: [],
           deck: [],
-          evo: [],
           decks: [],
           activeDeckId: null,
           campaignChapter: 0,
@@ -497,25 +468,22 @@ export const useGame = create<GameMeta>()(
       // s'exécute de façon SYNCHRONE pendant l'hydratation avec un stockage synchrone
       // (localStorage) — à ce moment-là, `const useGame = create(...)` n'a pas encore fini
       // de s'exécuter, donc toute référence à `useGame` depuis ce callback lève une
-      // ReferenceError (TDZ) et fait silencieusement échouer la migration. `merge` reçoit
-      // directement le state par défaut et le state persisté : aucune référence externe
-      // nécessaire, et le résultat retourné devient le nouveau state sans détour.
+      // ReferenceError (TDZ) et fait silencieusement échouer la migration (et, même sans
+      // cette référence, muter l'objet `state` reçu ne notifie personne et n'est jamais
+      // réécrit dans localStorage). `merge` reçoit directement le state par défaut et le
+      // state persisté : aucune référence externe nécessaire, et le résultat retourné
+      // devient le nouveau state sans détour.
       merge: (persistedState, currentState) => {
         const persisted = (persistedState ?? {}) as Partial<GameMeta>;
         const merged: GameMeta = { ...currentState, ...persisted };
 
         // Migration douce pour les joueurs qui avaient un unique deck avant l'ajout du
         // gestionnaire multi-decks : on l'enveloppe dans un SavedDeck plutôt que de le perdre.
-        let decks = merged.decks ?? [];
-        if (decks.length === 0 && merged.deck.length > 0) {
-          decks = [{ id: 'deck-migrated', name: `Deck ${merged.faction} 1`, faction: merged.faction, main: merged.deck, evo: autoEvosphere(merged.deck) }];
-          merged.activeDeckId = decks[0].id;
+        if (merged.decks.length === 0 && merged.deck.length > 0) {
+          const wrapped: SavedDeck = { id: 'deck-migrated', name: `Deck ${merged.faction} 1`, faction: merged.faction, main: merged.deck };
+          merged.decks = [wrapped];
+          merged.activeDeckId = wrapped.id;
         }
-        // Migration douce pour les decks sauvegardés avant l'ajout de l'Évosphère
-        // personnalisable : on leur donne le même remplissage automatique qu'avant.
-        merged.decks = decks.map((d) => (d.evo ? d : { ...d, evo: autoEvosphere(d.main) }));
-        const active = merged.decks.find((d) => d.id === merged.activeDeckId);
-        merged.evo = active?.evo ?? merged.evo ?? [];
 
         // Migration douce pour les joueurs qui avaient un `owned` sans compteur de copies :
         // on leur donne 3 exemplaires de chaque carte déjà débloquée (comportement équivalent

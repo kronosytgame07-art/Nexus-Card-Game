@@ -578,15 +578,44 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
   .unit-actions { bottom: calc(env(safe-area-inset-bottom) + 40px); padding: 8px; }
   .draw-pile-stack { width: clamp(80px, 22vw, 110px); height: clamp(112px, 30vw, 154px); }
   /* L'aperçu d'une carte (image + nom + stats + texte + boutons) empilé
-     verticalement à taille bureau dépasse vite les 88vh et force un
-     scroll pour atteindre le bouton — resserré ici pour que ça tienne
-     dans la grande majorité des cas sans scroll. */
-  .hand-preview { padding: 14px; gap: 8px; max-height: 92vh; }
-  .hand-preview-art { width: clamp(90px, 24vh, 170px); }
-  .hand-preview b { font-size: 16px; }
-  .hand-preview-stats { font-size: 10px; gap: 6px; }
-  .hand-preview-stats span { padding: 3px 8px; }
-  .hand-preview p { font-size: 11px; line-height: 1.35; }
+     verticalement dépassait vite la hauteur dispo et forçait un scroll
+     pour atteindre le bouton. Sur mobile on bascule en un large rectangle
+     plaqué à droite de l'écran : l'illustration entière sert de fond, et
+     tout le texte (nom/coût/stats/effet/boutons) est écrit directement
+     dessus, ancré en bas sur un dégradé sombre — plus aucun scroll. */
+  .hand-preview-overlay { display: flex; align-items: stretch; justify-content: flex-end; padding: 0; background: rgba(1, 5, 8, .5); backdrop-filter: blur(4px); }
+  .hand-preview {
+    position: relative;
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+    width: clamp(220px, 42vw, 320px);
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    gap: 0;
+    border-width: 0 0 0 1px;
+    border-radius: 0;
+    box-shadow: -20px 0 50px rgba(0, 0, 0, .55);
+    overflow: hidden;
+  }
+  .hand-preview-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 0; filter: none; }
+  .hand-preview-body {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 6px;
+    min-height: 100%;
+    padding: 16px 14px calc(14px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(4, 9, 10, 0) 0%, rgba(4, 9, 10, .5) 36%, rgba(3, 8, 9, .92) 68%, rgba(2, 6, 7, .97) 100%);
+  }
+  .hand-preview b { font-size: 16px; text-shadow: 0 2px 8px rgba(0, 0, 0, .8); }
+  .hand-preview-stats { font-size: 10px; gap: 6px; justify-content: flex-start; flex-wrap: wrap; }
+  .hand-preview-stats span { padding: 3px 8px; background: rgba(4, 9, 10, .55); }
+  .hand-preview p { font-size: 11px; line-height: 1.35; text-shadow: 0 1px 6px rgba(0, 0, 0, .9); }
   .hand-preview-actions button { height: 38px; font-size: 10px; }
 }
 
@@ -619,14 +648,11 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
   .profile-float .duel-profile-avatar { width: 18px; height: 18px; }
   .profile-float.enemy { top: max(4px, env(safe-area-inset-top)); }
   .profile-float.player { bottom: max(4px, env(safe-area-inset-bottom)); }
-  /* Même resserré, l'aperçu de carte empilé verticalement ne rentre plus
-     dans une hauteur aussi courte — bascule en image à gauche / infos à
-     droite, qui exploite la largeur généreuse du paysage au lieu de la
-     hauteur qui manque. */
-  .hand-preview-overlay { padding: 10px; }
-  .hand-preview { flex-direction: row; align-items: center; text-align: left; max-width: 96vw; max-height: 94vh; padding: 12px; gap: 12px; }
-  .hand-preview-art { flex: 0 0 auto; width: clamp(64px, 24vh, 110px); }
-  .hand-preview-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1 1 auto; }
-  .hand-preview-stats { justify-content: flex-start; }
-  .hand-preview p { max-height: 40px; overflow-y: auto; }
+  /* Le rectangle d'aperçu plaqué à droite (voir le palier mobile général)
+     reste utilisable même sur cette hauteur très réduite ; on resserre
+     juste son texte pour qu'il continue à tenir sans scroll. */
+  .hand-preview-body { padding-top: 10px; gap: 4px; }
+  .hand-preview b { font-size: 13px; }
+  .hand-preview p { font-size: 10px; line-height: 1.25; }
+  .hand-preview-actions button { height: 32px; }
 }
