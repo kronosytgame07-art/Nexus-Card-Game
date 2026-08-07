@@ -498,6 +498,12 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 .evolution-flash { position: fixed; inset: 0; z-index: 80; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(255, 55, 75, .32), rgba(0, 0, 0, .94) 60%); text-align: center; pointer-events: none; }
 .evolution-flash span { font: 12px "DM Mono"; letter-spacing: 6px; color: #ff7185; }
 .evolution-flash b { font: 900 clamp(36px, 8vw, 100px) "Space Grotesk"; color: white; text-shadow: 0 0 24px rgba(255, 255, 255, .6); }
+.field-card.evolving-hidden { opacity: 0; pointer-events: none; }
+.evo-seq-overlay { position: fixed; inset: 0; z-index: 85; pointer-events: none; }
+.evo-seq-halo { position: fixed; width: 320px; height: 320px; margin-left: -160px; margin-top: -160px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 255, 255, .95), rgba(160, 205, 255, .55) 42%, transparent 72%); filter: blur(4px); }
+.evo-seq-card { position: fixed; object-fit: cover; border-radius: 14px; box-shadow: 0 0 70px rgba(170, 210, 255, .65), 0 24px 70px rgba(0, 0, 0, .65); border: 2px solid rgba(239, 201, 107, .85); }
+.evo-seq-whiteout { position: fixed; inset: 0; background: #fff; }
+.evo-seq-label { position: fixed; left: 50%; top: calc(50% + 260px); transform: translateX(-50%); font: 900 clamp(20px, 3vw, 30px) "Space Grotesk"; color: #ffe9a8; text-shadow: 0 0 18px rgba(255, 220, 140, .9); letter-spacing: 1px; }
 
 .effect-hint { position: fixed; left: 50%; top: 14px; transform: translateX(-50%); z-index: 60; padding: 8px 16px; border-radius: 999px; border: 1px solid rgba(239, 201, 107, .5); background: rgba(6, 12, 14, .95); color: #ffe9a8; font: 700 11px "DM Mono"; }
 

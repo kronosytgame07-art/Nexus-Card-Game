@@ -591,59 +591,73 @@ export function aiMainPhase(rawState: GameState): GameState {
 }
 
 // Battle phase de l'IA : décide et résout toutes ses attaques.
-export function aiBattlePhase(rawState: GameState): GameState {
-  let state = clone(rawState);
-  if (state.winner || state.activePlayer !== 'enemy') return state;
-  const difficulty = state.aiDifficulty;
-  const attackers = state.enemy.field.filter((u) => u.canAttack && u.stunnedTurns === 0);
+export type AiBattlePlan = { attackerIds: string[]; lethal: boolean; keepBackId?: string };
+
+// Décide à l'avance QUI va attaquer et selon quelle logique ("lethal",
+// unité gardée en défense) — calculé une seule fois sur l'état d'entrée en
+// Battle Phase, pour que l'interface puisse ensuite dérouler les attaques
+// une par une (avec une animation par attaque) sans changer la décision de
+// l'IA en cours de route.
+export function aiPrepareBattlePlan(rawState: GameState): AiBattlePlan {
+  if (rawState.winner || rawState.activePlayer !== 'enemy') return { attackerIds: [], lethal: false };
+  const difficulty = rawState.aiDifficulty;
+  const attackers = rawState.enemy.field.filter((u) => u.canAttack && u.stunnedTurns === 0);
 
   // "maitre" : si la somme des attaques disponibles peut achever le joueur, on fonce tout au visage.
   const lethal =
     difficulty === 'maitre' &&
-    state.player.field.filter((u) => u.taunt).length === 0 &&
-    attackers.reduce((sum, u) => sum + u.attack, 0) >= state.player.life;
+    rawState.player.field.filter((u) => u.taunt).length === 0 &&
+    attackers.reduce((sum, u) => sum + u.attack, 0) >= rawState.player.life;
 
   // "maitre" à faible vie : on garde la meilleure unité en défense plutôt que de l'engager.
   const keepBackId =
-    difficulty === 'maitre' && !lethal && state.enemy.life <= 10 && attackers.length > 1
+    difficulty === 'maitre' && !lethal && rawState.enemy.life <= 10 && attackers.length > 1
       ? [...attackers].sort((a, b) => b.health - a.health)[0]?.instanceId
       : undefined;
 
-  for (const attacker of attackers) {
-    const currentAttacker = findUnit(state.enemy, attacker.instanceId);
-    if (!currentAttacker || !currentAttacker.canAttack) continue;
-    if (!lethal && currentAttacker.instanceId === keepBackId) continue;
+  return { attackerIds: attackers.map((u) => u.instanceId), lethal, keepBackId };
+}
 
-    const playerTaunts = state.player.field.filter((u) => u.taunt);
-    if (playerTaunts.length > 0) {
-      const target = [...playerTaunts].sort((a, b) => a.health - b.health)[0];
-      state = declareAttack(state, 'enemy', currentAttacker.instanceId, target.instanceId);
-      continue;
-    }
+export type AiAttackStep = { state: GameState; attackerId: string; targetId: string | null; skipped: boolean };
 
-    if (lethal) {
-      state = declareAttack(state, 'enemy', currentAttacker.instanceId, null);
-      if (state.winner) break;
-      continue;
-    }
+// Résout UNE attaque de l'IA (celle de attackerId), en respectant la
+// décision globale déjà prise par aiPrepareBattlePlan. "skipped" indique
+// qu'il n'y a rien à animer pour cet attaquant (mort entre-temps, étourdi,
+// ou gardé volontairement en défense) — l'appelant doit alors passer au
+// suivant sans délai ni animation.
+export function aiResolveOneAttack(rawState: GameState, attackerId: string, lethal: boolean, keepBackId: string | undefined): AiAttackStep {
+  const state = clone(rawState);
+  if (state.winner || state.activePlayer !== 'enemy') return { state, attackerId, targetId: null, skipped: true };
+  const currentAttacker = findUnit(state.enemy, attackerId);
+  if (!currentAttacker || !currentAttacker.canAttack) return { state, attackerId, targetId: null, skipped: true };
+  if (!lethal && currentAttacker.instanceId === keepBackId) return { state, attackerId, targetId: null, skipped: true };
 
-    if (difficulty === 'novice') {
-      const trade = bestTradeTarget(currentAttacker, state.player.field);
-      state = declareAttack(
-        state,
-        'enemy',
-        currentAttacker.instanceId,
-        trade.trade === 'kill_free' ? trade.target!.instanceId : null
-      );
-    } else {
-      // veteran / maitre : n'accepte que les échanges rentables (gratuits ou de valeur égale).
-      const trade = bestTradeTarget(currentAttacker, state.player.field);
-      if (trade.trade !== 'bad' && trade.target) {
-        state = declareAttack(state, 'enemy', currentAttacker.instanceId, trade.target.instanceId);
-      } else {
-        state = declareAttack(state, 'enemy', currentAttacker.instanceId, null);
-      }
-    }
+  const difficulty = state.aiDifficulty;
+  const playerTaunts = state.player.field.filter((u) => u.taunt);
+  let targetId: string | null;
+  if (playerTaunts.length > 0) {
+    targetId = [...playerTaunts].sort((a, b) => a.health - b.health)[0].instanceId;
+  } else if (lethal) {
+    targetId = null;
+  } else if (difficulty === 'novice') {
+    const trade = bestTradeTarget(currentAttacker, state.player.field);
+    targetId = trade.trade === 'kill_free' ? trade.target!.instanceId : null;
+  } else {
+    // veteran / maitre : n'accepte que les échanges rentables (gratuits ou de valeur égale).
+    const trade = bestTradeTarget(currentAttacker, state.player.field);
+    targetId = trade.trade !== 'bad' && trade.target ? trade.target.instanceId : null;
+  }
+  const next = declareAttack(state, 'enemy', attackerId, targetId);
+  return { state: next, attackerId, targetId, skipped: false };
+}
+
+export function aiBattlePhase(rawState: GameState): GameState {
+  let state = clone(rawState);
+  if (state.winner || state.activePlayer !== 'enemy') return state;
+  const plan = aiPrepareBattlePlan(state);
+  for (const attackerId of plan.attackerIds) {
+    const step = aiResolveOneAttack(state, attackerId, plan.lethal, plan.keepBackId);
+    state = step.state;
     if (state.winner) break;
   }
   return state;
