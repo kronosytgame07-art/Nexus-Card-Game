@@ -18,9 +18,9 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
   --ally: #41e2b3;
   --gold: #efc96b;
   --creature-w: clamp(108px, 8.6vw, 170px);
-  --creature-h: clamp(130px, 19vh, 185px);
-  --support-w: clamp(92px, 7.4vw, 138px);
-  --support-h: clamp(100px, 15vh, 135px);
+  --creature-h: clamp(118px, 16.5vh, 165px);
+  --support-w: var(--creature-w);
+  --support-h: var(--creature-h);
   --axis-w: min(1120px, 94vw);
   --rail-w: clamp(50px, 6vw, 82px);
   --hand-h: clamp(150px, 26vh, 220px);
@@ -35,7 +35,7 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
   height: 100dvh;
   min-height: 0;
   display: grid;
-  grid-template-rows: 24px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   row-gap: clamp(2px, .8vh, 8px);
   padding: 0 clamp(10px, 3vw, 32px);
   overflow: hidden;
@@ -57,14 +57,25 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
     radial-gradient(ellipse at 50% 92%, rgba(65, 226, 179, .14), transparent 42%);
 }
 
-/* Fond animé de l'arène. En avant des piles (Fosse/Évosphère/Deck) pour
-   laisser les embrasements passer par-dessus sans casser l'ambiance,
-   mais toujours sous le plateau/la main/les profils (.battle-center a
-   son propre z-index:10) pour ne jamais gêner la lisibilité du jeu.
-   pointer-events:none : les piles restent cliquables en dessous. */
-.battle-bg-video { position: absolute; inset: 0; z-index: 6; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
-
-.battle-meta { position: relative; z-index: 10; display: flex; justify-content: space-between; font: 10px "DM Mono"; color: #9db3ac; }
+/* Fond animé de l'arène. object-fit:contain montre l'image entière sans
+   zoomer/rogner (la vidéo source est déjà en 16:9, inutile de la
+   surcadrer). Toujours sous le plateau/la main/les profils/les piles
+   (tous au-dessus de z-index:6) pour ne jamais gêner la lisibilité du
+   jeu ; pointer-events:none pour ne jamais intercepter un clic. */
+.battle-bg-video { position: absolute; inset: 0; z-index: 6; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+/* Voile sombre par-dessus la vidéo : atténue le point de bouclage de la
+   boucle (moins de saut de luminosité perceptible) et garde le centre
+   du plateau lisible. */
+.battle:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 85% 65% at 50% 50%, transparent 45%, rgba(2, 4, 6, .58) 100%),
+    linear-gradient(180deg, rgba(2, 4, 6, .4) 0%, transparent 18%, transparent 82%, rgba(2, 4, 6, .48) 100%);
+}
 
 /* ---------- Profil (avatar rond + nom/deck), commun aux deux camps -------- */
 .duel-profile { display: flex; align-items: center; gap: 10px; }
@@ -117,7 +128,7 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 }
 .profile-float .duel-profile-avatar { width: 32px; height: 32px; }
 .profile-float .life, .profile-float .mana { padding: 3px 8px; font-size: 10px; }
-.profile-float.enemy { top: max(30px, calc(env(safe-area-inset-top) + 26px)); border-color: rgba(239, 73, 97, .45); }
+.profile-float.enemy { top: max(10px, env(safe-area-inset-top)); border-color: rgba(239, 73, 97, .45); }
 .profile-float.player { bottom: max(10px, env(safe-area-inset-bottom)); border-color: rgba(65, 226, 179, .45); }
 
 /* Main adverse : mêmes cartes, même taille que la main du joueur, en
@@ -127,7 +138,7 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
   position: fixed;
   left: 0;
   right: 0;
-  top: 24px;
+  top: 6px;
   z-index: 20;
   display: flex;
   align-items: flex-start;
@@ -144,7 +155,9 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
   flex: 0 0 auto;
   border: 2px solid rgba(239, 201, 107, .85);
   border-radius: 12px;
-  background-size: cover;
+  background-color: #050a0b;
+  background-size: contain;
+  background-repeat: no-repeat;
   background-position: center;
   box-shadow: 0 10px 26px rgba(0, 0, 0, .42);
 }
@@ -161,7 +174,7 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
   box-sizing: border-box;
 }
 
-.pile-rail { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(8px, 2vh, 22px); }
+.pile-rail { position: relative; z-index: 8; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(8px, 2vh, 22px); }
 
 .card-pile {
   position: relative;
@@ -415,20 +428,32 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 
 .match-result { position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: #04100fee; text-align: center; }
 
+/* ---------- Bouton pause + menu Abandonner/Recommencer -------------------- */
+.battle-pause-btn { position: fixed; top: max(10px, env(safe-area-inset-top)); right: max(10px, env(safe-area-inset-right)); z-index: 26; width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(239, 201, 107, .5); background: rgba(4, 10, 11, .92); color: var(--gold); font-size: 15px; cursor: pointer; box-shadow: 0 6px 16px rgba(0, 0, 0, .4); }
+.battle-pause-overlay { position: fixed; inset: 0; z-index: 501; display: grid; place-items: center; background: rgba(1, 5, 8, .75); backdrop-filter: blur(6px); }
+.battle-pause-menu { display: flex; flex-direction: column; gap: 10px; width: min(300px, 88vw); padding: 22px; border: 1px solid rgba(239, 201, 107, .5); border-radius: 16px; background: linear-gradient(145deg, rgba(20, 24, 34, .99), rgba(4, 13, 15, .99)); box-shadow: 0 30px 90px rgba(0, 0, 0, .72); text-align: center; }
+.battle-pause-menu b { color: var(--gold); font: 700 18px "Playfair Display"; margin-bottom: 4px; }
+.battle-pause-menu button { margin: 0; }
+.battle-pause-menu button.danger { border-color: #ef6c6c; color: #ffb3b3; }
+
+/* ---------- Aura de jouabilité sur les cartes de la main ------------------- */
+.hand-card-wrap.affordable .card.full-art { box-shadow: 0 0 0 3px rgba(255, 210, 110, .95), 0 0 26px rgba(255, 193, 79, .7); }
+.hand-card-wrap.unaffordable .card.full-art { filter: saturate(.5) brightness(.72); }
+
 /* ============================== MOBILE =================================== */
 @media (max-width: 900px), (orientation: landscape) and (max-height: 600px) {
   .battle {
-    --creature-w: clamp(58px, 12.5vw, 96px);
-    --creature-h: clamp(82px, 22vh, 134px);
-    --support-w: clamp(46px, 10vw, 76px);
-    --support-h: clamp(64px, 17vh, 106px);
     --rail-w: clamp(30px, 8vw, 42px);
     --axis-w: min(700px, calc(100vw - 2 * var(--rail-w) - 32px));
+    --creature-w: calc((var(--axis-w) - 4 * 8px) / 5);
+    --creature-h: clamp(90px, 26vh, 180px);
+    --support-w: var(--creature-w);
+    --support-h: var(--creature-h);
     --hand-h: clamp(96px, 20vh, 140px);
     --hand-card-w: clamp(58px, 15vw, 82px);
     --hand-card-h: clamp(82px, 20vh, 114px);
     padding: 0 8px;
-    grid-template-rows: 16px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
   }
   .profile-float { padding: 4px 10px 4px 4px; gap: 6px; }
   .profile-float .duel-profile-avatar { width: 24px; height: 24px; }
