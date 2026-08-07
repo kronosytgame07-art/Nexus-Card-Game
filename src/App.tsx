@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { NavLink, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ALL_CARDS, AnimationMode, copiesInDeck, EVOSPHERE_MAX, InterfaceScale, Language, MAIN_DECK_MAX, MAIN_DECK_MIN, maxCopiesAllowed, UNLOCK_SECOND_FACTION_AT, useGame, VisualQuality, XP_PER_LEVEL } from './store/game';
+import { ALL_CARDS, AnimationMode, BOOSTER_PULL_COUNT, copiesInDeck, EVOSPHERE_MAX, FOIL_CRAFT_COST, InterfaceScale, Language, MAIN_DECK_MAX, MAIN_DECK_MIN, maxCopiesAllowed, UNLOCK_SECOND_FACTION_AT, useGame, VisualQuality, XP_PER_LEVEL } from './store/game';
 import { cardsByFaction, getCard } from './engine/cards';
 import { CardDef, Faction, FieldUnit, GameState, SupportCard } from './engine/types';
 import { CHAPTERS, chapterById } from './engine/campaign';
@@ -11,7 +11,12 @@ import ArenaBackground, { ArenaBackgroundHandle } from './components/ArenaBackgr
 import VfxLayer, { VfxHandle } from './components/VfxLayer';
 import HomeSparkles from './components/HomeSparkles';
 
-const nav = ['Jouer', 'Campagne', 'Collection', 'Decks', 'Profil', 'Classement', 'Boutique', 'Tutoriel', 'Paramètres'];
+// Chargé à la demande : embarque le SDK Firebase (auth + firestore), inutile pour le reste
+// du jeu — évite d'alourdir le chargement initial pour les joueurs qui ne visitent jamais
+// l'écran Échanges.
+const Trades = lazy(() => import('./Trades'));
+
+const nav = ['Jouer', 'Campagne', 'Collection', 'Decks', 'Échanges', 'Profil', 'Classement', 'Boutique', 'Tutoriel', 'Paramètres'];
 const path = (x: string) => (x === 'Jouer' ? '/' : '/' + x.toLowerCase());
 const CARD_BACK_URL = `${import.meta.env.BASE_URL}cards/card-back.jpg`;
 const LOGO_URL = `${import.meta.env.BASE_URL}icons/logo-mark.png`;
@@ -157,7 +162,39 @@ function Home() {
 
 function Campaign() { const s = useGame(); const go = useNavigate(); return <section><h2>Campagne</h2><p className="hint">{s.campaignChapter} / {CHAPTERS.length} chapitres terminés</p><div className="chapter-list">{CHAPTERS.map((chapter, i) => { const locked = i > s.campaignChapter; const done = i < s.campaignChapter; return <article key={chapter.id} className={'chapter' + (locked ? ' locked' : '')}><span className="number">0{i + 1}</span><div className="chapter-body"><b>{chapter.title}</b><small>{done ? 'Victoire inscrite dans les archives' : locked ? 'Scellé par la Reine' : `Gardien ${chapter.opponentFaction} · IA ${chapter.aiDifficulty}`}</small></div>{!locked && <button onClick={() => go('/combat', { state: { chapterId: chapter.id } })}>{done ? 'Rejouer' : 'Jouer'}</button>}{locked && <span>◌</span>}</article>; })}</div></section>; }
 
-function Collection() { const [query, setQuery] = useState(''); const owned = useGame((s) => s.owned); const unlockedFactions = useGame((s) => s.unlockedFactions); const visibleCards = ALL_CARDS.filter((c) => unlockedFactions.includes(c.faction)); const filtered = visibleCards.filter((c) => c.name.toLowerCase().includes(query.toLowerCase())); const lockedFaction = (['Meute', 'Chevalier'] as Faction[]).find((f) => !unlockedFactions.includes(f)); return <section><h2>Collection</h2><input placeholder="Rechercher une carte…" value={query} onChange={(e) => setQuery(e.target.value)} /><div className="grid">{filtered.map((c) => <CardView key={c.id} card={c} badge={owned.includes(c.id) ? undefined : 'Non possédée'} />)}</div><p className="hint">{owned.length}/{visibleCards.filter((c) => c.level === 1).length} cartes de base possédées</p>{lockedFaction && <p className="hint">🔒 Les cartes {lockedFaction} restent cachées tant que la faction n'est pas débloquée — gagne {UNLOCK_SECOND_FACTION_AT} chapitres de campagne.</p>}</section>; }
+function Collection() {
+  const [query, setQuery] = useState('');
+  const s = useGame();
+  const visibleCards = ALL_CARDS.filter((c) => s.unlockedFactions.includes(c.faction));
+  const filtered = visibleCards.filter((c) => c.name.toLowerCase().includes(query.toLowerCase()));
+  const lockedFaction = (['Meute', 'Chevalier'] as Faction[]).find((f) => !s.unlockedFactions.includes(f));
+  const craftFoil = (card: CardDef) => {
+    const count = s.inventory[card.id] ?? 0;
+    if (count < FOIL_CRAFT_COST) return;
+    if (window.confirm(`Détruire ${FOIL_CRAFT_COST} exemplaires de ${card.name} pour forger 1 exemplaire foil ?`)) s.craftFoil(card.id);
+  };
+  return (
+    <section>
+      <h2>Collection</h2>
+      <input placeholder="Rechercher une carte…" value={query} onChange={(e) => setQuery(e.target.value)} />
+      <div className="grid">
+        {filtered.map((c) => {
+          const count = s.inventory[c.id] ?? 0;
+          const foilCount = s.foilInventory[c.id] ?? 0;
+          const badge = count === 0 && foilCount === 0 ? 'Non possédée' : `×${count}${foilCount ? ` · ✨×${foilCount}` : ''}`;
+          const craftable = count >= FOIL_CRAFT_COST;
+          return (
+            <div key={c.id} className={'collection-entry' + (foilCount > 0 ? ' has-foil' : '')}>
+              <CardView card={c} badge={badge} disabled={!craftable} onClick={craftable ? () => craftFoil(c) : undefined} />
+            </div>
+          );
+        })}
+      </div>
+      <p className="hint">{s.owned.length}/{visibleCards.filter((c) => c.level === 1).length} cartes de base possédées · touche une carte avec {FOIL_CRAFT_COST}+ exemplaires pour la forger en foil</p>
+      {lockedFaction && <p className="hint">🔒 Les cartes {lockedFaction} restent cachées tant que la faction n'est pas débloquée — gagne {UNLOCK_SECOND_FACTION_AT} chapitres de campagne.</p>}
+    </section>
+  );
+}
 
 function DeckMenu({ onEdit }: { onEdit: (id: string) => void }) {
   const s = useGame();
@@ -246,9 +283,13 @@ function DeckEditor({ deckId, onBack }: { deckId: string; onBack: () => void }) 
 
   const main = savedDeck.main;
   const count = main.length;
+  // Le nombre d'exemplaires jouables en deck ne dépasse jamais ce que le joueur possède
+  // vraiment (voir s.inventory) — la règle des 3 exemplaires maximum reste un plafond, pas une
+  // dotation gratuite.
+  const maxCopiesOwned = (id: string) => Math.min(maxCopiesAllowed(id), (s.inventory[id] ?? 0) + (s.foilInventory[id] ?? 0));
   const add = (id: string) => {
     if (count >= MAIN_DECK_MAX) return;
-    if (copiesInDeck(main, id) < maxCopiesAllowed(id)) s.setDeckCards(deckId, [...main, id]);
+    if (copiesInDeck(main, id) < maxCopiesOwned(id)) s.setDeckCards(deckId, [...main, id]);
   };
   const removeAt = (i: number) => s.setDeckCards(deckId, main.filter((_, n) => n !== i));
   const statusClass = count < MAIN_DECK_MIN ? 'warn' : count > MAIN_DECK_MAX ? 'danger' : 'ok';
@@ -291,8 +332,8 @@ function DeckEditor({ deckId, onBack }: { deckId: string; onBack: () => void }) 
             <CardView
               key={c.id}
               card={c}
-              badge={`${copiesInDeck(main, c.id)}/${maxCopiesAllowed(c.id)}`}
-              disabled={copiesInDeck(main, c.id) >= maxCopiesAllowed(c.id) || count >= MAIN_DECK_MAX}
+              badge={`${copiesInDeck(main, c.id)}/${maxCopiesOwned(c.id)}`}
+              disabled={copiesInDeck(main, c.id) >= maxCopiesOwned(c.id) || count >= MAIN_DECK_MAX}
               onClick={() => add(c.id)}
             />
           ))}
@@ -582,7 +623,44 @@ const BOOSTERS: { id: Faction; name: string; price: number; blurb: string }[] = 
 
 function Shop() {
   const s = useGame();
-  return <section><h2>Boutique</h2><p className="hint">💎 {s.gems} gemmes · ✦ {s.gold} or</p><div className="options-grid">{BOOSTERS.map((booster) => { const preview = ALL_CARDS.filter((c) => c.faction === booster.id && c.boosterOnly); return <article key={booster.id} className="options-card"><b>{booster.name}</b><p className="hint">{booster.blurb}</p><p className="hint">Prix : ✦ {booster.price} · {preview.length} cartes inédites déjà conçues</p><ul className="hint booster-preview">{preview.map((card) => <li key={card.id}>{card.name} ({card.cost}◆) — {card.text}</li>)}</ul><button className="secondary" disabled title="Illustrations pas encore prêtes — vente désactivée en attendant.">🔒 Bientôt disponible</button></article>; })}</div><p className="hint">Les decks actuels ont déjà 3 exemplaires de chaque carte existante (maximum autorisé) : ces boosters ne contiendront donc que des cartes inédites, pas de doublons — leurs effets et statistiques sont déjà finalisés (voir la liste ci-dessus). Il ne manque plus que les illustrations pour les activer.</p></section>;
+  const [reveal, setReveal] = useState<{ faction: Faction; cards: CardDef[]; isNew: boolean[] } | null>(null);
+
+  const openBooster = (booster: (typeof BOOSTERS)[number]) => {
+    if (s.gold < booster.price) return;
+    const before = s.inventory;
+    const pulledIds = s.openBooster(booster.id, booster.price);
+    if (pulledIds.length === 0) return;
+    setReveal({
+      faction: booster.id,
+      cards: pulledIds.map((id) => getCard(id)),
+      isNew: pulledIds.map((id) => (before[id] ?? 0) === 0),
+    });
+  };
+  const closeReveal = () => setReveal(null);
+
+  return (
+    <section>
+      <h2>Boutique</h2>
+      <p className="hint">💎 {s.gems} gemmes · ✦ {s.gold} or</p>
+      <div className="options-grid">
+        {BOOSTERS.map((booster) => {
+          const preview = ALL_CARDS.filter((c) => c.faction === booster.id && c.boosterOnly);
+          const affordable = s.gold >= booster.price;
+          return (
+            <article key={booster.id} className="options-card">
+              <b>{booster.name}</b>
+              <p className="hint">{booster.blurb}</p>
+              <p className="hint">Prix : ✦ {booster.price} · {BOOSTER_PULL_COUNT} cartes par booster, doublons compris</p>
+              <ul className="hint booster-preview">{preview.map((card) => <li key={card.id}>{card.name} ({card.cost}◆) — {card.text}</li>)}</ul>
+              <button className="primary" disabled={!affordable} onClick={() => openBooster(booster)}>{affordable ? 'Ouvrir' : 'Or insuffisant'}</button>
+            </article>
+          );
+        })}
+      </div>
+      <p className="hint">Chaque booster tire {BOOSTER_PULL_COUNT} cartes de sa faction (cartes déjà possédées incluses) — le tirage favorise les cartes que tu n'as pas encore, et une carte Épique ou plus est garantie tous les 10 boosters au maximum.</p>
+      {reveal && <div className="pile-modal" role="dialog" aria-modal="true" onClick={closeReveal}><div className="pile-modal-content" onClick={(e) => e.stopPropagation()}><header><h3>Booster {reveal.faction}</h3><button onClick={closeReveal}>×</button></header><div className="pile-grid">{reveal.cards.map((card, i) => <motion.div key={`${card.id}-${i}`} initial={{ opacity: 0, y: 20, rotateY: 90 }} animate={{ opacity: 1, y: 0, rotateY: 0 }} transition={{ delay: i * 0.18, duration: 0.4, ease: 'easeOut' }}><CardView card={card} badge={reveal.isNew[i] ? 'Nouveau' : 'Doublon'} /></motion.div>)}</div></div></div>}
+    </section>
+  );
 }
 
 function Leaderboard() {
@@ -657,4 +735,4 @@ function DisplaySettingsBridge() {
   return null;
 }
 
-export default function App() { const factionChosen = useGame((s) => s.factionChosen); const hasLegacyDeck = useGame((s) => s.deck.length > 0); if (!factionChosen && !hasLegacyDeck) return <FactionOnboarding />; return <><DisplaySettingsBridge /><Shell><Routes><Route path="/" element={<Home />} /><Route path="/campagne" element={<Campaign />} /><Route path="/collection" element={<Collection />} /><Route path="/decks" element={<Decks />} /><Route path="/profil" element={<Profile />} /><Route path="/replay/:id" element={<Replay />} /><Route path="/combat" element={<Combat />} /><Route path="/paramètres" element={<Options />} /><Route path="/classement" element={<Leaderboard />} /><Route path="/boutique" element={<Shop />} /><Route path="/tutoriel" element={<Tutorial />} /></Routes></Shell></>; }
+export default function App() { const factionChosen = useGame((s) => s.factionChosen); const hasLegacyDeck = useGame((s) => s.deck.length > 0); if (!factionChosen && !hasLegacyDeck) return <FactionOnboarding />; return <><DisplaySettingsBridge /><Shell><Routes><Route path="/" element={<Home />} /><Route path="/campagne" element={<Campaign />} /><Route path="/collection" element={<Collection />} /><Route path="/decks" element={<Decks />} /><Route path="/échanges" element={<Suspense fallback={<section><h2>Échanges</h2><p className="hint">Chargement…</p></section>}><Trades /></Suspense>} /><Route path="/profil" element={<Profile />} /><Route path="/replay/:id" element={<Replay />} /><Route path="/combat" element={<Combat />} /><Route path="/paramètres" element={<Options />} /><Route path="/classement" element={<Leaderboard />} /><Route path="/boutique" element={<Shop />} /><Route path="/tutoriel" element={<Tutorial />} /></Routes></Shell></>; }
