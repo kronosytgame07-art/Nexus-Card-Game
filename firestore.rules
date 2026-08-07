@@ -1,0 +1,49 @@
+rules_version = '2';
+
+// Règles de sécurité Firestore pour l'écran Échanges de Nexus Card Arena.
+// Modèle :
+//   players/{code}  — un document par joueur, id = code ami (ex. "NEXUS-7F2K"), immuable une
+//                      fois créé, sert à retrouver l'uid d'un joueur à partir de son code.
+//   trades/{tradeId} — une offre d'échange entre deux joueurs identifiés par leur uid.
+//
+// Limite connue (v1) : l'inventaire de cartes n'est pas stocké côté serveur — seules les
+// offres le sont. Chaque client applique lui-même le résultat d'un échange accepté à son
+// inventaire local. Ce n'est pas une garantie anti-triche à 100 %, mais suffisant pour des
+// échanges entre joueurs qui se connaissent (voir la note affichée dans l'écran Échanges).
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /players/{code} {
+      allow read: if request.auth != null;
+      // Un joueur ne peut créer que SON propre document (son uid dans le champ `uid`),
+      // et un code ami donné ne peut être pris qu'une seule fois.
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    match /trades/{tradeId} {
+      // Créable uniquement par l'expéditeur, à l'état 'pending'.
+      allow create: if request.auth != null
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.status == 'pending';
+
+      // Lisible uniquement par les deux parties concernées.
+      allow read: if request.auth != null
+        && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
+
+      // Transitions de statut autorisées :
+      //  - l'expéditeur peut annuler sa propre offre encore en attente,
+      //  - le destinataire peut l'accepter ou la refuser tant qu'elle est en attente.
+      allow update: if request.auth != null
+        && resource.data.status == 'pending'
+        && (
+          (resource.data.fromUid == request.auth.uid && request.resource.data.status == 'cancelled')
+          || (resource.data.toUid == request.auth.uid && request.resource.data.status in ['accepted', 'declined'])
+        );
+
+      allow delete: if false;
+    }
+  }
+}
