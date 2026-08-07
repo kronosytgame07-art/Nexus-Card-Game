@@ -70,6 +70,23 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
    (tous au-dessus de z-index:6) pour ne jamais gêner la lisibilité du
    jeu ; pointer-events:none pour ne jamais intercepter un clic. */
 .battle-bg-video { position: absolute; inset: 0; z-index: 6; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+/* Couche de particules (invocation, évolution, impacts, pioche, éclats de
+   carte détruite) — toujours au-dessus du plateau pour rester visible,
+   toujours sous les fenêtres modales (z-index >= 200). */
+.vfx-layer { position: absolute; inset: 0; z-index: 35; width: 100%; height: 100%; pointer-events: none; }
+/* Secousse d'écran quand le héros encaisse des dégâts directs (option
+   "Vibrations d'écran"). Amplitude modeste pour ne jamais gêner la
+   lecture du plateau. */
+@keyframes battle-shake {
+  0% { transform: translate(0, 0); }
+  18% { transform: translate(-8px, 4px); }
+  36% { transform: translate(7px, -5px); }
+  54% { transform: translate(-5px, -3px); }
+  72% { transform: translate(4px, 5px); }
+  88% { transform: translate(-2px, 2px); }
+  100% { transform: translate(0, 0); }
+}
+.battle-shake { animation: battle-shake .42s ease; }
 /* Voile sombre par-dessus la vidéo : atténue le point de bouclage de la
    boucle (moins de saut de luminosité perceptible) et garde le centre
    du plateau lisible. */
