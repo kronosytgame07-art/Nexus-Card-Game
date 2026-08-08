@@ -63,6 +63,7 @@ function makePlayer(id: PlayerId, faction: Faction, customDeck?: string[], lifeB
     graveyard: [],
     evosphere,
     fatigue: 0,
+    normalSummonUsed: false,
   };
 }
 
@@ -336,7 +337,7 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
           effectUsesThisTurn: 0,
           slot: resolveSlot(owner.field, MAX_FIELD_UNITS),
         });
-        pushLog(state, `${labelFor(ownerId)} invoque ${pick.name}.`);
+        pushLog(state, `${labelFor(ownerId)} invoque spécialement ${pick.name}.`);
       } else {
         succeeded = false;
       }
@@ -363,6 +364,10 @@ export function playCard(
   const def = getCard(cardId);
   const cost = effectivePlayCost(def, p);
   if (cost > p.mana) return state;
+  if (def.type === 'unit' && p.normalSummonUsed) {
+    pushLog(state, 'Tu as déjà utilisé ton invocation normale ce tour.');
+    return state;
+  }
   if (def.type === 'unit' && p.field.length >= MAX_FIELD_UNITS) {
     pushLog(state, 'Le plateau est plein, impossible de jouer cette unité.');
     return state;
@@ -392,6 +397,7 @@ export function playCard(
       slot: resolveSlot(p.field, MAX_FIELD_UNITS, slotIndex),
     };
     p.field.push(unit);
+    p.normalSummonUsed = true;
     pushLog(state, `${labelFor(playerId)} joue ${def.name}${cost < def.cost ? ` (Rang Sacré : ${cost}◆ au lieu de ${def.cost}◆)` : ''}.`);
     if (def.effect && def.text.toLowerCase().includes('à l’invocation')) resolveEffect(state, playerId, def.effect, unit.instanceId);
   } else {
@@ -462,6 +468,7 @@ export function declareAttack(
 
 function startTurn(state: GameState, id: PlayerId) {
   const p = state[id];
+  p.normalSummonUsed = false;
   p.maxMana = Math.min(MAX_MANA, p.maxMana + 1);
   p.mana = p.maxMana;
   drawOne(state, id);
@@ -611,7 +618,7 @@ export function aiMainPhase(rawState: GameState): GameState {
       .filter(
         (c) =>
           effectivePlayCost(c, p) <= p.mana &&
-          (c.type !== 'unit' || p.field.length < MAX_FIELD_UNITS) &&
+          (c.type !== 'unit' || (!p.normalSummonUsed && p.field.length < MAX_FIELD_UNITS)) &&
           (c.type !== 'spell' || p.support.length < MAX_SUPPORT)
       )
       .sort((a, b) => b.cost - a.cost);
