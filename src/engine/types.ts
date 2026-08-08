@@ -11,7 +11,8 @@ export type EffectKind =
   | 'stun'
   | 'damage'
   | 'buff'
-  | 'summon';
+  | 'summon'
+  | 'board_wipe';
 
 export interface EffectDef {
   kind: EffectKind;
