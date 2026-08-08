@@ -2,7 +2,7 @@
 // Toute la logique de partie s'appuie sur ces types — aucune UI ne doit
 // dupliquer de règles, elle ne fait que lire GameState et appeler engine.ts.
 
-export type Faction = 'Meute' | 'Chevalier' | 'Orc';
+export type Faction = 'Meute' | 'Chevalier' | 'Orc' | 'Dragon' | 'Gobelin';
 
 export type EffectKind =
   | 'protect'
@@ -40,9 +40,15 @@ export interface CardDef {
   attack: number;
   health: number;
   effect?: EffectDef;
+  /** Unité volante : ne peut être ciblée au combat que par une unité à distance. */
   flying?: boolean;
+  /** Unité capable de combattre les cibles Vol. */
   ranged?: boolean;
+  /** Peut attaquer dès le tour où elle est invoquée. */
   blitz?: boolean;
+  /** Nombre de tours complets à attendre avant de pouvoir attaquer. Utilisé notamment par les gros Dragons. */
+  attackDelayTurns?: number;
+  /** Nombre de tours à survivre avant l'évolution. */
   waitTurns?: number;
   evolvesTo?: string;
   evolvesFrom?: string;
