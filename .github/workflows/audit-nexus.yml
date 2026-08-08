@@ -1,0 +1,360 @@
+name: Audit complet Nexus Arena
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/audit-nexus.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nexus-audit
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Initialiser le rapport
+        run: |
+          cat > AUDIT_NEXUS.md <<'EOF'
+          # Audit Nexus Arena
+
+          Audit automatique du dépôt après intégration des nouvelles illustrations.
+
+          | Contrôle | Résultat |
+          |---|---|
+          EOF
+
+      - name: Vérifier les 45 sources et le mapping des 42 visuels
+        id: assets
+        continue-on-error: true
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import ast, hashlib, re, shutil, zipfile
+
+          root = Path('.')
+          script = root / 'scripts' / 'integrate-meute-images.py'
+          if not script.exists():
+              raise SystemExit('scripts/integrate-meute-images.py absent')
+
+          tree = ast.parse(script.read_text(encoding='utf-8'))
+          mapping = None
+          ignored = None
+          for node in tree.body:
+              if isinstance(node, ast.Assign):
+                  for target in node.targets:
+                      if isinstance(target, ast.Name) and target.id == 'MAPPING':
+                          mapping = ast.literal_eval(node.value)
+                      if isinstance(target, ast.Name) and target.id == 'IGNORED':
+                          ignored = ast.literal_eval(node.value)
+          if not isinstance(mapping, dict):
+              raise SystemExit('MAPPING introuvable')
+          if not isinstance(ignored, set):
+              raise SystemExit('IGNORED introuvable')
+          if len(mapping) != 42:
+              raise SystemExit(f'42 visuels attendus, mapping={len(mapping)}')
+          if len(ignored) != 3:
+              raise SystemExit(f'3 variantes ignorées attendues, trouvé={len(ignored)}')
+
+          tmp = root / '.audit-images'
+          if tmp.exists(): shutil.rmtree(tmp)
+          tmp.mkdir()
+          zips = sorted(root.glob('Nexus_Images_Final_Lot_*.zip'))
+          if len(zips) != 9:
+              raise SystemExit(f'9 ZIP attendus, trouvé={len(zips)}')
+
+          found = {}
+          for idx, archive in enumerate(zips):
+              d = tmp / str(idx)
+              d.mkdir()
+              with zipfile.ZipFile(archive) as zf:
+                  zf.extractall(d)
+              for p in d.rglob('*.png'):
+                  found[p.name] = p
+          if len(found) != 45:
+              raise SystemExit(f'45 PNG uniques attendus, trouvé={len(found)}')
+
+          missing_sources = [x for x in mapping if x not in found]
+          if missing_sources:
+              raise SystemExit('Sources manquantes: ' + repr(missing_sources))
+
+          missing_targets = []
+          mismatches = []
+          for src_name, rel in mapping.items():
+              target = root / 'public' / rel
+              if not target.exists():
+                  missing_targets.append(str(target))
+                  continue
+              src_hash = hashlib.sha256(found[src_name].read_bytes()).hexdigest()
+              dst_hash = hashlib.sha256(target.read_bytes()).hexdigest()
+              if src_hash != dst_hash:
+                  mismatches.append((src_name, str(target)))
+          if missing_targets:
+              raise SystemExit('Cibles absentes: ' + repr(missing_targets))
+          if mismatches:
+              raise SystemExit('Images ne correspondant pas aux sources mappées: ' + repr(mismatches))
+
+          card_targets = [v for v in mapping.values() if v.startswith('cards/')]
+          booster_targets = [v for v in mapping.values() if v.startswith('boosters/')]
+          if len(card_targets) != 37 or len(booster_targets) != 5:
+              raise SystemExit(f'Répartition invalide cards={len(card_targets)} boosters={len(booster_targets)}')
+
+          print('OK: 45 sources, 42 utilisées, 3 variantes, hashes exacts.')
+          shutil.rmtree(tmp)
+          PY
+
+      - name: Reporter mapping
+        if: always()
+        run: |
+          if [ "${{ steps.assets.outcome }}" = "success" ]; then
+            echo '| 45 sources / 42 visuels / mapping exact par SHA-256 | ✅ OK |' >> AUDIT_NEXUS.md
+          else
+            echo '| 45 sources / 42 visuels / mapping exact par SHA-256 | ❌ ÉCHEC |' >> AUDIT_NEXUS.md
+          fi
+
+      - name: Vérifier la base de cartes et les IDs Meute
+        id: cards
+        continue-on-error: true
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('src/engine/cards.ts').read_text(encoding='utf-8')
+          required = [
+            'louve-veilleuse','loup-eclaireur','jeune-croc','loup-des-brumes','chasseuse-grise',
+            'loup-de-givre','pisteur-alpha','loup-sentinelle','hurleur-de-nuit','croc-de-fer',
+            'meute-rassemblee','appel-de-la-lune','instinct-de-survie','morsure-sauvage','territoire-sacre',
+            'emprise-de-la-meute','lune-rouge','totem-alpha','pacte-des-crocs','derniere-trace',
+            'eclaireuse-des-crocs','chasseuse-des-ombres','meute-enragee','piege-de-givre','sang-pour-sang',
+            'rugissement-de-la-meute','mythique-loup-du-nexus'
+          ]
+          missing = [x for x in required if x not in text]
+          if missing:
+              raise SystemExit('IDs Meute absents: ' + repr(missing))
+          if 'Le Loup du Nexus' not in text or "rarity:'Mythique'" not in text.replace(' ', ''):
+              raise SystemExit('Carte Mythique mal déclarée ou absente')
+          for name in ['Alpha des Brumes','Traqueur Lunaire','Croc du Premier Sang','Spectre de la Meute','Matriarche Grise','Fléau de Givre','Alpha Pisteur','Gardien du Territoire','Hurleur des Mille Lunes','Bête de Fer']:
+              if name not in text:
+                  raise SystemExit('Évolution absente: ' + name)
+          print('OK base de cartes Meute + évolutions + Mythique')
+          PY
+
+      - name: Reporter cartes
+        if: always()
+        run: |
+          if [ "${{ steps.cards.outcome }}" = "success" ]; then
+            echo '| IDs cartes Meute, 10 évolutions et Mythique | ✅ OK |' >> AUDIT_NEXUS.md
+          else
+            echo '| IDs cartes Meute, 10 évolutions et Mythique | ❌ ÉCHEC |' >> AUDIT_NEXUS.md
+          fi
+
+      - name: Vérifier boutique boosters et raretés
+        id: shop
+        continue-on-error: true
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          app = Path('src/App.tsx').read_text(encoding='utf-8')
+          css = Path('src/styles.css').read_text(encoding='utf-8')
+          checks = {
+            'boosterArtwork': 'function boosterArtwork' in app,
+            'vraie image boutique': 'booster-shop-art' in app,
+            'vraie image ouverture': 'booster-pack-art' in app,
+            'aura rareté': 'rarityAuraClass' in app,
+            'rare': 'rarity-rare' in css,
+            'epique': 'rarity-epique' in css,
+            'legendaire': 'rarity-legendaire' in css,
+            'mythique': 'rarity-mythique' in css,
+          }
+          bad = [k for k,v in checks.items() if not v]
+          if bad: raise SystemExit('Boutique incomplète: ' + repr(bad))
+          print('OK boutique boosters et auras')
+          PY
+
+      - name: Reporter boutique
+        if: always()
+        run: |
+          if [ "${{ steps.shop.outcome }}" = "success" ]; then
+            echo '| Boutique : 5 pochettes, ouverture et auras de rareté | ✅ OK |' >> AUDIT_NEXUS.md
+          else
+            echo '| Boutique : 5 pochettes, ouverture et auras de rareté | ❌ ÉCHEC |' >> AUDIT_NEXUS.md
+          fi
+
+      - name: Vérifier déploiement et cache PWA
+        id: pwa
+        continue-on-error: true
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          deploy = Path('.github/workflows/deploy.yml').read_text(encoding='utf-8')
+          sw = Path('public/sw.js').read_text(encoding='utf-8')
+          if 'scripts/copy-card-art.sh dist/cards' in deploy:
+              raise SystemExit('deploy.yml exécute encore le vieux copy-card-art.sh')
+          for asset in ['dist/cards/louve-veilleuse.png','dist/cards/mythique-loup-du-nexus.png','dist/boosters/meute.png']:
+              if asset not in deploy:
+                  raise SystemExit('Assertion de build absente: ' + asset)
+          if "nexus-arena-v20" not in sw:
+              raise SystemExit('Cache PWA pas en v20')
+          if "url.pathname.includes('/cards/')" not in sw or "url.pathname.includes('/boosters/')" not in sw:
+              raise SystemExit('Network-first assets absent')
+          if "request.headers.has('range')" not in sw:
+              raise SystemExit('Protection Range/audio absente')
+          print('OK déploiement + PWA')
+          PY
+
+      - name: Reporter PWA
+        if: always()
+        run: |
+          if [ "${{ steps.pwa.outcome }}" = "success" ]; then
+            echo '| Déploiement Pages et cache PWA/network-first | ✅ OK |' >> AUDIT_NEXUS.md
+          else
+            echo '| Déploiement Pages et cache PWA/network-first | ❌ ÉCHEC |' >> AUDIT_NEXUS.md
+          fi
+
+      - name: Installer les dépendances
+        id: npmci
+        continue-on-error: true
+        run: npm ci
+
+      - name: Reporter npm ci
+        if: always()
+        run: |
+          if [ "${{ steps.npmci.outcome }}" = "success" ]; then
+            echo '| npm ci | ✅ OK |' >> AUDIT_NEXUS.md
+          else
+            echo '| npm ci | ❌ ÉCHEC |' >> AUDIT_NEXUS.md
+          fi
+
+      - name: Build TypeScript + Vite
+        id: build
+        if: steps.npmci.outcome == 'success'
+        continue-on-error: true
+        run: npm run build
+
+      - name: Reporter build
+        if: always()
+        run: |
+          if [ "${{ steps.build.outcome }}" = "success" ]; then
+            echo '| npm run build (TypeScript + Vite) | ✅ OK |' >> AUDIT_NEXUS.md
+          else
+            echo '| npm run build (TypeScript + Vite) | ❌ ÉCHEC |' >> AUDIT_NEXUS.md
+          fi
+
+      - name: Vérifier le contenu final dist
+        id: dist
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
+        run: |
+          set -e
+          test -f dist/index.html
+          test -f dist/sw.js
+          test -f dist/cards/louve-veilleuse.png
+          test -f dist/cards/loup-eclaireur.png
+          test -f dist/cards/evo-louve-veilleuse.png
+          test -f dist/cards/evo-croc-de-fer.png
+          test -f dist/cards/eclaireuse-des-crocs.png
+          test -f dist/cards/rugissement-de-la-meute.png
+          test -f dist/cards/mythique-loup-du-nexus.png
+          test -f dist/boosters/meute.png
+          test -f dist/boosters/chevalier.png
+          test -f dist/boosters/orc.png
+          test -f dist/boosters/dragon.png
+          test -f dist/boosters/gobelin.png
+
+      - name: Reporter dist
+        if: always()
+        run: |
+          if [ "${{ steps.dist.outcome }}" = "success" ]; then
+            echo '| Assets critiques présents dans dist/ | ✅ OK |' >> AUDIT_NEXUS.md
+          else
+            echo '| Assets critiques présents dans dist/ | ❌ ÉCHEC |' >> AUDIT_NEXUS.md
+          fi
+
+      - name: Lancer tests/lint éventuels
+        id: extra
+        continue-on-error: true
+        run: |
+          node - <<'NODE'
+          const p=require('./package.json');
+          const {spawnSync}=require('child_process');
+          const names=['test','lint','typecheck'];
+          let failed=false, ran=[];
+          for(const n of names){
+            if(!p.scripts?.[n]) continue;
+            ran.push(n);
+            const r=spawnSync('npm',['run',n],{stdio:'inherit'});
+            if(r.status!==0) failed=true;
+          }
+          console.log('Scripts supplémentaires exécutés:', ran.join(', ') || 'aucun');
+          process.exit(failed?1:0);
+          NODE
+
+      - name: Reporter tests/lint
+        if: always()
+        run: |
+          if [ "${{ steps.extra.outcome }}" = "success" ]; then
+            echo '| Tests/lint/typecheck disponibles | ✅ OK |' >> AUDIT_NEXUS.md
+          else
+            echo '| Tests/lint/typecheck disponibles | ❌ ÉCHEC |' >> AUDIT_NEXUS.md
+          fi
+
+      - name: Détecter les anciens workflows temporaires dangereux
+        id: legacy
+        continue-on-error: true
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          legacy = [
+            '.github/workflows/integrate-meute-assets.yml',
+            '.github/workflows/integrate-meute-images.yml',
+            '.github/workflows/trigger-meute-integration.yml',
+            '.github/workflows/update-booster-ui.yml',
+          ]
+          present=[x for x in legacy if Path(x).exists()]
+          if present:
+              raise SystemExit('Workflows temporaires encore présents: ' + repr(present))
+          PY
+
+      - name: Reporter workflows temporaires
+        if: always()
+        run: |
+          if [ "${{ steps.legacy.outcome }}" = "success" ]; then
+            echo '| Absence de workflows temporaires pouvant réécrire les assets | ✅ OK |' >> AUDIT_NEXUS.md
+          else
+            echo '| Absence de workflows temporaires pouvant réécrire les assets | ⚠️ À NETTOYER |' >> AUDIT_NEXUS.md
+          fi
+
+      - name: Résumé
+        if: always()
+        run: |
+          echo '' >> AUDIT_NEXUS.md
+          echo "Commit audité : \`$(git rev-parse HEAD)\`" >> AUDIT_NEXUS.md
+          echo '' >> AUDIT_NEXUS.md
+          echo 'Les contrôles marqués ❌ ou ⚠️ doivent être corrigés avant de considérer la version comme totalement validée.' >> AUDIT_NEXUS.md
+          cat AUDIT_NEXUS.md
+
+      - name: Publier le rapport et retirer cet audit temporaire
+        if: always()
+        run: |
+          rm -f .github/workflows/audit-nexus.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add AUDIT_NEXUS.md .github/workflows/audit-nexus.yml
+          git commit -m 'Publie le rapport audit Nexus Arena' || exit 0
+          git push origin HEAD:main
