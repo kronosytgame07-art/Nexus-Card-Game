@@ -97,6 +97,9 @@ export interface PlayerState {
   /** Réserve séparée contenant jusqu’à 20 cartes d’évolution. */
   evosphere: string[];
   fatigue: number;
+  /** Une seule invocation normale (payée en runes depuis la main) est autorisée par tour.
+   *  Les invocations spéciales déclenchées par des effets n'utilisent pas ce compteur. */
+  normalSummonUsed: boolean;
 }
 
 export type Phase = 'main' | 'combat' | 'end';
