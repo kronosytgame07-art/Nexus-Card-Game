@@ -247,8 +247,12 @@ function Collection() {
         {filtered.map((c) => {
           const count = s.inventory[c.id] ?? 0;
           const foilCount = s.foilInventory[c.id] ?? 0;
-          const badge = count === 0 && foilCount === 0 ? 'Non possédée' : `×${count}${foilCount ? ` · ✨×${foilCount}` : ''}`;
-          const craftable = count >= FOIL_CRAFT_COST;
+          // Une évolution n'est jamais tirée en booster : elle est débloquée dès que sa
+          // carte de base est possédée (voir Évosphère du deck builder, même logique).
+          const badge = c.evolvesFrom
+            ? (s.owned.includes(c.evolvesFrom) ? 'Débloquée' : 'Non débloquée')
+            : count === 0 && foilCount === 0 ? 'Non possédée' : `×${count}${foilCount ? ` · ✨×${foilCount}` : ''}`;
+          const craftable = !c.evolvesFrom && count >= FOIL_CRAFT_COST;
           return (
             <div key={c.id} className={'collection-entry' + (foilCount > 0 ? ' has-foil' : '')}>
               <CardView card={c} badge={badge} disabled={!craftable} onClick={craftable ? () => craftFoil(c) : undefined} />

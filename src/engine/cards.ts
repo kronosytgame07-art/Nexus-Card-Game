@@ -139,6 +139,12 @@ function buildFaction(faction: Faction, rows: Row[]): CardDef[] {
   const evolvableIds = new Set(
     rows.filter(([, , , , health]) => health > 0).slice(0, 10).map(([id]) => id)
   );
+  // Nom de l'évolution imprimée de chaque carte de base évoluable — précalculé
+  // dans le même ordre que `evolutions` plus bas, pour l'annoncer dans le texte
+  // de la carte de base (collection + aperçus en jeu) avant même de l'obtenir.
+  const evolutionNameById = new Map(
+    rows.filter(([id]) => evolvableIds.has(id)).map(([id], i) => [id, evolutionNames[faction][i]])
+  );
 
   const base: CardDef[] = rows.map(([id, name, cost, attack, health, effect, boosterOnly]) => ({
     id,
@@ -155,7 +161,7 @@ function buildFaction(faction: Faction, rows: Row[]): CardDef[] {
     copies: 3,
     rarity: rarityForCost(cost),
     image: `${import.meta.env.BASE_URL}cards/${id}.png`,
-    text: describeEffect(effect),
+    text: describeEffect(effect) + (evolvableIds.has(id) ? ` Évolue en ${evolutionNameById.get(id)}.` : ''),
     boosterOnly: boosterOnly || undefined,
   }));
 
