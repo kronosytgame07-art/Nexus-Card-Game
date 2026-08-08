@@ -26,4 +26,18 @@ patch(
   'journal invocation spéciale explicite'
 );
 
-console.log('[engine-integrity] Invocations spéciales sécurisées.');
+patch(
+  'src/engine/engine.ts',
+  "        pushLog(state, `${labelFor(ownerId)} invoque spécialement ${pick.name} depuis son deck${pick.blitz ? ' — Blitz !' : ''}.`);\n      } else succeeded = false;\n      break;\n    }\n  }\n  removeDead(state, other(ownerId));",
+  "        pushLog(state, `${labelFor(ownerId)} invoque spécialement ${pick.name} depuis son deck${pick.blitz ? ' — Blitz !' : ''}.`);\n      } else succeeded = false;\n      break;\n    }\n    case 'board_wipe': {\n      if (opponent.field.length === 0) { succeeded = false; break; }\n      const destroyed = opponent.field.length;\n      for (const unit of opponent.field) opponent.graveyard.push(unit.cardId);\n      opponent.field = [];\n      pushLog(state, labelFor(ownerId) + ' déclenche un nettoyage de terrain : ' + destroyed + ' unité(s) adverse(s) détruite(s).');\n      break;\n    }\n  }\n  removeDead(state, other(ownerId));",
+  'effet nettoyage complet du terrain adverse'
+);
+
+patch(
+  'src/engine/cards.ts',
+  "case'summon':return`Cri de guerre : invoque une unité ${effect.target??''}.`;default:return'Aucun effet spécial.';",
+  "case'summon':return`Cri de guerre : invoque une unité ${effect.target??''}.`;case'board_wipe':return'Détruit toutes les unités adverses.';default:return'Aucun effet spécial.';",
+  'description nettoyage de terrain'
+);
+
+console.log('[engine-integrity] Invocations spéciales et effets de terrain sécurisés.');
