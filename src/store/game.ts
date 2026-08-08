@@ -177,6 +177,11 @@ interface GameMeta {
   replays: SavedReplay[];
   saveReplay: (replay: Omit<SavedReplay, 'id' | 'date'>) => void;
   deleteReplay: (id: string) => void;
+  /** true une fois que le joueur a fermé l'invite de connexion Google au lancement
+      (sans se connecter) — évite de le relancer à chaque ouverture de l'app. La
+      connexion reste possible à tout moment depuis Profil/Paramètres. */
+  googleSignInDismissed: boolean;
+  dismissGoogleSignIn: () => void;
 }
 
 function startingOwnedFor(faction: Faction): string[] {
@@ -330,6 +335,7 @@ export const useGame = create<GameMeta>()(
       batterySaver: false,
       vibrationEnabled: true,
       replays: [],
+      googleSignInDismissed: false,
       addCard: (id) =>
         set((s) => {
           const inventory = mergeInventory(s.inventory, [id]);
@@ -567,6 +573,7 @@ export const useGame = create<GameMeta>()(
           replays: [{ ...replay, id: `replay-${Date.now()}-${Math.floor(Math.random() * 1000)}`, date: Date.now() }, ...s.replays].slice(0, MAX_REPLAYS),
         })),
       deleteReplay: (id) => set((s) => ({ replays: s.replays.filter((r) => r.id !== id) })),
+      dismissGoogleSignIn: () => set({ googleSignInDismissed: true }),
     }),
     {
       name: 'nexus-save',

@@ -68,3 +68,17 @@ export function applyRankedResult(currentRating: number, win: boolean): number {
 export function formatRank(rank: RankedRank): string {
   return rank.tier === 'Légende du Nexus' ? rank.tier : `${rank.tier} ${rank.division}`;
 }
+
+/**
+ * Tant qu'aucun vrai joueur n'est trouvé par le matchmaking (pas de serveur
+ * temps réel branché), un bot prend sa place. En Classé, son niveau d'IA doit
+ * refléter le rang actuel du joueur plutôt que d'être tiré au hasard.
+ */
+export type AiDifficulty = 'novice' | 'veteran' | 'maitre';
+
+export function aiDifficultyForRating(rating: number): AiDifficulty {
+  const safe = Math.max(0, Math.floor(rating));
+  if (safe >= 1200) return 'maitre';
+  if (safe >= 600) return 'veteran';
+  return 'novice';
+}

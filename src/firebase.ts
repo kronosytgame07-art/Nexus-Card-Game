@@ -4,7 +4,7 @@
 // vaut false et l'écran Échanges affiche un message d'indisponibilité plutôt que de planter.
 
 import { initializeApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged, type Auth, type User } from 'firebase/auth';
+import { getAuth, signInAnonymously, signInWithPopup, signOut, GoogleAuthProvider, onAuthStateChanged, type Auth, type User } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 
 const config = {
@@ -53,4 +53,35 @@ export function ensureSignedIn(): Promise<User> {
     });
   }
   return anonSignIn;
+}
+
+const googleProvider = new GoogleAuthProvider();
+
+/** Connexion Google explicite (bouton) — remplace une éventuelle session anonyme
+    par le vrai compte de l'utilisateur, ce qui préserve le même uid pour les échanges
+    et sert de clé de sauvegarde cloud (voir src/cloudSave.ts). */
+export function signInWithGoogle(): Promise<User> {
+  if (!firebaseReady || !auth) return Promise.reject(new Error('Firebase non configuré.'));
+  return signInWithPopup(auth, googleProvider).then((credential) => credential.user);
+}
+
+export function signOutUser(): Promise<void> {
+  if (!auth) return Promise.resolve();
+  anonSignIn = null;
+  return signOut(auth);
+}
+
+/** true si l'utilisateur connecté a un vrai compte Google (pas une session anonyme). */
+export function isGoogleUser(user: User | null | undefined): boolean {
+  return Boolean(user && !user.isAnonymous);
+}
+
+/** S'abonne à l'état de connexion Firebase. Sans config Firebase, appelle immédiatement
+    le callback avec `null` (aucune connexion possible) et ne s'abonne à rien. */
+export function subscribeAuthState(callback: (user: User | null) => void): () => void {
+  if (!firebaseReady || !auth) {
+    callback(null);
+    return () => {};
+  }
+  return onAuthStateChanged(auth, callback);
 }

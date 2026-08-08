@@ -459,6 +459,22 @@ html[data-animations='off'] .card.Mythique:hover::after {
 .rank-ladder { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:8px; }
 .rank-ladder > div { display:flex; justify-content:space-between; gap:10px; padding:10px 12px; border-radius:10px; background:#ffffff08; border:1px solid #ffffff10; }
 .rank-ladder b { color:#e9f1ed; font-size:12px; }.rank-ladder span { color:#8da39b; font:10px "DM Mono"; }
+.matchmaking-overlay { position:fixed; inset:0; z-index:60; display:grid; place-items:center; background:rgba(1,5,8,.78); backdrop-filter:blur(6px); }
+.matchmaking-card { display:flex; flex-direction:column; align-items:center; gap:10px; width:min(320px,88vw); padding:28px 24px; border:1px solid #e6bd6355; border-radius:16px; background:linear-gradient(145deg,#141822fc,#040d0ffc); box-shadow:0 30px 90px rgba(0,0,0,.72); text-align:center; }
+.matchmaking-card b { color:#ffe19a; font:700 16px "Playfair Display"; }
+.matchmaking-card small { color:#9db2aa; font:11px "DM Mono"; }
+.matchmaking-spinner { width:38px; height:38px; border-radius:50%; border:3px solid #ffffff22; border-top-color:#5ae0be; animation:matchmaking-spin .9s linear infinite; }
+@keyframes matchmaking-spin { to { transform:rotate(360deg); } }
+html[data-animations='off'] .matchmaking-spinner { animation:none; }
+.match-result-ranked { display:inline-block; margin-top:4px; color:#ffe19a; font:800 12px "DM Mono"; letter-spacing:.4px; }
+.signin-gate-overlay { position:fixed; inset:0; z-index:200; display:grid; place-items:center; background:rgba(1,5,8,.82); backdrop-filter:blur(6px); padding:20px; }
+.signin-gate-card { display:flex; flex-direction:column; gap:10px; width:min(360px,92vw); padding:28px 24px; border:1px solid #e6bd6355; border-radius:16px; background:linear-gradient(145deg,#141822fc,#040d0ffc); box-shadow:0 30px 90px rgba(0,0,0,.72); text-align:center; }
+.signin-gate-card b { color:#ffe19a; font:700 18px "Playfair Display"; }
+.signin-gate-card p { color:#b3c6bd; font-size:13px; margin:0; }
+.signin-gate-error { color:#ff9a9a; }
+.account-section { margin:10px 0 22px; padding:16px; border:1px solid #ffffff1c; border-radius:14px; background:#ffffff08; }
+.account-section h3 { margin:0 0 8px; }
+.account-connected, .account-disconnected { display:flex; flex-direction:column; align-items:flex-start; gap:8px; }
 @media(max-width:760px){.multiplayer-modes{grid-template-columns:1fr}}
 
 
