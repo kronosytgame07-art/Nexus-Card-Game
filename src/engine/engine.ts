@@ -329,7 +329,7 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
           health: pick.health,
           maxHealth: pick.health,
           turnsOnField: 0,
-          canAttack: false,
+          canAttack: Boolean(pick.blitz),
           stunnedTurns: 0,
           buffs: 0,
           taunt: false,
@@ -337,7 +337,7 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
           effectUsesThisTurn: 0,
           slot: resolveSlot(owner.field, MAX_FIELD_UNITS),
         });
-        pushLog(state, `${labelFor(ownerId)} invoque spécialement ${pick.name}.`);
+        pushLog(state, `${labelFor(ownerId)} invoque spécialement ${pick.name}${pick.blitz ? ' — Blitz !' : ''}.`);
       } else {
         succeeded = false;
       }
@@ -388,7 +388,7 @@ export function playCard(
       health: def.health,
       maxHealth: def.health,
       turnsOnField: 0,
-      canAttack: false,
+      canAttack: Boolean(def.blitz),
       stunnedTurns: 0,
       buffs: 0,
       taunt: false,
@@ -398,7 +398,7 @@ export function playCard(
     };
     p.field.push(unit);
     p.normalSummonUsed = true;
-    pushLog(state, `${labelFor(playerId)} joue ${def.name}${cost < def.cost ? ` (Rang Sacré : ${cost}◆ au lieu de ${def.cost}◆)` : ''}.`);
+    pushLog(state, `${labelFor(playerId)} joue ${def.name}${cost < def.cost ? ` (Rang Sacré : ${cost}◆ au lieu de ${def.cost}◆)` : ''}${def.blitz ? ' — Blitz !' : ''}.`);
     if (def.effect && def.text.toLowerCase().includes('à l’invocation')) resolveEffect(state, playerId, def.effect, unit.instanceId);
   } else {
     const support = { instanceId: instanceId(), cardId: def.id, slot: resolveSlot(p.support, MAX_SUPPORT, slotIndex) };
