@@ -5,12 +5,15 @@ html,body{height:100%;margin:0}
 button,a,.field-card,.support-card,.card-pile,.menu-card,.faction-button,.chapter,.deck-row{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 body{background:radial-gradient(circle at 65% 5%,#294f70,#081819 48%,#050b0c);overscroll-behavior:none}
 #root{display:flex;height:100vh;height:100svh;height:100dvh;width:100%;overflow:hidden}
-aside{width:240px;flex:0 0 auto;padding:28px 18px;border-right:1px solid #ffffff18;background:#061113cc;display:flex;flex-direction:column;gap:6px;overflow-y:auto}
-aside h1{font:700 22px Playfair Display;margin:0 0 28px;color:#e9c878;display:flex;align-items:center;gap:8px}
+a{color:inherit;text-decoration:none}
+.app-sidebar{width:240px;flex:0 0 auto;padding:28px 18px;border-right:1px solid #ffffff18;background:#061113cc;display:flex;flex-direction:column;gap:4px;overflow-y:auto;overflow-x:hidden}
+.app-sidebar h1{font:700 22px Playfair Display;margin:0 0 28px;color:#e9c878;display:flex;align-items:center;gap:8px;white-space:nowrap}
 .brand-mark{width:26px;height:26px;border-radius:7px;object-fit:cover;flex:0 0 auto}
-aside small{display:block;font:9px DM Mono;letter-spacing:2px;color:#53ddbd}
-a{color:#9cb3ac;text-decoration:none;padding:11px 14px;border-radius:8px;border-left:2px solid transparent;font:600 12px "Space Grotesk";letter-spacing:.3px;transition:background .15s,border-color .15s,color .15s}
-a.active,a:hover{background:linear-gradient(90deg,#4ce1bb22,transparent);color:#7ff0d0;border-left-color:#56dab8}
+.app-sidebar h1 small{display:block;font:9px DM Mono;letter-spacing:2px;color:#53ddbd}
+.nav-link{display:flex;align-items:center;gap:12px;color:#9cb3ac;padding:12px 14px;border-radius:10px;border-left:2px solid transparent;font:600 13px "Space Grotesk";letter-spacing:.3px;white-space:nowrap;transition:background .15s,border-color .15s,color .15s}
+.nav-link:hover{color:#cfe0d8;background:#ffffff08}
+.nav-link.active{background:linear-gradient(90deg,#4ce1bb22,transparent);color:#7ff0d0;border-left-color:#56dab8}
+.nav-link-icon{flex:0 0 auto;width:20px;text-align:center;font-size:15px}
 main{flex:1;min-width:0;min-height:0;padding:55px;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .home-hero{padding:36px 4% 60px;position:relative;overflow:hidden}.home-hero:before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(4,9,10,.55) 0%,rgba(4,9,10,.72) 45%,rgba(5,10,10,.94) 78%,#071314 100%);}.home-hero>*{position:relative;z-index:3}
 .home-hero-bg{position:absolute;inset:-6%;z-index:0;width:112%;height:112%;object-fit:cover;object-position:center 30%;animation:home-pan 28s ease-in-out infinite alternate;will-change:transform}
@@ -42,16 +45,43 @@ progress{accent-color:#56dab8}.faction-pick{display:flex;gap:10px;margin:18px 0}
 .card-name-tooltip{position:absolute;left:0;right:0;bottom:0;padding:6px 8px 5px;background:linear-gradient(0deg,rgba(0,0,0,.88) 10%,transparent 100%);color:#fff;font:700 11px "DM Mono";letter-spacing:.2px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transform:translateY(4px);transition:opacity .15s ease,transform .15s ease;pointer-events:none}
 .card.full-art:hover .card-name-tooltip,.card.full-art:focus-visible .card-name-tooltip,.card-name-tooltip.show{opacity:1;transform:translateY(0)}
 .hud-buttons{position:fixed;top:10px;right:10px;z-index:20;display:flex;gap:8px}
-.fullscreen-toggle,.music-toggle{width:38px;height:38px;border-radius:50%;border:1px solid #ffffff2a;background:#0a1f1ecc;color:#7ff0d0;font-size:16px;cursor:pointer}
+.fullscreen-toggle,.music-toggle,.help-toggle{width:38px;height:38px;border-radius:50%;border:1px solid #ffffff2a;background:#0a1f1ecc;color:#7ff0d0;font-size:16px;cursor:pointer;display:grid;place-items:center;font-weight:700}
 .portrait-gate{display:none}
-@media(max-width:700px){#root{display:block;height:auto;overflow:visible}aside{width:100%;height:auto;flex-flow:row wrap;padding:14px}aside h1{width:100%;margin:0}main{padding:28px 18px;overflow:visible}.home-hero{padding:20px 0}h2{font-size:32px}.builder{grid-template-columns:1fr}.grid{grid-template-columns:repeat(2,1fr)}}
+/* Nav mobile/tablette : un onglet portrait (rare, coincé derrière la
+   PortraitGate sur mobile tactile — n'arrive que fenêtre desktop étroite)
+   passe le rail de navigation en icônes seules plutôt que de le renvoyer en
+   liste empilée au-dessus du contenu comme avant (poussait tout vers le bas
+   sur les petits écrans). */
+@media(max-width:700px){
+  #root{height:100vh;height:100svh;height:100dvh}
+  /* Plein écran / son / aide n'apportent rien sur mobile (déjà en plein
+     écran dans l'app, contrôle du son au niveau du système) — on ne garde
+     que ce qui sert vraiment sur un petit écran. */
+  .hud-buttons{display:none}
+  .app-sidebar{width:68px;padding:14px 4px;gap:3px;align-items:stretch}
+  .app-sidebar h1{display:none}
+  .nav-link{flex-direction:column;gap:3px;padding:10px 2px;font-size:8px;text-align:center;border-left:0;border-radius:10px;white-space:normal}
+  .nav-link-icon{font-size:19px;width:auto}
+  .nav-link.active{box-shadow:inset 0 0 0 1px #56dab866}
+  main{padding:28px 18px;overflow-y:auto}
+  .home-hero{padding:20px 0}
+  h2{font-size:32px}
+  .builder{grid-template-columns:1fr}
+  .grid{grid-template-columns:repeat(2,1fr)}
+}
+/* Cas réel sur téléphone : la PortraitGate impose le mode paysage, donc
+   c'est CE palier (paysage + hauteur réduite) que voient tous les joueurs
+   sur mobile tactile — l'ancien bandeau du haut à liens compressés/scrollables
+   à l'horizontale (10 onglets sur 34px de haut) est remplacé par un rail
+   vertical fin à gauche, cohérent avec le rail bureau et bien plus lisible
+   sur une hauteur aussi limitée. */
 @media(orientation:landscape) and (max-height:650px){
-  #root{flex-direction:column;height:100vh;height:100svh;height:100dvh}
-  aside{width:100%;flex:0 0 auto;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;padding:6px 10px;gap:4px;border-right:0;border-bottom:1px solid #ffffff18;align-items:center}
-  aside h1{font-size:13px;margin:0 10px 0 0;white-space:nowrap}
-  aside h1 small{display:none}
-  .brand-mark{width:18px;height:18px;border-radius:5px}
-  aside a{padding:6px 8px;font-size:10px;white-space:nowrap;border-radius:6px}
+  #root{flex-direction:row;height:100vh;height:100svh;height:100dvh}
+  .app-sidebar{width:56px;flex:0 0 56px;padding:8px 4px;gap:2px;align-items:stretch;overflow-y:auto;overflow-x:hidden}
+  .app-sidebar h1{display:none}
+  .nav-link{flex-direction:column;gap:2px;padding:7px 2px;font-size:7px;text-align:center;border-left:0;border-radius:8px;white-space:normal}
+  .nav-link-icon{font-size:15px;width:auto}
+  .nav-link.active{box-shadow:inset 0 0 0 1px #56dab866}
   main{flex:1;min-height:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));width:100%}
   .home-hero{padding:12px 4%;min-height:0}
   h2{font-size:24px}
@@ -77,8 +107,7 @@ progress{accent-color:#56dab8}.faction-pick{display:flex;gap:10px;margin:18px 0}
   .stats span{font-size:10px}
   .grid{grid-template-columns:repeat(4,1fr);gap:8px}
   .card{min-height:150px}
-  .hud-buttons{top:6px;right:6px;gap:6px}
-  .fullscreen-toggle,.music-toggle{width:30px;height:30px;font-size:13px}
+  .hud-buttons{display:none}
   .chapter{padding:8px 10px;gap:8px}
   .chapter .number{font-size:15px}
   .chapter-body b{font-size:13px}
@@ -93,7 +122,28 @@ progress{accent-color:#56dab8}.faction-pick{display:flex;gap:10px;margin:18px 0}
   .rotate-icon{display:inline-block;font-size:44px;color:#56dab8;animation:rotate-hint 1.6s ease-in-out infinite}
 }
 @keyframes rotate-hint{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-90deg)}}
-.home-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}.home-logo{display:flex;align-items:center;gap:12px}.home-logo-mark{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;overflow:hidden;color:#f2c56a;background:radial-gradient(circle at 35% 20%,#1e5651,#0a1e20 60%,#071314);border:1px solid #e9c87855;animation:home-logo-pulse 3.2s ease-in-out infinite}.home-logo-mark img{width:100%;height:100%;object-fit:cover}.home-logo b{display:block;font:700 15px "Playfair Display";letter-spacing:1px}.home-logo small{display:block;font:9px "DM Mono";letter-spacing:2px;color:#5ae0be}.install-button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 16px;border:1px solid #ffffff2a;border-radius:10px;background:#ffffff08;color:#cfe0d8;font:10px "DM Mono";cursor:pointer}.install-button:hover{background:#ffffff14}.home-showcase{display:flex;justify-content:center;min-height:260px}.home-copy{flex:0 0 min(560px,88%);display:flex;flex-direction:column;justify-content:center;text-align:center;padding:20px 10px}.home-copy h2{margin:6px 0}.faction-pick.compact{justify-content:center;margin:16px 0 0}.menu-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:26px}.menu-card{grid-column:span 1;position:relative;overflow:hidden;display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:12px;border:1px solid #ffffff16;background:linear-gradient(135deg,#ffffff09,#ffffff02);color:inherit;text-align:left;cursor:pointer;transition:transform .15s,border-color .15s}.menu-card:before{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.09) 45%,transparent 60%);transform:translateX(-120%);transition:transform .6s ease}.menu-card:hover{transform:translateY(-2px);border-color:#56dab866}.menu-card:hover:before{transform:translateX(120%)}.menu-card:first-child{grid-column:1 / 2}.menu-card:nth-child(2){grid-column:2 / 3}.menu-card:nth-child(3){grid-column:1 / 3}.menu-card-icon{width:38px;height:38px;flex:0 0 auto;border-radius:50%;display:grid;place-items:center;font-size:16px;border:1px solid currentColor}.menu-card-icon.gold{color:#f2c56a;background:#f2c56a1a}.menu-card-icon.teal{color:#56dab8;background:#56dab81a}.menu-card-icon.violet{color:#b79bff;background:#b79bff1a}.menu-card-icon.red{color:#ff8d8d;background:#ff6c6c1a}.menu-card-body{flex:1;display:flex;flex-direction:column;gap:2px}.menu-card-body small{font:9px "DM Mono";letter-spacing:1.5px;color:#8fa39c}.menu-card-body b{font:700 17px "Playfair Display"}.menu-card-body em{font:11px "DM Mono";font-style:normal;color:#9db3ac}.menu-card-arrow{font-size:18px;color:#56dab8}.options-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-top:22px}.options-card{padding:16px;border:1px solid #ffffff16;border-radius:12px;background:#ffffff08;display:flex;flex-direction:column;gap:8px}.options-card b{font:700 15px "Playfair Display"}.options-card.danger{border-color:#ef6c6c44}.secondary.danger{border-color:#ef6c6c;color:#ffb3b3}
+.home-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}.home-logo{display:flex;align-items:center;gap:12px}.home-logo-mark{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;overflow:hidden;color:#f2c56a;background:radial-gradient(circle at 35% 20%,#1e5651,#0a1e20 60%,#071314);border:1px solid #e9c87855;animation:home-logo-pulse 3.2s ease-in-out infinite}.home-logo-mark img{width:100%;height:100%;object-fit:cover}.home-logo b{display:block;font:700 15px "Playfair Display";letter-spacing:1px}.home-logo small{display:block;font:9px "DM Mono";letter-spacing:2px;color:#5ae0be}.install-button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 16px;border:1px solid #ffffff2a;border-radius:10px;background:#ffffff08;color:#cfe0d8;font:10px "DM Mono";cursor:pointer}.install-button:hover{background:#ffffff14}.home-showcase{display:flex;justify-content:center;min-height:260px}.home-copy{flex:0 0 min(560px,88%);display:flex;flex-direction:column;justify-content:center;text-align:center;padding:20px 10px}.home-copy h2{margin:6px 0}.faction-pick.compact{justify-content:center;margin:16px 0 0}.menu-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:28px}
+.menu-card{grid-column:span 1;position:relative;overflow:hidden;display:flex;align-items:center;gap:16px;padding:20px 22px;border-radius:16px;border:1px solid #ffffff18;background:linear-gradient(150deg,#ffffff0d,#ffffff02 60%);color:inherit;text-align:left;cursor:pointer;transition:transform .18s,border-color .18s,box-shadow .18s}
+.menu-card:before{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.1) 45%,transparent 60%);transform:translateX(-120%);transition:transform .6s ease}
+.menu-card:hover{transform:translateY(-3px);border-color:#56dab877;box-shadow:0 14px 30px rgba(0,0,0,.35)}
+.menu-card:hover:before{transform:translateX(120%)}
+.menu-card:first-child{grid-column:1 / 2}
+.menu-card:nth-child(2){grid-column:2 / 3}
+.menu-card:nth-child(3){grid-column:1 / 3}
+.menu-card-icon{width:52px;height:52px;flex:0 0 auto;border-radius:16px;display:grid;place-items:center;font-size:22px;border:1px solid currentColor;box-shadow:0 0 24px -6px currentColor}
+.menu-card-icon.gold{color:#f2c56a;background:radial-gradient(circle at 35% 30%,#f2c56a33,#f2c56a12)}
+.menu-card-icon.teal{color:#56dab8;background:radial-gradient(circle at 35% 30%,#56dab833,#56dab812)}
+.menu-card-icon.violet{color:#b79bff;background:radial-gradient(circle at 35% 30%,#b79bff33,#b79bff12)}
+.menu-card-icon.red{color:#ff8d8d;background:radial-gradient(circle at 35% 30%,#ff6c6c33,#ff6c6c12)}
+.menu-card-body{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}
+.menu-card-body small{font:800 10px "DM Mono";letter-spacing:2px;color:#8fa39c}
+.menu-card-body b{font:700 19px "Playfair Display"}
+.menu-card-body em{font:11px "DM Mono";font-style:normal;color:#9db3ac;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.menu-card-arrow{font-size:20px;color:#56dab8;flex:0 0 auto}
+.menu-card-lock{font-size:18px;flex:0 0 auto;opacity:.7}
+.menu-card.locked{cursor:not-allowed;opacity:.62;filter:saturate(.65)}
+.menu-card.locked:hover{transform:none;border-color:#ffffff18;box-shadow:none}
+.menu-card.locked:hover:before{transform:translateX(-120%)}.options-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-top:22px}.options-card{padding:16px;border:1px solid #ffffff16;border-radius:12px;background:#ffffff08;display:flex;flex-direction:column;gap:8px}.options-card b{font:700 15px "Playfair Display"}.options-card.danger{border-color:#ef6c6c44}.secondary.danger{border-color:#ef6c6c;color:#ffb3b3}
 .secondary{padding:13px 24px;background:rgba(86,218,184,.08);border:1px solid #56dab8;color:#7ff0d0;border-radius:9px;font:700 12px "Space Grotesk";letter-spacing:.5px;text-transform:uppercase;cursor:pointer;transition:background .15s,transform .12s}.secondary:hover{background:rgba(86,218,184,.18);transform:translateY(-2px)}
 .match-result-actions{display:flex;gap:10px;justify-content:center;margin-top:10px;flex-wrap:wrap}
 .chapter-list{display:grid;gap:10px;margin-top:26px}
@@ -103,6 +153,10 @@ progress{accent-color:#56dab8}.faction-pick{display:flex;gap:10px;margin:18px 0}
 .chapter small{color:#b1c3bc}
 .chapter button{border:0;background:#56dab8;color:#06201c;border-radius:7px;padding:8px 12px;font-weight:bold;cursor:pointer}
 .chapter.locked{opacity:.45}
+.subtabs{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.subtab{padding:9px 18px;border-radius:999px;border:1px solid #ffffff2a;background:#ffffff0d;color:#9cb3ac;font:700 12px "Space Grotesk";letter-spacing:.3px;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+.subtab:hover{color:#cfe0d8}
+.subtab.active{border-color:#56dab8;background:#56dab826;color:#7ff0d0}
 .deck-menu-list{display:flex;flex-direction:column;gap:10px;margin:16px 0}
 .deck-menu-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;border:1px solid #ffffff16;border-radius:12px;background:#ffffff08}
 .deck-menu-row.active{border-color:#56dab8;background:#56dab814}
