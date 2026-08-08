@@ -63,11 +63,16 @@ export interface FieldUnit {
   packBonus: number;
   /** Nombre d’activations manuelles déjà utilisées pendant le tour courant. */
   effectUsesThisTurn: number;
+  /** Emplacement choisi (0..MAX_FIELD_UNITS-1) sur le terrain — purement pour l'affichage,
+      la liste elle-même reste ordonnée par ordre d'arrivée pour le reste des règles. */
+  slot: number;
 }
 
 export interface SupportCard {
   instanceId: string;
   cardId: string;
+  /** Emplacement choisi (0..MAX_SUPPORT-1) en zone Soutien — même logique que FieldUnit.slot. */
+  slot: number;
 }
 
 export type PlayerId = 'player' | 'enemy';

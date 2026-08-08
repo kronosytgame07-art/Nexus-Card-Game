@@ -128,6 +128,15 @@ function findUnit(p: PlayerState, id: string): FieldUnit | undefined {
   return p.field.find((u) => u.instanceId === id);
 }
 
+/** Choisit l'emplacement d'affichage d'une nouvelle unité/carte de soutien : celui demandé
+    par le joueur s'il est libre et valide, sinon le premier emplacement libre. */
+function resolveSlot(existing: { slot: number }[], max: number, requested?: number): number {
+  const taken = new Set(existing.map((u) => u.slot));
+  if (requested !== undefined && requested >= 0 && requested < max && !taken.has(requested)) return requested;
+  for (let i = 0; i < max; i++) if (!taken.has(i)) return i;
+  return existing.length;
+}
+
 function removeDead(state: GameState, id: PlayerId) {
   const p = state[id];
   const dead = p.field.filter((u) => u.health <= 0);
@@ -325,6 +334,7 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
           taunt: false,
           packBonus: 0,
           effectUsesThisTurn: 0,
+          slot: resolveSlot(owner.field, MAX_FIELD_UNITS),
         });
         pushLog(state, `${labelFor(ownerId)} invoque ${pick.name}.`);
       } else {
@@ -342,7 +352,8 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
 export function playCard(
   rawState: GameState,
   playerId: PlayerId,
-  cardId: string
+  cardId: string,
+  slotIndex?: number
 ): GameState {
   const state = clone(rawState);
   if (state.winner || state.activePlayer !== playerId) return state;
@@ -378,12 +389,13 @@ export function playCard(
       taunt: false,
       packBonus: 0,
       effectUsesThisTurn: 0,
+      slot: resolveSlot(p.field, MAX_FIELD_UNITS, slotIndex),
     };
     p.field.push(unit);
     pushLog(state, `${labelFor(playerId)} joue ${def.name}${cost < def.cost ? ` (Rang Sacré : ${cost}◆ au lieu de ${def.cost}◆)` : ''}.`);
     if (def.effect && def.text.toLowerCase().includes('à l’invocation')) resolveEffect(state, playerId, def.effect, unit.instanceId);
   } else {
-    const support = { instanceId: instanceId(), cardId: def.id };
+    const support = { instanceId: instanceId(), cardId: def.id, slot: resolveSlot(p.support, MAX_SUPPORT, slotIndex) };
     p.support.push(support);
     pushLog(state, `${labelFor(playerId)} pose ${def.name} face cachée en Soutien.`);
   }
@@ -404,7 +416,9 @@ export function declareAttack(
   if (!attacker || !attacker.canAttack || attacker.stunnedTurns > 0) return state;
 
   const opponent = state[other(playerId)];
-  const opponentTaunts = opponent.field.filter((u) => u.taunt);
+  // Un étourdissement suspend les effets de l'unité — une Provocation étourdie
+  // ne force plus l'attaque sur elle, les autres cibles redeviennent valides.
+  const opponentTaunts = opponent.field.filter((u) => u.taunt && u.stunnedTurns === 0);
   const attackerDef = getCard(attacker.cardId);
   const canAttackDirectly = attackerDef.text.toLowerCase().includes('attaque directe');
   if (!targetInstanceId && opponent.field.length > 0 && !canAttackDirectly) {
@@ -426,12 +440,16 @@ export function declareAttack(
     const target = findUnit(opponent, targetInstanceId);
     if (!target) return state;
     const targetDef = getCard(target.cardId);
-    const targetDmg = effectiveAttack(target, targetDef);
+    // Une cible étourdie ne riposte pas : elle encaisse les dégâts sans contre-attaquer.
+    const targetStunned = target.stunnedTurns > 0;
+    const targetDmg = targetStunned ? 0 : effectiveAttack(target, targetDef);
     target.health -= attackerDmg;
-    attacker.health -= targetDmg;
+    if (!targetStunned) attacker.health -= targetDmg;
     pushLog(
       state,
-      `${attackerDef.name} (${attackerDmg}) affronte ${targetDef.name} (${targetDmg}).`
+      targetStunned
+        ? `${attackerDef.name} frappe ${targetDef.name} (étourdi) : ${attackerDmg} dégâts, aucune riposte.`
+        : `${attackerDef.name} (${attackerDmg}) affronte ${targetDef.name} (${targetDmg}).`
     );
   }
 
@@ -633,7 +651,7 @@ export function aiPrepareBattlePlan(rawState: GameState): AiBattlePlan {
   // "maitre" : si la somme des attaques disponibles peut achever le joueur, on fonce tout au visage.
   const lethal =
     difficulty === 'maitre' &&
-    rawState.player.field.filter((u) => u.taunt).length === 0 &&
+    rawState.player.field.filter((u) => u.taunt && u.stunnedTurns === 0).length === 0 &&
     attackers.reduce((sum, u) => sum + effectiveAttack(u, getCard(u.cardId)), 0) >= rawState.player.life;
 
   // "maitre" à faible vie : on garde la meilleure unité en défense plutôt que de l'engager.
@@ -660,7 +678,7 @@ export function aiResolveOneAttack(rawState: GameState, attackerId: string, leth
   if (!lethal && currentAttacker.instanceId === keepBackId) return { state, attackerId, targetId: null, skipped: true };
 
   const difficulty = state.aiDifficulty;
-  const playerTaunts = state.player.field.filter((u) => u.taunt);
+  const playerTaunts = state.player.field.filter((u) => u.taunt && u.stunnedTurns === 0);
   let targetId: string | null;
   if (playerTaunts.length > 0) {
     targetId = [...playerTaunts].sort((a, b) => a.health - b.health)[0].instanceId;
