@@ -93,4 +93,7 @@ jobs:
           test ! -e .github/workflows/integrate-meute-images.yml
           test ! -e .github/workflows/trigger-meute-integration.yml
           test ! -e .github/workflows/update-booster-ui.yml
-          ! grep -R "copy-card-art.sh" package.json .github/workflows || true
+          if grep -R "copy-card-art.sh" package.json .github/workflows; then
+            echo "Ancienne référence copy-card-art.sh détectée"
+            exit 1
+          fi
