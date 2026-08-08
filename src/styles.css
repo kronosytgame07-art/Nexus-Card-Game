@@ -533,3 +533,98 @@ html[data-animations='off'] .matchmaking-spinner { animation:none; }
 .archetype-identity{display:grid;grid-template-columns:minmax(220px,1.25fr) minmax(260px,1fr);gap:16px;margin:12px 0 20px;padding:16px 18px;border-radius:16px;border:1px solid rgba(233,200,120,.24);background:linear-gradient(135deg,rgba(233,200,120,.08),rgba(86,218,184,.06));box-shadow:0 12px 30px rgba(0,0,0,.18)}
 .archetype-identity small{display:block;color:#e9c878;font:800 9px "DM Mono";letter-spacing:1.5px}.archetype-identity b{display:block;margin:4px 0 5px;font:700 20px "Playfair Display"}.archetype-identity p{margin:0;color:#aebfb9;font-size:12px;line-height:1.45}.archetype-columns{display:grid;grid-template-columns:1fr 1fr;gap:10px}.archetype-columns span{display:flex;flex-direction:column;gap:5px;padding:9px 10px;border-radius:10px;background:rgba(255,255,255,.035)}.archetype-columns strong{font:800 9px "DM Mono";color:#dce8e3}.archetype-columns em{font-style:normal;font-size:10px;color:#9db2aa;line-height:1.3}@media(max-width:760px),(orientation:landscape) and (max-height:600px){.archetype-identity{grid-template-columns:1fr;padding:11px 12px;margin:8px 0 12px}.archetype-identity b{font-size:16px}.archetype-identity p{font-size:10px}.archetype-columns em{font-size:9px}}
 
+\n\n/* NEXUS BOOSTER ARTWORK 2026 */
+.booster-product-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+}
+
+.booster-shop-art {
+  display: block;
+  width: min(100%, 260px);
+  aspect-ratio: 2 / 3;
+  object-fit: contain;
+  margin: .15rem auto .45rem;
+  filter: drop-shadow(0 18px 24px rgba(0,0,0,.42));
+  transition: transform .22s ease, filter .22s ease;
+}
+
+.booster-product-card:hover .booster-shop-art {
+  transform: translateY(-5px) scale(1.025);
+  filter: drop-shadow(0 22px 30px rgba(0,0,0,.58));
+}
+
+.booster-product-title {
+  display: block;
+  width: 100%;
+  text-align: center;
+  font-size: 1.06rem;
+  margin-bottom: .4rem;
+}
+
+.booster-pack-animation {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.booster-pack-art {
+  display: block;
+  width: min(32vw, 290px);
+  max-height: 42vh;
+  object-fit: contain;
+  filter: drop-shadow(0 22px 38px rgba(0,0,0,.62));
+  transform-origin: center top;
+  animation: nexus-booster-arrive .5s cubic-bezier(.2,.8,.2,1) both;
+}
+
+.booster-tear-line {
+  position: absolute;
+  left: 50%;
+  top: 10%;
+  width: min(30vw, 270px);
+  height: 3px;
+  transform: translateX(-50%) scaleX(0);
+  transform-origin: left center;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.98), transparent);
+  box-shadow: 0 0 16px rgba(255,255,255,.9);
+  animation: nexus-booster-tear .46s .35s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes nexus-booster-arrive {
+  from { opacity: 0; transform: translateY(-26px) scale(.9) rotate(-1deg); }
+  to { opacity: 1; transform: translateY(0) scale(1) rotate(0); }
+}
+
+@keyframes nexus-booster-tear {
+  0% { opacity: 0; transform: translateX(-50%) scaleX(0); }
+  45% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-50%) scaleX(1); }
+}
+
+.booster-pull-card {
+  border-radius: 14px;
+  transition: filter .25s ease, box-shadow .25s ease, transform .25s ease;
+}
+.booster-pull-card.rarity-commune { box-shadow: 0 0 18px rgba(235,240,255,.28); }
+.booster-pull-card.rarity-rare { box-shadow: 0 0 25px rgba(50,145,255,.72), 0 0 55px rgba(50,145,255,.26); }
+.booster-pull-card.rarity-epique { box-shadow: 0 0 28px rgba(170,65,255,.9), 0 0 68px rgba(170,65,255,.34); }
+.booster-pull-card.rarity-legendaire { box-shadow: 0 0 32px rgba(255,191,45,.92), 0 0 74px rgba(255,191,45,.38); }
+.booster-pull-card.rarity-mythique { box-shadow: 0 0 36px rgba(255,42,42,1), 0 0 88px rgba(255,42,42,.52); }
+.booster-card-fan.revealed .booster-pull-card.rarity-epique,
+.booster-card-fan.revealed .booster-pull-card.rarity-legendaire,
+.booster-card-fan.revealed .booster-pull-card.rarity-mythique {
+  animation: nexus-rarity-pulse 1.45s ease-in-out infinite alternate;
+}
+@keyframes nexus-rarity-pulse {
+  from { filter: brightness(1); }
+  to { filter: brightness(1.16) saturate(1.18); }
+}
+
+@media (max-height: 650px) and (orientation: landscape) {
+  .booster-shop-art { width: min(22vh, 170px); }
+  .booster-pack-art { width: min(24vw, 190px); max-height: 34vh; }
+}

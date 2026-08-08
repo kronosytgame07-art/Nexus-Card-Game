@@ -3,7 +3,7 @@ import { Link, Route, Routes, useLocation, useNavigate, useParams } from 'react-
 import { motion } from 'framer-motion';
 import { ALL_CARDS, ALL_FACTIONS, AnimationMode, AVATAR_PRICE_GEMS, BOOSTER_PULL_COUNT, copiesInDeck, defaultAvatarFor, EVOSPHERE_MAX, FOIL_CRAFT_COST, InterfaceScale, Language, MAIN_DECK_MAX, MAIN_DECK_MIN, maxCopiesAllowed, purchasableAvatarCards, TERRAIN_PRICE_GEMS, TERRAINS, UNLOCK_SECOND_FACTION_AT, UNLOCK_THIRD_FACTION_AT, useGame, VisualQuality, WIN_GEMS_REWARD, XP_PER_LEVEL } from './store/game';
 import { cardsByFaction, getCard } from './engine/cards';
-import { CardDef, Faction, FieldUnit, GameState, SupportCard } from './engine/types';
+import { CardDef, Faction, FieldUnit, GameState, Rarity, SupportCard } from './engine/types';
 import { DEFAULT_RANKED_RATING, RANKED_LADDER, aiDifficultyForRating, formatRank, rankForRating, rankedRatingDelta } from './engine/ranked';
 import { CHAPTERS, chapterById } from './engine/campaign';
 import { activateSupportCard, activateUnitEffect, aiDrawPhase, aiEndPhase, aiMainPhase, aiPrepareBattlePlan, aiResolveOneAttack, availableReactionSupportIds, declareAttack, evolveUnit, MAX_FIELD_UNITS, MAX_SUPPORT, newGame, passReactionWindow, playCard } from './engine/engine';
@@ -814,6 +814,18 @@ function Tutorial() {
   return <section><h2>Tutoriel</h2><p className="hint">Les bases pour ton premier duel — relis cette page à tout moment depuis le menu.</p><div className="options-grid">{TUTORIAL_STEPS.map((step) => <article key={step.title} className="options-card"><b>{step.title}</b><p className="hint">{step.text}</p></article>)}</div></section>;
 }
 
+function boosterArtwork(faction: Faction): string {
+  return `${import.meta.env.BASE_URL}boosters/${faction.toLowerCase()}.png`;
+}
+
+function rarityAuraClass(rarity: Rarity): string {
+  if (rarity === 'Mythique') return 'rarity-mythique';
+  if (rarity === 'Légendaire') return 'rarity-legendaire';
+  if (rarity === 'Épique') return 'rarity-epique';
+  if (rarity === 'Rare') return 'rarity-rare';
+  return 'rarity-commune';
+}
+
 const BOOSTERS: { id: Faction; name: string; price: number; blurb: string; available?: boolean }[] = [
   { id: 'Meute', name: 'Booster Meute', price: 150, blurb: 'Nouvelles cartes Meute, pensées pour renforcer les decks qui possèdent déjà les 3 exemplaires maximum de chaque carte actuelle.' },
   { id: 'Chevalier', name: 'Booster Chevalier', price: 150, blurb: 'Nouvelles cartes Chevalier, pensées pour renforcer les decks qui possèdent déjà les 3 exemplaires maximum de chaque carte actuelle.' },
@@ -862,8 +874,9 @@ function Shop() {
           const available = booster.available !== false;
           const affordable = available && s.gold >= booster.price;
           return (
-            <article key={booster.id} className="options-card">
-              <b>{booster.name}</b>
+            <article key={booster.id} className="options-card booster-product-card">
+              <img className="booster-shop-art" src={boosterArtwork(booster.id)} alt={booster.name} loading="lazy" />
+              <b className="booster-product-title">{booster.name}</b>
               <p className="hint">{booster.blurb}</p>
               <p className="hint">Prix : ✦ {booster.price} · {BOOSTER_PULL_COUNT} cartes par booster, doublons compris</p>
               <ul className="hint booster-preview">{preview.map((card) => <li key={card.id}>{card.name} ({card.cost}◆) — {card.text}</li>)}</ul>
@@ -917,7 +930,7 @@ function Shop() {
         const allCards = reveal.packs.flatMap((pack) => pack.cards);
         const allNew = reveal.packs.flatMap((pack) => pack.isNew);
         if (reveal.summary) return <div className="booster-opening-overlay" role="dialog" aria-modal="true"><div className="booster-summary"><header><div><small>OUVERTURE TERMINÉE</small><h3>{reveal.packs.length} booster{reveal.packs.length > 1 ? 's' : ''} {reveal.faction}</h3></div><button onClick={closeReveal}>×</button></header><div className="booster-summary-grid">{allCards.map((card, i) => <motion.div key={`${card.id}-${i}`} className={card.rarity === 'Mythique' ? 'mythic-pull' : ''} initial={{ opacity: 0, scale: .88 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: Math.min(i * .025, .6), duration: .28 }}><CardView card={card} badge={allNew[i] ? 'Nouveau' : 'Doublon'} /></motion.div>)}</div><button className="primary booster-done" onClick={closeReveal}>Récupérer les cartes</button></div></div>;
-        return <div className="booster-opening-overlay" role="dialog" aria-modal="true"><div className="booster-opening-stage"><header><div><small>BOOSTER {reveal.packIndex + 1}/{reveal.packs.length}</small><h3>{reveal.faction}</h3></div><div className="booster-opening-actions">{reveal.packs.length > 1 && <button className="secondary" onClick={skipRevealPacks}>Passer</button>}<button className="secondary" onClick={closeReveal}>×</button></div></header><div className="booster-pack-animation" aria-hidden="true"><div className="booster-pack-shell"><span>NEXUS</span><b>{reveal.faction}</b><i /></div><div className="booster-tear-line" /></div><button type="button" className={'booster-card-fan' + (reveal.revealed ? ' revealed' : '')} onClick={reveal.revealed ? undefined : revealCurrentPack} aria-label={reveal.revealed ? 'Cartes révélées' : 'Révéler toutes les cartes'}>{currentPack.cards.map((card, i) => <motion.div key={`${card.id}-${i}`} className={'booster-pull-card ' + (card.rarity === 'Mythique' ? 'mythic-pull' : '')} initial={{ opacity: 0, y: -80, rotate: (i - 2) * 5, scale: .7 }} animate={{ opacity: 1, y: 0, rotate: (i - 2) * 4, scale: 1 }} transition={{ delay: .55 + i * .08, duration: .42, ease: 'easeOut' }}>{reveal.revealed ? <CardView card={card} badge={currentPack.isNew[i] ? 'Nouveau' : 'Doublon'} /> : <div className="booster-card-back" style={{ backgroundImage: `url(${CARD_BACK_URL})` }} />}</motion.div>)}</button><div className="booster-opening-footer">{!reveal.revealed ? <><b>Touche une fois pour tout révéler</b><small>Les {BOOSTER_PULL_COUNT} cartes se retournent ensemble.</small></> : <button className="primary" onClick={nextRevealPack}>{reveal.packIndex < reveal.packs.length - 1 ? 'Booster suivant' : 'Voir tout le tirage'}</button>}</div></div></div>;
+        return <div className="booster-opening-overlay" role="dialog" aria-modal="true"><div className="booster-opening-stage"><header><div><small>BOOSTER {reveal.packIndex + 1}/{reveal.packs.length}</small><h3>{reveal.faction}</h3></div><div className="booster-opening-actions">{reveal.packs.length > 1 && <button className="secondary" onClick={skipRevealPacks}>Passer</button>}<button className="secondary" onClick={closeReveal}>×</button></div></header><div className="booster-pack-animation" aria-hidden="true"><img className="booster-pack-art" src={boosterArtwork(reveal.faction)} alt={`Booster ${reveal.faction}`} /><div className="booster-tear-line" /></div><button type="button" className={'booster-card-fan' + (reveal.revealed ? ' revealed' : '')} onClick={reveal.revealed ? undefined : revealCurrentPack} aria-label={reveal.revealed ? 'Cartes révélées' : 'Révéler toutes les cartes'}>{currentPack.cards.map((card, i) => <motion.div key={`${card.id}-${i}`} className={'booster-pull-card ' + rarityAuraClass(card.rarity) + (card.rarity === 'Mythique' ? ' mythic-pull' : '')} initial={{ opacity: 0, y: -80, rotate: (i - 2) * 5, scale: .7 }} animate={{ opacity: 1, y: 0, rotate: (i - 2) * 4, scale: 1 }} transition={{ delay: .55 + i * .08, duration: .42, ease: 'easeOut' }}>{reveal.revealed ? <CardView card={card} badge={currentPack.isNew[i] ? 'Nouveau' : 'Doublon'} /> : <div className="booster-card-back" style={{ backgroundImage: `url(${CARD_BACK_URL})` }} />}</motion.div>)}</button><div className="booster-opening-footer">{!reveal.revealed ? <><b>Touche une fois pour tout révéler</b><small>Les {BOOSTER_PULL_COUNT} cartes se retournent ensemble.</small></> : <button className="primary" onClick={nextRevealPack}>{reveal.packIndex < reveal.packs.length - 1 ? 'Booster suivant' : 'Voir tout le tirage'}</button>}</div></div></div>;
       })()}
     </section>
   );
