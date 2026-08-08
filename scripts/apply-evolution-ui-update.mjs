@@ -23,25 +23,32 @@ function appendOnce(path, marker, content) {
   console.log(`[evolution-ui] ${marker}`);
 }
 
+const evolutionComponent = [
+  'function EvolutionInfo({ card, turnsOnField }: { card: CardDef; turnsOnField?: number }) {',
+  '  if (!card.evolvesTo) return null;',
+  '  const evolution = ALL_CARDS.find((entry) => entry.id === card.evolvesTo);',
+  '  if (!evolution) return <div className="evolution-info missing"><b>Évolution</b><span>Forme suivante introuvable dans les données.</span></div>;',
+  '  const required = card.waitTurns ?? 0;',
+  '  const current = turnsOnField ?? 0;',
+  '  const remaining = Math.max(0, required - current);',
+  '  const ready = turnsOnField !== undefined && remaining === 0;',
+  '  const status = turnsOnField === undefined',
+  "    ? 'Disponible après ' + required + ' tour' + (required > 1 ? 's' : '') + ' sur le terrain.'",
+  "    : ready ? '✓ ÉVOLUTION PRÊTE' : 'Encore ' + remaining + ' tour' + (remaining > 1 ? 's' : '') + ' à survivre.';",
+  "  return <div className={'evolution-info' + (ready ? ' ready' : '')}>",
+  '    <img src={evolution.image} alt={evolution.name} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = cardBack; }} />',
+  '    <div><b>Évolution → {evolution.name}</b><span>⚔ {evolution.attack} · ♥ {evolution.health}</span>{required > 0 && <small>{status}</small>}</div>',
+  '  </div>;',
+  '}',
+  '',
+  'function Home() {',
+].join('\n');
+
 patchFile('src/App.tsx', [
   {
     label: 'Composant commun EvolutionInfo',
     from: "function Home() {",
-    to: `function EvolutionInfo({ card, turnsOnField }: { card: CardDef; turnsOnField?: number }) {
-  if (!card.evolvesTo) return null;
-  const evolution = ALL_CARDS.find((entry) => entry.id === card.evolvesTo);
-  if (!evolution) return <div className="evolution-info missing"><b>Évolution</b><span>Forme suivante introuvable dans les données.</span></div>;
-  const required = card.waitTurns ?? 0;
-  const current = turnsOnField ?? 0;
-  const remaining = Math.max(0, required - current);
-  const ready = turnsOnField !== undefined && remaining === 0;
-  return <div className={'evolution-info' + (ready ? ' ready' : '')}>
-    <img src={evolution.image} alt={evolution.name} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = cardBack; }} />
-    <div><b>Évolution → {evolution.name}</b><span>⚔ {evolution.attack} · ♥ {evolution.health}</span>{required > 0 && <small>{turnsOnField === undefined ? `Disponible après ${required} tour${required > 1 ? 's' : ''} sur le terrain.` : ready ? '✓ ÉVOLUTION PRÊTE' : `Encore ${remaining} tour${remaining > 1 ? 's' : ''} à survivre.`}</small>}</div>
-  </div>;
-}
-
-function Home() {`,
+    to: evolutionComponent,
   },
   {
     label: 'Évolution toujours visible dans aperçu de main',
@@ -61,7 +68,7 @@ function Home() {`,
   {
     label: 'Badge terrain indique progression évolution',
     from: `<span className="field-card-level">NIV {card.level}</span>`,
-    to: `<span className="field-card-level">NIV {card.level}</span>{card.evolvesTo && card.waitTurns && <span className={'field-card-evo' + (unit.turnsOnField >= card.waitTurns ? ' ready' : '')}>{unit.turnsOnField >= card.waitTurns ? 'ÉVO ✓' : `ÉVO ${unit.turnsOnField}/${card.waitTurns}`}</span>}`,
+    to: `<span className="field-card-level">NIV {card.level}</span>{card.evolvesTo && card.waitTurns && <span className={'field-card-evo' + (unit.turnsOnField >= card.waitTurns ? ' ready' : '')}>{unit.turnsOnField >= card.waitTurns ? 'ÉVO ✓' : 'ÉVO ' + unit.turnsOnField + '/' + card.waitTurns}</span>}`,
   },
 ]);
 
