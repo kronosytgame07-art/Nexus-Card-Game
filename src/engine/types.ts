@@ -33,6 +33,12 @@ export interface CardDef {
   attack: number;
   health: number;
   effect?: EffectDef;
+  /** Vol : ne peut être combattue que par une unité disposant d'À distance. */
+  flying?: boolean;
+  /** À distance : peut combattre les unités Vol (archers, projectiles, magie offensive, etc.). */
+  ranged?: boolean;
+  /** Blitz : peut attaquer dès le tour où elle est invoquée. Réservé en priorité aux unités légères. */
+  blitz?: boolean;
   /** Nombre de tours passés sur le plateau requis pour évoluer (unités niveau 1/2 uniquement). */
   waitTurns?: number;
   /** id de la carte évoluée obtenue une fois waitTurns atteint. */
