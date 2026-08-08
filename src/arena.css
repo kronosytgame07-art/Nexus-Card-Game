@@ -522,6 +522,11 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 .pile-modal-content header h3 { margin: 0; font: 700 17px "Playfair Display"; color: var(--gold); }
 .pile-modal-content header button { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #ffffff2a; background: #ffffff0d; color: white; cursor: pointer; font-size: 16px; line-height: 1; }
 .pile-grid { flex: 1; min-height: 0; overflow-y: auto; padding: 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+.duel-log { flex: 1; min-height: 0; overflow-y: auto; margin: 0; padding: 10px 16px; list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.duel-log li { padding: 7px 9px; border-radius: 8px; background: #ffffff08; font: 12px "DM Mono"; color: #cfe0d8; line-height: 1.4; }
+.duel-log li:first-child { background: #56dab814; color: #eef8f0; }
+
+.enemy-unit-actions { right: auto; left: max(14px, env(safe-area-inset-left)); bottom: auto; top: max(60px, calc(env(safe-area-inset-top) + 54px)); }
 
 .evolution-flash { position: fixed; inset: 0; z-index: 80; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(255, 55, 75, .32), rgba(0, 0, 0, .94) 60%); text-align: center; pointer-events: none; }
 .evolution-flash span { font: 12px "DM Mono"; letter-spacing: 6px; color: #ff7185; }

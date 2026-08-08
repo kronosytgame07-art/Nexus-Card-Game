@@ -21,13 +21,15 @@ export const BOOSTER_PULL_COUNT = 5;
 export const FOIL_CRAFT_COST = 3;
 /** Prix en gemmes d'une image de profil d'évolution dans la Boutique. */
 export const AVATAR_PRICE_GEMS = 40;
+/** Gemmes gagnées à chaque duel remporté (en plus de l'or). */
+export const WIN_GEMS_REWARD = 10;
 
 /** Terrains (fonds d'arène) cosmétiques — "default" est le terrain texturé
     d'origine, toujours possédé ; les autres sont des illustrations dédiées
     achetables en Boutique, affichées via le même composant WebGL (voir
     ArenaBackground.tsx : une texture + un jeu de particules par terrain). */
 export type TerrainId = 'default' | 'frost' | 'volcanic' | 'spectral';
-export const TERRAIN_PRICE_GEMS = 60;
+export const TERRAIN_PRICE_GEMS = 200;
 export const TERRAINS: { id: TerrainId; name: string; blurb: string }[] = [
   { id: 'default', name: 'Nexus Originel', blurb: "Le plateau d'arène classique — givre côté Meute, flammes côté Chevalier." },
   { id: 'frost', name: 'Sanctuaire de Givre', blurb: 'Sol gelé, cristaux bleus et fortifications glacées, citadelle de glace visible au loin.' },
@@ -120,7 +122,7 @@ interface GameMeta {
       BOOSTER_PULL_COUNT cartes (pondérées par rareté + bonus carte manquante + pity), les
       ajoute à l'inventaire, et retourne les ids tirés pour l'animation de révélation. Ne fait
       rien et retourne [] si l'or est insuffisant. */
-  openBooster: (faction: Faction, cost: number) => string[];
+  openBooster: (faction: Faction, cost: number, count?: number) => string[];
   /** Détruit FOIL_CRAFT_COST exemplaires normaux d'une carte pour en forger 1 exemplaire foil
       (cosmétique). Ne fait rien si l'inventaire normal est insuffisant. */
   craftFoil: (cardId: string) => void;
@@ -161,6 +163,7 @@ interface GameMeta {
   resetSettings: () => void;
   record: (win: boolean) => void;
   addGold: (amount: number) => void;
+  addGems: (amount: number) => void;
   addXp: (amount: number) => void;
   completeChapter: (chapterId: number) => void;
   setMusicEnabled: (enabled: boolean) => void;
@@ -182,11 +185,14 @@ export function defaultAvatarFor(faction: Faction): string {
   return unit?.id ?? '';
 }
 
-/** Cartes d'évolution proposées comme image de profil en Boutique — exclut
-    l'Orc, dont les illustrations ne sont pas encore prêtes (cartes affichées
-    avec le dos de carte en attendant, inadapté comme avatar). */
-export function purchasableAvatarCards(unlockedFactions: Faction[]): CardDef[] {
-  return ALL_CARDS.filter((c) => c.level === 2 && c.faction !== 'Orc' && unlockedFactions.includes(c.faction));
+/** Cartes d'évolution proposées comme image de profil en Boutique — disponibles
+    pour toutes les factions dès lors qu'on paie en gemmes, même si la faction
+    n'est pas encore débloquée en jeu (achat cosmétique, indépendant de la
+    progression). Exclut l'Orc, dont les illustrations ne sont pas encore
+    prêtes (cartes affichées avec le dos de carte en attendant, inadapté
+    comme avatar) — c'est une contrainte d'assets, pas de progression. */
+export function purchasableAvatarCards(): CardDef[] {
+  return ALL_CARDS.filter((c) => c.level === 2 && c.faction !== 'Orc');
 }
 
 function applyXp(level: number, xp: number, gems: number, amount: number) {
@@ -315,30 +321,37 @@ export const useGame = create<GameMeta>()(
           const inventory = mergeInventory(s.inventory, ids);
           return { inventory, owned: ownedFromInventory(inventory, s.foilInventory) };
         }),
-      openBooster: (faction, cost) => {
+      openBooster: (faction, cost, count = 1) => {
         let pulled: string[] = [];
         set((s) => {
-          if (s.gold < cost) return {};
+          const totalCost = cost * count;
+          if (s.gold < totalCost) return {};
           const pool = cardsByFaction(faction).filter((c) => c.level === 1);
-          const picks = Array.from({ length: BOOSTER_PULL_COUNT }, () => weightedPick(pool, s.inventory));
-          const hasRare = picks.some((c) => rarityIndex(c.rarity) >= rarityIndex('Épique'));
-          const pity = (s.packsSincePity[faction] ?? 0) + 1;
-          let finalPicks = picks;
-          let nextPity = pity;
-          if (hasRare) {
-            nextPity = 0;
-          } else if (pity >= PITY_INTERVAL) {
-            const rarePool = pool.filter((c) => rarityIndex(c.rarity) >= rarityIndex('Épique'));
-            finalPicks = [...picks.slice(0, -1), weightedPick(rarePool, s.inventory)];
-            nextPity = 0;
+          let inventory = s.inventory;
+          let pity = s.packsSincePity[faction] ?? 0;
+          const allPulled: string[] = [];
+          for (let i = 0; i < count; i++) {
+            const picks = Array.from({ length: BOOSTER_PULL_COUNT }, () => weightedPick(pool, inventory));
+            const hasRare = picks.some((c) => rarityIndex(c.rarity) >= rarityIndex('Épique'));
+            pity += 1;
+            let finalPicks = picks;
+            if (hasRare) {
+              pity = 0;
+            } else if (pity >= PITY_INTERVAL) {
+              const rarePool = pool.filter((c) => rarityIndex(c.rarity) >= rarityIndex('Épique'));
+              finalPicks = [...picks.slice(0, -1), weightedPick(rarePool, inventory)];
+              pity = 0;
+            }
+            const ids = finalPicks.map((c) => c.id);
+            allPulled.push(...ids);
+            inventory = mergeInventory(inventory, ids);
           }
-          pulled = finalPicks.map((c) => c.id);
-          const inventory = mergeInventory(s.inventory, pulled);
+          pulled = allPulled;
           return {
-            gold: s.gold - cost,
+            gold: s.gold - totalCost,
             inventory,
             owned: ownedFromInventory(inventory, s.foilInventory),
-            packsSincePity: { ...s.packsSincePity, [faction]: nextPity },
+            packsSincePity: { ...s.packsSincePity, [faction]: pity },
           };
         });
         return pulled;
@@ -467,6 +480,7 @@ export const useGame = create<GameMeta>()(
             : { losses: s.losses + 1, ...progression };
         }),
       addGold: (amount) => set((s) => ({ gold: s.gold + amount })),
+      addGems: (amount) => set((s) => ({ gems: s.gems + amount })),
       addXp: (amount) => set((s) => applyXp(s.level, s.xp, s.gems, amount)),
       completeChapter: (chapterId) =>
         set((s) => {
