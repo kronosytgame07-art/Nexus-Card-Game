@@ -23,15 +23,16 @@ export const FOIL_CRAFT_COST = 3;
 export const AVATAR_PRICE_GEMS = 40;
 
 /** Terrains (fonds d'arène) cosmétiques — "default" est le terrain texturé
-    d'origine, toujours possédé ; les autres sont des fonds WebGL entièrement
-    procéduraux achetables en Boutique (voir ProceduralArenaBackground.tsx). */
+    d'origine, toujours possédé ; les autres sont des illustrations dédiées
+    achetables en Boutique, affichées via le même composant WebGL (voir
+    ArenaBackground.tsx : une texture + un jeu de particules par terrain). */
 export type TerrainId = 'default' | 'frost' | 'volcanic' | 'spectral';
 export const TERRAIN_PRICE_GEMS = 60;
 export const TERRAINS: { id: TerrainId; name: string; blurb: string }[] = [
   { id: 'default', name: 'Nexus Originel', blurb: "Le plateau d'arène classique — givre côté Meute, flammes côté Chevalier." },
-  { id: 'frost', name: 'Arène de Givre', blurb: 'Aurores glacées, chute de neige continue et éclats de givre sur tout le plateau.' },
-  { id: 'volcanic', name: 'Arène Volcanique', blurb: 'Braises montantes, cendres et vagues de chaleur sur un fond incandescent.' },
-  { id: 'spectral', name: 'Arène Spectrale', blurb: 'Volutes violettes et poussière d\'étoiles dérivant dans un vide mystique.' },
+  { id: 'frost', name: 'Sanctuaire de Givre', blurb: 'Sol gelé, cristaux bleus et fortifications glacées, citadelle de glace visible au loin.' },
+  { id: 'volcanic', name: 'Citadelle du Magma', blurb: 'Immense citadelle volcanique entre deux volcans en éruption, lave et braseros.' },
+  { id: 'spectral', name: 'Arène des Os Brisés', blurb: 'Terres maudites jonchées d\'os et de crânes, flammes vertes et bannières écarlates.' },
 ];
 
 export type Language = 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh';
