@@ -1,4 +1,5 @@
 import { CARD_DB, getCard, starterDeck } from './cards';
+import { canFightTarget } from './combat-rules';
 import {
   CardDef,
   EffectDef,
@@ -30,6 +31,7 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 const MIN_PLAYABLE_DECK = 30;
+const PACK_ATTACK_BONUS_CAP = 2;
 
 function makePlayer(id: PlayerId, faction: Faction, customDeck?: string[], lifeBonus = 0, customEvosphere?: string[]): PlayerState {
   const source = customDeck && customDeck.length >= MIN_PLAYABLE_DECK ? customDeck : starterDeck(faction);
@@ -42,9 +44,6 @@ function makePlayer(id: PlayerId, faction: Faction, customDeck?: string[], lifeB
       .map((id) => getCard(id).evolvesTo)
       .filter((id): id is string => Boolean(id))
   )];
-  // Le joueur peut choisir lui-même le contenu de son évosphère dans le
-  // deck-builder ; sinon on garde l'ancien comportement automatique
-  // (chaque évolution possible x3, jusqu'à 20 emplacements).
   const evosphere = customEvosphere && customEvosphere.length
     ? customEvosphere.slice(0, 20)
     : evolutionIds.flatMap((id) => [id, id, id]).slice(0, 20);
@@ -63,6 +62,7 @@ function makePlayer(id: PlayerId, faction: Faction, customDeck?: string[], lifeB
     graveyard: [],
     evosphere,
     fatigue: 0,
+    normalSummonUsed: false,
   };
 }
 
@@ -128,8 +128,6 @@ function findUnit(p: PlayerState, id: string): FieldUnit | undefined {
   return p.field.find((u) => u.instanceId === id);
 }
 
-/** Choisit l'emplacement d'affichage d'une nouvelle unité/carte de soutien : celui demandé
-    par le joueur s'il est libre et valide, sinon le premier emplacement libre. */
 function resolveSlot(existing: { slot: number }[], max: number, requested?: number): number {
   const taken = new Set(existing.map((u) => u.slot));
   if (requested !== undefined && requested >= 0 && requested < max && !taken.has(requested)) return requested;
@@ -148,15 +146,10 @@ function removeDead(state: GameState, id: PlayerId) {
 }
 
 /**
- * Mécaniques d'archétype — chaque faction joue différemment :
- *  - Meute (Instinct de Meute) : chaque créature Meute gagne +1 ATQ pour chaque AUTRE
- *    créature Meute sur le même terrain. Recalculé à chaque changement de terrain via un
- *    delta (packBonus stocké) pour ne jamais dupliquer le bonus.
- *  - Chevalier (Rang Sacré) : jouer un chevalier coûte 1 mana de moins pour chaque
- *    chevalier déjà présent sur le terrain (minimum 1 mana). Voir chevalierPlayCost().
- *  - Orc (Fureur Sauvage) : une créature Orc passée sous la moitié de ses PV max
- *    frappe pour +2 ATQ (attaque comme contre-attaque). Récompense la prise de
- *    risque plutôt que la synergie de terrain ou le coût — voir effectiveAttack().
+ * Mécaniques d'archétype :
+ *  - Meute (Instinct de Meute) : +1 ATQ par autre Meute, plafonné à +2 ATQ par unité.
+ *  - Chevalier (Rang Sacré) : coût réduit selon les Chevaliers déjà présents, minimum 1.
+ *  - Orc (Fureur Sauvage) : +2 ATQ sous 50 % des PV max.
  */
 function applyPackBonuses(state: GameState) {
   for (const id of ['player', 'enemy'] as PlayerId[]) {
@@ -164,18 +157,16 @@ function applyPackBonuses(state: GameState) {
     for (const unit of p.field) {
       const def = getCard(unit.cardId);
       if (def.faction !== 'Meute') continue;
-      const packSize = p.field.filter(
+      const otherPackMembers = p.field.filter(
         (u) => u.instanceId !== unit.instanceId && getCard(u.cardId).faction === 'Meute'
       ).length;
-      unit.attack += packSize - unit.packBonus;
-      unit.packBonus = packSize;
+      const nextBonus = Math.min(PACK_ATTACK_BONUS_CAP, otherPackMembers);
+      unit.attack += nextBonus - unit.packBonus;
+      unit.packBonus = nextBonus;
     }
   }
 }
 
-/** Coût réel pour jouer une carte, en tenant compte du Rang Sacré des chevaliers.
-    Les sorts/enchantements se posent toujours gratuitement face cachée en
-    Soutien — seule leur activation coûte des runes (voir activateSupportCard). */
 function effectivePlayCost(def: CardDef, owner: PlayerState): number {
   if (def.type === 'spell') return 0;
   if (def.faction !== 'Chevalier' || def.type !== 'unit') return def.cost;
@@ -185,10 +176,6 @@ function effectivePlayCost(def: CardDef, owner: PlayerState): number {
 
 const ORC_RAGE_BONUS = 2;
 
-/** Puissance de frappe réelle d'une unité, Fureur Sauvage des Orcs incluse
-    (voir le commentaire de mécaniques d'archétype ci-dessus). Calculée à
-    partir des PV AVANT l'échange de coups, pour que les deux belligérants
-    d'un même combat soient jugés sur leur état au moment de frapper. */
 function effectiveAttack(unit: FieldUnit, def: CardDef): number {
   if (def.faction !== 'Orc' || unit.health > unit.maxHealth / 2) return unit.attack;
   return unit.attack + ORC_RAGE_BONUS;
@@ -199,18 +186,13 @@ function checkWinner(state: GameState) {
   if (state.enemy.life <= 0 && !state.winner) state.winner = 'player';
 }
 
-/** Choisit une cible pertinente pour un effet, selon des heuristiques simples et déterministes. */
 function autoTarget(state: GameState, ownerId: PlayerId, effect: EffectDef, sourceUnitId?: string) {
   const owner = state[ownerId];
   const opponent = state[other(ownerId)];
 
   switch (effect.kind) {
     case 'protect': {
-      // Si la source est déjà une unité sur le plateau, elle devient elle-même Provocation.
-      if (sourceUnitId && findUnit(owner, sourceUnitId)) {
-        return sourceUnitId;
-      }
-      // Sinon (carte sort), la Provocation est accordée à l'unité alliée avec le plus de PV.
+      if (sourceUnitId && findUnit(owner, sourceUnitId)) return sourceUnitId;
       const strongest = [...owner.field].sort((a, b) => b.health - a.health)[0];
       return strongest?.instanceId;
     }
@@ -254,9 +236,7 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
         const [found] = owner.deck.splice(idx, 1);
         owner.hand.push(found);
         pushLog(state, `${labelFor(ownerId)} trouve ${getCard(found).name} dans son deck.`);
-      } else {
-        succeeded = false;
-      }
+      } else succeeded = false;
       break;
     }
     case 'protect': {
@@ -265,9 +245,7 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
       if (unit) {
         unit.taunt = true;
         pushLog(state, `${getCard(unit.cardId).name} gagne Provocation.`);
-      } else {
-        succeeded = false;
-      }
+      } else succeeded = false;
       break;
     }
     case 'buff': {
@@ -277,9 +255,7 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
         unit.attack += effect.value ?? 1;
         unit.buffs += effect.value ?? 1;
         pushLog(state, `${getCard(unit.cardId).name} gagne +${effect.value ?? 1} attaque.`);
-      } else {
-        succeeded = false;
-      }
+      } else succeeded = false;
       break;
     }
     case 'stun': {
@@ -289,9 +265,7 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
         unit.stunnedTurns += effect.value ?? 1;
         unit.canAttack = false;
         pushLog(state, `${getCard(unit.cardId).name} est étourdi.`);
-      } else {
-        succeeded = false;
-      }
+      } else succeeded = false;
       break;
     }
     case 'damage': {
@@ -312,9 +286,6 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
         succeeded = false;
         break;
       }
-      // Uniquement parmi les cartes réellement présentes dans le deck de
-      // départ du joueur — jamais une carte qu'il ne possède pas (issue
-      // d'un booster jamais ouvert, par exemple).
       const ownedUnitIds = [...new Set(owner.deckList)];
       const pool = ownedUnitIds
         .map((id) => getCard(id))
@@ -328,7 +299,7 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
           health: pick.health,
           maxHealth: pick.health,
           turnsOnField: 0,
-          canAttack: false,
+          canAttack: Boolean(pick.blitz),
           stunnedTurns: 0,
           buffs: 0,
           taunt: false,
@@ -336,10 +307,8 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
           effectUsesThisTurn: 0,
           slot: resolveSlot(owner.field, MAX_FIELD_UNITS),
         });
-        pushLog(state, `${labelFor(ownerId)} invoque ${pick.name}.`);
-      } else {
-        succeeded = false;
-      }
+        pushLog(state, `${labelFor(ownerId)} invoque spécialement ${pick.name}${pick.blitz ? ' — Blitz !' : ''}.`);
+      } else succeeded = false;
       break;
     }
   }
@@ -349,12 +318,7 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
   return succeeded;
 }
 
-export function playCard(
-  rawState: GameState,
-  playerId: PlayerId,
-  cardId: string,
-  slotIndex?: number
-): GameState {
+export function playCard(rawState: GameState, playerId: PlayerId, cardId: string, slotIndex?: number): GameState {
   const state = clone(rawState);
   if (state.winner || state.activePlayer !== playerId) return state;
   const p = state[playerId];
@@ -363,6 +327,10 @@ export function playCard(
   const def = getCard(cardId);
   const cost = effectivePlayCost(def, p);
   if (cost > p.mana) return state;
+  if (def.type === 'unit' && p.normalSummonUsed) {
+    pushLog(state, `${labelFor(playerId)} a déjà utilisé son invocation normale ce tour.`);
+    return state;
+  }
   if (def.type === 'unit' && p.field.length >= MAX_FIELD_UNITS) {
     pushLog(state, 'Le plateau est plein, impossible de jouer cette unité.');
     return state;
@@ -383,7 +351,7 @@ export function playCard(
       health: def.health,
       maxHealth: def.health,
       turnsOnField: 0,
-      canAttack: false,
+      canAttack: Boolean(def.blitz),
       stunnedTurns: 0,
       buffs: 0,
       taunt: false,
@@ -392,7 +360,8 @@ export function playCard(
       slot: resolveSlot(p.field, MAX_FIELD_UNITS, slotIndex),
     };
     p.field.push(unit);
-    pushLog(state, `${labelFor(playerId)} joue ${def.name}${cost < def.cost ? ` (Rang Sacré : ${cost}◆ au lieu de ${def.cost}◆)` : ''}.`);
+    p.normalSummonUsed = true;
+    pushLog(state, `${labelFor(playerId)} joue ${def.name}${cost < def.cost ? ` (Rang Sacré : ${cost}◆ au lieu de ${def.cost}◆)` : ''}${def.blitz ? ' — Blitz !' : ''}.`);
     if (def.effect && def.text.toLowerCase().includes('à l’invocation')) resolveEffect(state, playerId, def.effect, unit.instanceId);
   } else {
     const support = { instanceId: instanceId(), cardId: def.id, slot: resolveSlot(p.support, MAX_SUPPORT, slotIndex) };
@@ -416,18 +385,33 @@ export function declareAttack(
   if (!attacker || !attacker.canAttack || attacker.stunnedTurns > 0) return state;
 
   const opponent = state[other(playerId)];
-  // Un étourdissement suspend les effets de l'unité — une Provocation étourdie
-  // ne force plus l'attaque sur elle, les autres cibles redeviennent valides.
-  const opponentTaunts = opponent.field.filter((u) => u.taunt && u.stunnedTurns === 0);
   const attackerDef = getCard(attacker.cardId);
   const canAttackDirectly = attackerDef.text.toLowerCase().includes('attaque directe');
-  if (!targetInstanceId && opponent.field.length > 0 && !canAttackDirectly) {
-    pushLog(state, 'Les créatures adverses te barrent la route.');
+
+  const reachableUnits = opponent.field.filter((u) => canFightTarget(attackerDef, getCard(u.cardId)));
+  const reachableTaunts = reachableUnits.filter((u) => u.taunt && u.stunnedTurns === 0);
+
+  if (!targetInstanceId && reachableUnits.length > 0 && !canAttackDirectly) {
+    pushLog(state, 'Les créatures adverses atteignables te barrent la route.');
     return state;
   }
-  if (opponentTaunts.length > 0) {
-    const validIds = new Set(opponentTaunts.map((u) => u.instanceId));
-    if (!targetInstanceId || !validIds.has(targetInstanceId)) return state; // doit cibler une Provocation
+
+  if (reachableTaunts.length > 0) {
+    const validIds = new Set(reachableTaunts.map((u) => u.instanceId));
+    if (!targetInstanceId || !validIds.has(targetInstanceId)) {
+      pushLog(state, 'Une unité avec Provocation doit être attaquée en priorité.');
+      return state;
+    }
+  }
+
+  if (targetInstanceId) {
+    const target = findUnit(opponent, targetInstanceId);
+    if (!target) return state;
+    const targetDef = getCard(target.cardId);
+    if (!canFightTarget(attackerDef, targetDef)) {
+      pushLog(state, `${targetDef.name} possède Vol : ${attackerDef.name} doit avoir À distance pour l'atteindre.`);
+      return state;
+    }
   }
 
   attacker.canAttack = false;
@@ -437,10 +421,8 @@ export function declareAttack(
     opponent.life -= attackerDmg;
     pushLog(state, `${attackerDef.name} frappe directement : ${attackerDmg} dégâts.`);
   } else {
-    const target = findUnit(opponent, targetInstanceId);
-    if (!target) return state;
+    const target = findUnit(opponent, targetInstanceId)!;
     const targetDef = getCard(target.cardId);
-    // Une cible étourdie ne riposte pas : elle encaisse les dégâts sans contre-attaquer.
     const targetStunned = target.stunnedTurns > 0;
     const targetDmg = targetStunned ? 0 : effectiveAttack(target, targetDef);
     target.health -= attackerDmg;
@@ -462,6 +444,7 @@ export function declareAttack(
 
 function startTurn(state: GameState, id: PlayerId) {
   const p = state[id];
+  p.normalSummonUsed = false;
   p.maxMana = Math.min(MAX_MANA, p.maxMana + 1);
   p.mana = p.maxMana;
   drawOne(state, id);
@@ -477,21 +460,15 @@ function startTurn(state: GameState, id: PlayerId) {
   pushLog(state, `Tour ${state.turn} : c'est à ${labelFor(id).toLowerCase()} de jouer.`);
 }
 
-export function evolveUnit(
-  rawState: GameState,
-  playerId: PlayerId,
-  unitInstanceId: string
-): GameState {
+export function evolveUnit(rawState: GameState, playerId: PlayerId, unitInstanceId: string): GameState {
   const state = clone(rawState);
   if (state.winner || state.activePlayer !== playerId) return state;
-
   const player = state[playerId];
   const unit = findUnit(player, unitInstanceId);
   if (!unit) return state;
 
   const base = getCard(unit.cardId);
   if (!base.waitTurns || !base.evolvesTo || unit.turnsOnField < base.waitTurns) return state;
-
   const evoIndex = player.evosphere.indexOf(base.evolvesTo);
   if (evoIndex < 0) {
     pushLog(state, `${base.name} ne peut pas évoluer : son évolution n’est plus dans l’Évosphère.`);
@@ -501,13 +478,12 @@ export function evolveUnit(
   const evo = getCard(base.evolvesTo);
   player.evosphere.splice(evoIndex, 1);
   player.graveyard.push(base.id);
-
   unit.cardId = evo.id;
   unit.attack = evo.attack + unit.buffs;
   unit.maxHealth = evo.health;
   unit.health = evo.health;
   unit.turnsOnField = 0;
-  unit.canAttack = false;
+  unit.canAttack = Boolean(evo.blitz);
   unit.packBonus = 0;
 
   pushLog(state, `WARNING EVOLUTION — ${base.name} évolue en ${evo.name} !`);
@@ -544,13 +520,6 @@ export function endTurn(rawState: GameState): GameState {
   return state;
 }
 
-// --- Tour de l'IA, découpé en phases -------------------------------------
-// Chaque fonction est un pas autonome (pioche / main / combat / fin) que
-// l'interface peut appliquer l'une après l'autre avec une pause visuelle
-// entre chacune, au lieu de tout résoudre d'un bloc et de ne montrer le
-// résultat qu'à la toute fin.
-
-// Pioche + mana de l'IA — équivalent du début d'endTurn pour le camp adverse.
 export function aiDrawPhase(rawState: GameState): GameState {
   const state = clone(rawState);
   if (state.winner) return state;
@@ -561,19 +530,16 @@ export function aiDrawPhase(rawState: GameState): GameState {
   return state;
 }
 
-// --- Intelligence artificielle -------------------------------------------
-// Trois niveaux, du même moteur de décision mais avec des seuils différents :
-//  - novice  : joue tout son mana, fonce au visage sauf échange gratuit.
-//  - veteran : n'accepte que les échanges rentables (garde ses unités plus
-//              chères que celles qu'elle sacrifie), sinon frappe au visage.
-//  - maitre  : en plus, calcule le coup fatal (lethal) et fonce dessus sans
-//              hésiter, et garde une unité en défense si sa vie est basse.
-
 type Trade = 'kill_free' | 'kill_trade' | 'bad';
 
 function evaluateTrade(attacker: FieldUnit, defender: FieldUnit): Trade {
-  const killsDefender = attacker.attack >= defender.health;
-  const attackerSurvives = defender.attack < attacker.health;
+  const attackerDef = getCard(attacker.cardId);
+  const defenderDef = getCard(defender.cardId);
+  if (!canFightTarget(attackerDef, defenderDef)) return 'bad';
+  const attackerDamage = effectiveAttack(attacker, attackerDef);
+  const defenderDamage = defender.stunnedTurns > 0 ? 0 : effectiveAttack(defender, defenderDef);
+  const killsDefender = attackerDamage >= defender.health;
+  const attackerSurvives = defenderDamage < attacker.health;
   if (killsDefender && attackerSurvives) return 'kill_free';
   if (killsDefender) return 'kill_trade';
   return 'bad';
@@ -581,13 +547,12 @@ function evaluateTrade(attacker: FieldUnit, defender: FieldUnit): Trade {
 
 function bestTradeTarget(attacker: FieldUnit, enemyField: FieldUnit[]): { target?: FieldUnit; trade: Trade } {
   let best: { target?: FieldUnit; trade: Trade } = { trade: 'bad' };
-  for (const defender of enemyField) {
+  const attackerDef = getCard(attacker.cardId);
+  for (const defender of enemyField.filter((u) => canFightTarget(attackerDef, getCard(u.cardId)))) {
     const trade = evaluateTrade(attacker, defender);
     if (trade === 'kill_free') return { target: defender, trade };
     if (trade === 'kill_trade' && best.trade !== 'kill_free') {
-      // Un échange à la loyale n'en vaut la peine que si la cible coûte au
-      // moins autant à construire que l'attaquant qu'on va perdre.
-      const attackerCost = getCard(attacker.cardId).cost;
+      const attackerCost = attackerDef.cost;
       const defenderCost = getCard(defender.cardId).cost;
       if (defenderCost >= attackerCost) best = { target: defender, trade };
     }
@@ -595,8 +560,6 @@ function bestTradeTarget(attacker: FieldUnit, enemyField: FieldUnit[]): { target
   return best;
 }
 
-// Main phase de l'IA : évolutions, pose de cartes (la plus chère d'abord),
-// puis activation des effets/soutiens déjà en jeu.
 export function aiMainPhase(rawState: GameState): GameState {
   let state = clone(rawState);
   if (state.winner || state.activePlayer !== 'enemy') return state;
@@ -611,7 +574,7 @@ export function aiMainPhase(rawState: GameState): GameState {
       .filter(
         (c) =>
           effectivePlayCost(c, p) <= p.mana &&
-          (c.type !== 'unit' || p.field.length < MAX_FIELD_UNITS) &&
+          (c.type !== 'unit' || (!p.normalSummonUsed && p.field.length < MAX_FIELD_UNITS)) &&
           (c.type !== 'spell' || p.support.length < MAX_SUPPORT)
       )
       .sort((a, b) => b.cost - a.cost);
@@ -621,55 +584,36 @@ export function aiMainPhase(rawState: GameState): GameState {
     }
   }
 
-  // Active les effets des unités déjà sur le plateau et les sorts posés en Soutien,
-  // comme le ferait un joueur cliquant sur chaque carte prête à s'activer.
   for (const unit of state.enemy.field) {
     const def = getCard(unit.cardId);
-    if (def.effect && !def.text.toLowerCase().includes('à l’invocation')) {
-      state = activateUnitEffect(state, 'enemy', unit.instanceId);
-    }
+    if (def.effect && !def.text.toLowerCase().includes('à l’invocation')) state = activateUnitEffect(state, 'enemy', unit.instanceId);
   }
-  for (const s of [...state.enemy.support]) {
-    state = activateSupportCard(state, 'enemy', s.instanceId);
-  }
+  for (const s of [...state.enemy.support]) state = activateSupportCard(state, 'enemy', s.instanceId);
   return state;
 }
 
-// Battle phase de l'IA : décide et résout toutes ses attaques.
 export type AiBattlePlan = { attackerIds: string[]; lethal: boolean; keepBackId?: string };
 
-// Décide à l'avance QUI va attaquer et selon quelle logique ("lethal",
-// unité gardée en défense) — calculé une seule fois sur l'état d'entrée en
-// Battle Phase, pour que l'interface puisse ensuite dérouler les attaques
-// une par une (avec une animation par attaque) sans changer la décision de
-// l'IA en cours de route.
 export function aiPrepareBattlePlan(rawState: GameState): AiBattlePlan {
   if (rawState.winner || rawState.activePlayer !== 'enemy') return { attackerIds: [], lethal: false };
   const difficulty = rawState.aiDifficulty;
   const attackers = rawState.enemy.field.filter((u) => u.canAttack && u.stunnedTurns === 0);
-
-  // "maitre" : si la somme des attaques disponibles peut achever le joueur, on fonce tout au visage.
+  const hasReachableTaunt = attackers.some((attacker) =>
+    rawState.player.field.some((defender) => defender.taunt && defender.stunnedTurns === 0 && canFightTarget(getCard(attacker.cardId), getCard(defender.cardId)))
+  );
   const lethal =
     difficulty === 'maitre' &&
-    rawState.player.field.filter((u) => u.taunt && u.stunnedTurns === 0).length === 0 &&
+    !hasReachableTaunt &&
     attackers.reduce((sum, u) => sum + effectiveAttack(u, getCard(u.cardId)), 0) >= rawState.player.life;
-
-  // "maitre" à faible vie : on garde la meilleure unité en défense plutôt que de l'engager.
   const keepBackId =
     difficulty === 'maitre' && !lethal && rawState.enemy.life <= 10 && attackers.length > 1
       ? [...attackers].sort((a, b) => b.health - a.health)[0]?.instanceId
       : undefined;
-
   return { attackerIds: attackers.map((u) => u.instanceId), lethal, keepBackId };
 }
 
 export type AiAttackStep = { state: GameState; attackerId: string; targetId: string | null; skipped: boolean };
 
-// Résout UNE attaque de l'IA (celle de attackerId), en respectant la
-// décision globale déjà prise par aiPrepareBattlePlan. "skipped" indique
-// qu'il n'y a rien à animer pour cet attaquant (mort entre-temps, étourdi,
-// ou gardé volontairement en défense) — l'appelant doit alors passer au
-// suivant sans délai ni animation.
 export function aiResolveOneAttack(rawState: GameState, attackerId: string, lethal: boolean, keepBackId: string | undefined): AiAttackStep {
   const state = clone(rawState);
   if (state.winner || state.activePlayer !== 'enemy') return { state, attackerId, targetId: null, skipped: true };
@@ -677,23 +621,28 @@ export function aiResolveOneAttack(rawState: GameState, attackerId: string, leth
   if (!currentAttacker || !currentAttacker.canAttack) return { state, attackerId, targetId: null, skipped: true };
   if (!lethal && currentAttacker.instanceId === keepBackId) return { state, attackerId, targetId: null, skipped: true };
 
+  const attackerDef = getCard(currentAttacker.cardId);
+  const reachable = state.player.field.filter((u) => canFightTarget(attackerDef, getCard(u.cardId)));
+  const reachableTaunts = reachable.filter((u) => u.taunt && u.stunnedTurns === 0);
   const difficulty = state.aiDifficulty;
-  const playerTaunts = state.player.field.filter((u) => u.taunt && u.stunnedTurns === 0);
   let targetId: string | null;
-  if (playerTaunts.length > 0) {
-    targetId = [...playerTaunts].sort((a, b) => a.health - b.health)[0].instanceId;
-  } else if (lethal) {
+
+  if (reachableTaunts.length > 0) {
+    targetId = [...reachableTaunts].sort((a, b) => a.health - b.health)[0].instanceId;
+  } else if (lethal || reachable.length === 0) {
     targetId = null;
   } else if (difficulty === 'novice') {
-    const trade = bestTradeTarget(currentAttacker, state.player.field);
-    targetId = trade.trade === 'kill_free' ? trade.target!.instanceId : null;
+    const trade = bestTradeTarget(currentAttacker, reachable);
+    targetId = trade.trade === 'kill_free' && trade.target ? trade.target.instanceId : null;
   } else {
-    // veteran / maitre : n'accepte que les échanges rentables (gratuits ou de valeur égale).
-    const trade = bestTradeTarget(currentAttacker, state.player.field);
+    const trade = bestTradeTarget(currentAttacker, reachable);
     targetId = trade.trade !== 'bad' && trade.target ? trade.target.instanceId : null;
   }
+
+  const before = currentAttacker.canAttack;
   const next = declareAttack(state, 'enemy', attackerId, targetId);
-  return { state: next, attackerId, targetId, skipped: false };
+  const after = findUnit(next.enemy, attackerId)?.canAttack;
+  return { state: next, attackerId, targetId, skipped: before === after };
 }
 
 export function aiBattlePhase(rawState: GameState): GameState {
@@ -708,7 +657,6 @@ export function aiBattlePhase(rawState: GameState): GameState {
   return state;
 }
 
-// Fin du tour de l'IA : bascule la main au joueur.
 export function aiEndPhase(rawState: GameState): GameState {
   const state = clone(rawState);
   pushLog(state, "L'adversaire termine son tour.");
@@ -729,7 +677,6 @@ export function runAiTurn(rawState: GameState): GameState {
   return aiEndPhase(state);
 }
 
-
 export function activateUnitEffect(rawState: GameState, playerId: PlayerId, unitInstanceId: string): GameState {
   const state = clone(rawState);
   if (state.winner || state.activePlayer !== playerId) return state;
@@ -749,12 +696,6 @@ export function activateUnitEffect(rawState: GameState, playerId: PlayerId, unit
   return state;
 }
 
-/**
- * Retourne un sort posé face cachée en zone Soutien et tente d'activer son effet.
- * Si les conditions ne sont pas réunies (pas de cible valide, etc.), la carte
- * reste posée face cachée et n'est pas consommée — elle pourra être retentée
- * plus tard.
- */
 export function activateSupportCard(rawState: GameState, playerId: PlayerId, supportInstanceId: string): GameState {
   const state = clone(rawState);
   if (state.winner || state.activePlayer !== playerId) return state;

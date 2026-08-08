@@ -22,7 +22,7 @@ export const FOIL_CRAFT_COST = 3;
 /** Prix en gemmes d'une image de profil d'évolution dans la Boutique. */
 export const AVATAR_PRICE_GEMS = 40;
 /** Gemmes gagnées à chaque duel remporté (en plus de l'or). */
-export const WIN_GEMS_REWARD = 10;
+export const WIN_GEMS_REWARD = 20;
 
 /** Terrains (fonds d'arène) cosmétiques — "default" est le terrain texturé
     d'origine, toujours possédé ; les autres sont des illustrations dédiées
@@ -244,6 +244,8 @@ function mergeInventory(inventory: Record<string, number>, additions: string[]):
 
 const RARITY_ORDER: Rarity[] = ['Commune', 'Rare', 'Épique', 'Légendaire', 'Mythique'];
 const RARITY_WEIGHT: Record<Rarity, number> = { Commune: 10, Rare: 6, Épique: 3, Légendaire: 1, Mythique: 0 };
+/** Probabilité indépendante de tirer une Mythique à chaque carte tirée : 0,0001 %, soit 1 sur 1 000 000. */
+export const MYTHIC_DROP_CHANCE = 1 / 1_000_000;
 /** Multiplicateur de poids pour une carte encore jamais possédée (0 exemplaire à ce jour). */
 const UNOWNED_BONUS = 3;
 /** Garantit au moins une carte Épique ou plus tous les N boosters ouverts, par faction. */
@@ -264,7 +266,16 @@ function weightedRandomCard(entries: { card: CardDef; weight: number }[]): CardD
 }
 
 function weightedPick(pool: CardDef[], inventory: Record<string, number>): CardDef {
-  const entries = pool.map((card) => ({
+  // La Mythique est une "chase card" indépendante du système de poids et du pity :
+  // elle n'est jamais forcée par une garantie Épique+, elle ne tombe que sur son jet 1/1 000 000.
+  const mythicPool = pool.filter((card) => card.rarity === 'Mythique');
+  if (mythicPool.length > 0 && Math.random() < MYTHIC_DROP_CHANCE) {
+    return mythicPool[Math.floor(Math.random() * mythicPool.length)];
+  }
+
+  const normalPool = pool.filter((card) => card.rarity !== 'Mythique');
+  const sourcePool = normalPool.length > 0 ? normalPool : pool;
+  const entries = sourcePool.map((card) => ({
     card,
     weight: RARITY_WEIGHT[card.rarity] * ((inventory[card.id] ?? 0) === 0 ? UNOWNED_BONUS : 1),
   }));

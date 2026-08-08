@@ -2,16 +2,17 @@
 // Toute la logique de partie s'appuie sur ces types — aucune UI ne doit
 // dupliquer de règles, elle ne fait que lire GameState et appeler engine.ts.
 
-export type Faction = 'Meute' | 'Chevalier' | 'Orc';
+export type Faction = 'Meute' | 'Chevalier' | 'Orc' | 'Dragon' | 'Gobelin';
 
 export type EffectKind =
-  | 'protect' // Provocation : les ennemis doivent attaquer cette unité en priorité
-  | 'draw'    // Pioche N cartes
-  | 'search'  // Cherche une carte de la faction ciblée dans le deck et la met en main
-  | 'stun'    // Étourdit une unité ennemie pendant N tour(s) : elle ne peut pas attaquer
-  | 'damage'  // Inflige N dégâts (à une unité choisie, ou au héros adverse si aucune cible)
-  | 'buff'    // Augmente l'attaque d'une unité alliée de N de façon permanente
-  | 'summon'; // Invoque une unité 1★ aléatoire de la faction ciblée sur le plateau
+  | 'protect'
+  | 'draw'
+  | 'search'
+  | 'stun'
+  | 'damage'
+  | 'buff'
+  | 'summon'
+  | 'board_wipe';
 
 export interface EffectDef {
   kind: EffectKind;
@@ -20,6 +21,9 @@ export interface EffectDef {
 }
 
 export type CardType = 'unit' | 'spell';
+/** Sous-type des cartes de Soutien : enchantement proactif ou Sortilège réactif. */
+export type SupportKind = 'enchantment' | 'reaction';
+export type ReactionTrigger = 'attack_declared' | 'unit_summoned' | 'effect_activated' | 'unit_evolved' | 'unit_destroyed';
 export type CardLevel = 1 | 2 | 3;
 export type Rarity = 'Commune' | 'Rare' | 'Épique' | 'Légendaire' | 'Mythique';
 
@@ -29,22 +33,32 @@ export interface CardDef {
   faction: Faction;
   level: CardLevel;
   type: CardType;
+  /** Uniquement pour type === 'spell'. Absent = enchantment pour rétrocompatibilité. */
+  supportKind?: SupportKind;
+  /** Événements adverses auxquels un Sortilège peut répondre. */
+  reactionTriggers?: ReactionTrigger[];
   cost: number;
   attack: number;
   health: number;
   effect?: EffectDef;
-  /** Nombre de tours passés sur le plateau requis pour évoluer (unités niveau 1/2 uniquement). */
+  /** Unité volante : ne peut être ciblée au combat que par une unité à distance. */
+  flying?: boolean;
+  /** Unité capable de combattre les cibles Vol. */
+  ranged?: boolean;
+  /** Peut attaquer dès le tour où elle est invoquée. */
+  blitz?: boolean;
+  /** Nombre de tours complets à attendre avant de pouvoir attaquer. Utilisé notamment par les gros Dragons. */
+  attackDelayTurns?: number;
+  /** Nombre de tours à survivre avant l'évolution. */
   waitTurns?: number;
-  /** id de la carte évoluée obtenue une fois waitTurns atteint. */
   evolvesTo?: string;
-  /** id de la carte niveau inférieur dont celle-ci est l'évolution. */
   evolvesFrom?: string;
-  /** Nombre d'exemplaires autorisés en deck (règle de construction). */
   copies: number;
   rarity: Rarity;
   image: string;
-  /** Carte obtenue uniquement via un booster (pas distribuée automatiquement au choix de faction). */
   boosterOnly?: boolean;
+  /** Carte définie côté gameplay mais volontairement masquée tant que l'illustration finale n'est pas installée. */
+  assetMissing?: boolean;
   text: string;
 }
 
@@ -59,19 +73,14 @@ export interface FieldUnit {
   stunnedTurns: number;
   buffs: number;
   taunt: boolean;
-  /** Bonus d'Instinct de Meute actuellement appliqué (recalculé à chaque changement de terrain). */
   packBonus: number;
-  /** Nombre d’activations manuelles déjà utilisées pendant le tour courant. */
   effectUsesThisTurn: number;
-  /** Emplacement choisi (0..MAX_FIELD_UNITS-1) sur le terrain — purement pour l'affichage,
-      la liste elle-même reste ordonnée par ordre d'arrivée pour le reste des règles. */
   slot: number;
 }
 
 export interface SupportCard {
   instanceId: string;
   cardId: string;
-  /** Emplacement choisi (0..MAX_SUPPORT-1) en zone Soutien — même logique que FieldUnit.slot. */
   slot: number;
 }
 
@@ -85,21 +94,27 @@ export interface PlayerState {
   mana: number;
   maxMana: number;
   deck: string[];
-  /** Composition figée du deck de départ (30 cartes) — sert de réserve pour
-   *  les effets qui invoquent/piochent "au hasard dans ton deck", pour ne
-   *  jamais tirer une carte que le joueur ne possède pas. */
   deckList: string[];
   hand: string[];
   field: FieldUnit[];
-  /** Sorts posés face cachée en zone Soutien, en attente d'activation (5 emplacements). */
   support: SupportCard[];
   graveyard: string[];
-  /** Réserve séparée contenant jusqu’à 20 cartes d’évolution. */
   evosphere: string[];
   fatigue: number;
+  normalSummonUsed: boolean;
 }
 
 export type Phase = 'main' | 'combat' | 'end';
+
+/** Événement suspendu le temps que l'adversaire décide s'il répond avec un Sortilège. */
+export interface ReactionWindow {
+  trigger: ReactionTrigger;
+  actingPlayer: PlayerId;
+  respondingPlayer: PlayerId;
+  sourceInstanceId?: string;
+  targetInstanceId?: string | null;
+  sourceCardId?: string;
+}
 
 export interface GameState {
   turn: number;
@@ -109,8 +124,9 @@ export interface GameState {
   enemy: PlayerState;
   log: string[];
   winner?: PlayerId;
-  /** Difficulté de l'IA côté enemy. */
   aiDifficulty: 'novice' | 'veteran' | 'maitre';
+  /** Présent uniquement lorsqu'une action peut recevoir une réponse adverse. */
+  reactionWindow?: ReactionWindow;
 }
 
 export const MAX_MANA = 10;
