@@ -57,6 +57,8 @@ export interface CardDef {
   rarity: Rarity;
   image: string;
   boosterOnly?: boolean;
+  /** Carte définie côté gameplay mais volontairement masquée tant que l'illustration finale n'est pas installée. */
+  assetMissing?: boolean;
   text: string;
 }
 
