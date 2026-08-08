@@ -38,6 +38,13 @@ main{flex:1;min-width:0;min-height:0;padding:55px;overflow-y:auto;-webkit-overfl
 .avatar-choice.active{border-color:#56dab8;background:#56dab814}
 .avatar-choice.active img{border-color:#56dab8}
 .avatar-choice span{font-size:10px;color:#9db3ac;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.terrain-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-top:16px}
+.terrain-card{display:flex;flex-direction:column;gap:8px;padding:14px;border:1px solid #ffffff1c;border-radius:14px;background:#ffffff08}
+.terrain-card.active{border-color:#56dab8;background:#56dab814}
+.terrain-card b{font:700 15px "Playfair Display"}
+.terrain-preview{width:100%;height:110px;border-radius:10px;overflow:hidden;border:1px solid #ffffff1c;background:#04090b}
+.terrain-preview-bg{display:block;width:100%;height:100%;object-fit:cover}
+.terrain-card button{margin:0}
 progress{accent-color:#56dab8}.faction-pick{display:flex;gap:10px;margin:18px 0}.faction-button{padding:10px 18px;border-radius:8px;border:1px solid #ffffff2a;background:#ffffff0d;color:#cfe0d8;font-weight:600;cursor:pointer}.faction-button.active{border-color:#56dab8;background:#56dab826;color:#7ff0d0}.faction-button.locked,.faction-button:disabled{opacity:.5;cursor:not-allowed;background:#ffffff05}.onboarding{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse at 50% 10%,#1a2e3a,#050d0d 60%),#040a0a}.onboarding-inner{max-width:760px;text-align:center}.onboarding-inner h2{font:700 34px "Playfair Display";margin:8px 0}.onboarding-inner>p{color:#b3c6bd;max-width:520px;margin:0 auto}.onboarding-choices{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:30px}.onboarding-card{display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px;border:1px solid #ffffff1c;border-radius:16px;background:#ffffff08;color:inherit;cursor:pointer;transition:transform .15s,border-color .15s}.onboarding-card:hover{transform:translateY(-4px);border-color:#56dab866}.onboarding-art{width:100%;height:180px;border-radius:10px;background-size:cover;background-position:center;border:1px solid #ffffff14}.onboarding-card b{font:700 20px "Playfair Display"}.onboarding-card small{color:#9db3ac;font-size:12px;line-height:1.4}@media(max-width:640px){.onboarding-choices{grid-template-columns:1fr}}
 .card{position:relative}.card-badge{position:absolute;top:8px;right:8px;font-style:normal;font:10px "DM Mono";background:#0a1f1e;border:1px solid #56dab8;color:#7ff0d0;border-radius:20px;padding:2px 8px}
 .card.full-art{padding:0!important;overflow:hidden;background:#04090b}
