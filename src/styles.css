@@ -150,7 +150,7 @@ progress{accent-color:#56dab8}.faction-pick{display:flex;gap:10px;margin:18px 0}
 .menu-card-lock{font-size:18px;flex:0 0 auto;opacity:.7}
 .menu-card.locked{cursor:not-allowed;opacity:.62;filter:saturate(.65)}
 .menu-card.locked:hover{transform:none;border-color:#ffffff18;box-shadow:none}
-.menu-card.locked:hover:before{transform:translateX(-120%)}.options-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-top:22px}.options-card{padding:16px;border:1px solid #ffffff16;border-radius:12px;background:#ffffff08;display:flex;flex-direction:column;gap:8px}.options-card b{font:700 15px "Playfair Display"}.options-card.danger{border-color:#ef6c6c44}.secondary.danger{border-color:#ef6c6c;color:#ffb3b3}
+.menu-card.locked:hover:before{transform:translateX(-120%)}.options-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-top:22px}.options-card{padding:16px;border:1px solid #ffffff16;border-radius:12px;background:#ffffff08;display:flex;flex-direction:column;gap:8px}.options-card b{font:700 15px "Playfair Display"}.options-card.danger{border-color:#ef6c6c44}.secondary.danger{border-color:#ef6c6c;color:#ffb3b3}.booster-buy-row{display:flex;gap:8px}.booster-buy-row button{flex:1;margin:0}
 .secondary{padding:13px 24px;background:rgba(86,218,184,.08);border:1px solid #56dab8;color:#7ff0d0;border-radius:9px;font:700 12px "Space Grotesk";letter-spacing:.5px;text-transform:uppercase;cursor:pointer;transition:background .15s,transform .12s}.secondary:hover{background:rgba(86,218,184,.18);transform:translateY(-2px)}
 .match-result-actions{display:flex;gap:10px;justify-content:center;margin-top:10px;flex-wrap:wrap}
 .chapter-list{display:grid;gap:10px;margin-top:26px}
