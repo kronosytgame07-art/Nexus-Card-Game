@@ -19,6 +19,20 @@ export const MAX_REPLAYS = 12;
 export const BOOSTER_PULL_COUNT = 5;
 /** Nombre d'exemplaires normaux à sacrifier pour forger 1 exemplaire foil de la même carte. */
 export const FOIL_CRAFT_COST = 3;
+/** Prix en gemmes d'une image de profil d'évolution dans la Boutique. */
+export const AVATAR_PRICE_GEMS = 40;
+
+/** Terrains (fonds d'arène) cosmétiques — "default" est le terrain texturé
+    d'origine, toujours possédé ; les autres sont des fonds WebGL entièrement
+    procéduraux achetables en Boutique (voir ProceduralArenaBackground.tsx). */
+export type TerrainId = 'default' | 'frost' | 'volcanic' | 'spectral';
+export const TERRAIN_PRICE_GEMS = 60;
+export const TERRAINS: { id: TerrainId; name: string; blurb: string }[] = [
+  { id: 'default', name: 'Nexus Originel', blurb: "Le plateau d'arène classique — givre côté Meute, flammes côté Chevalier." },
+  { id: 'frost', name: 'Arène de Givre', blurb: 'Aurores glacées, chute de neige continue et éclats de givre sur tout le plateau.' },
+  { id: 'volcanic', name: 'Arène Volcanique', blurb: 'Braises montantes, cendres et vagues de chaleur sur un fond incandescent.' },
+  { id: 'spectral', name: 'Arène Spectrale', blurb: 'Volutes violettes et poussière d\'étoiles dérivant dans un vide mystique.' },
+];
 
 export type Language = 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh';
 export type VisualQuality = 'eco' | 'balanced' | 'high';
@@ -82,6 +96,13 @@ interface GameMeta {
   unlockedFactions: Faction[];
   playerName: string;
   avatarCardId: string;
+  /** Ids des cartes d'évolution (niveau 2) débloquées comme image de profil,
+      achetées en gemmes dans la Boutique — voir purchaseAvatar(). */
+  purchasedAvatars: string[];
+  /** Terrains possédés — "default" toujours présent, les autres achetés en Boutique. */
+  purchasedTerrains: TerrainId[];
+  /** Terrain actuellement utilisé en duel — voir Combat() dans App.tsx. */
+  selectedTerrain: TerrainId;
   visualQuality: VisualQuality;
   animationMode: AnimationMode;
   glowEffects: boolean;
@@ -102,6 +123,14 @@ interface GameMeta {
   /** Détruit FOIL_CRAFT_COST exemplaires normaux d'une carte pour en forger 1 exemplaire foil
       (cosmétique). Ne fait rien si l'inventaire normal est insuffisant. */
   craftFoil: (cardId: string) => void;
+  /** Débloque une carte d'évolution comme image de profil pour AVATAR_PRICE_GEMS
+      gemmes. Ne fait rien si les gemmes sont insuffisantes ou déjà débloquée. */
+  purchaseAvatar: (cardId: string) => void;
+  /** Débloque un terrain pour TERRAIN_PRICE_GEMS gemmes. Ne fait rien si les
+      gemmes sont insuffisantes ou déjà débloqué. */
+  purchaseTerrain: (id: TerrainId) => void;
+  /** Change le terrain actif — refuse silencieusement un terrain non possédé. */
+  selectTerrain: (id: TerrainId) => void;
   setFriendCode: (code: string) => void;
   /** Applique le delta d'un échange à l'inventaire local : retire `give`, ajoute `receive`
       (comptes par id de carte). Utilisé des deux côtés d'un échange accepté — voir Trades.tsx. */
@@ -150,6 +179,13 @@ function startingOwnedFor(faction: Faction): string[] {
 export function defaultAvatarFor(faction: Faction): string {
   const unit = cardsByFaction(faction).find((c) => c.type === 'unit' && c.level === 1);
   return unit?.id ?? '';
+}
+
+/** Cartes d'évolution proposées comme image de profil en Boutique — exclut
+    l'Orc, dont les illustrations ne sont pas encore prêtes (cartes affichées
+    avec le dos de carte en attendant, inadapté comme avatar). */
+export function purchasableAvatarCards(unlockedFactions: Faction[]): CardDef[] {
+  return ALL_CARDS.filter((c) => c.level === 2 && c.faction !== 'Orc' && unlockedFactions.includes(c.faction));
 }
 
 function applyXp(level: number, xp: number, gems: number, amount: number) {
@@ -254,6 +290,9 @@ export const useGame = create<GameMeta>()(
       unlockedFactions: [],
       playerName: 'Chronos',
       avatarCardId: '',
+      purchasedAvatars: [],
+      purchasedTerrains: ['default'],
+      selectedTerrain: 'default',
       visualQuality: 'balanced',
       animationMode: 'full',
       glowEffects: true,
@@ -310,6 +349,18 @@ export const useGame = create<GameMeta>()(
           const foilInventory = { ...s.foilInventory, [cardId]: (s.foilInventory[cardId] ?? 0) + 1 };
           return { inventory, owned: ownedFromInventory(inventory, foilInventory), foilInventory };
         }),
+      purchaseAvatar: (cardId) =>
+        set((s) => {
+          if (s.gems < AVATAR_PRICE_GEMS || s.purchasedAvatars.includes(cardId)) return {};
+          return { gems: s.gems - AVATAR_PRICE_GEMS, purchasedAvatars: [...s.purchasedAvatars, cardId] };
+        }),
+      purchaseTerrain: (id) =>
+        set((s) => {
+          if (s.gems < TERRAIN_PRICE_GEMS || s.purchasedTerrains.includes(id)) return {};
+          return { gems: s.gems - TERRAIN_PRICE_GEMS, purchasedTerrains: [...s.purchasedTerrains, id] };
+        }),
+      selectTerrain: (id) =>
+        set((s) => (s.purchasedTerrains.includes(id) ? { selectedTerrain: id } : {})),
       setFriendCode: (code) => set({ friendCode: code }),
       applyTradeDelta: (give, receive) =>
         set((s) => {
@@ -462,6 +513,9 @@ export const useGame = create<GameMeta>()(
           unlockedFactions: [],
           playerName: 'Chronos',
           avatarCardId: '',
+          purchasedAvatars: [],
+          purchasedTerrains: ['default'],
+          selectedTerrain: 'default',
           replays: [],
         }),
       saveReplay: (replay) =>
