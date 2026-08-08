@@ -83,6 +83,10 @@ export function newGame(
     log: ['La partie commence. À toi de jouer.'],
     aiDifficulty,
   };
+  // Le joueur 1 effectue bien sa première pioche. L'UI la masque jusqu'à
+  // l'animation de Draw Phase, puis passe automatiquement en Main Phase.
+  drawOne(state, 'player');
+  pushLog(state, 'Tu pioches ta première carte.');
   return state;
 }
 
@@ -165,6 +169,11 @@ function applyPackBonuses(state: GameState) {
       unit.packBonus = nextBonus;
     }
   }
+}
+
+function isOnSummonEffect(def: CardDef): boolean {
+  const text = def.text.toLowerCase();
+  return text.includes('à l’invocation') || text.includes('cri de guerre');
 }
 
 function effectivePlayCost(def: CardDef, owner: PlayerState): number {
@@ -286,12 +295,13 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
         succeeded = false;
         break;
       }
-      const ownedUnitIds = [...new Set(owner.deckList)];
-      const pool = ownedUnitIds
-        .map((id) => getCard(id))
-        .filter((c) => c.level === 1 && c.type === 'unit' && (!effect.target || c.faction === effect.target));
-      const pick = pool[Math.floor(Math.random() * pool.length)];
-      if (pick) {
+      const eligibleDeckIndexes = owner.deck
+        .map((id, index) => ({ id, index, card: getCard(id) }))
+        .filter(({ card }) => card.level === 1 && card.type === 'unit' && (!effect.target || card.faction === effect.target));
+      const chosen = eligibleDeckIndexes[Math.floor(Math.random() * eligibleDeckIndexes.length)];
+      const pick = chosen?.card;
+      if (pick && chosen) {
+        owner.deck.splice(chosen.index, 1);
         owner.field.push({
           instanceId: instanceId(),
           cardId: pick.id,
@@ -307,8 +317,16 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
           effectUsesThisTurn: 0,
           slot: resolveSlot(owner.field, MAX_FIELD_UNITS),
         });
-        pushLog(state, `${labelFor(ownerId)} invoque spécialement ${pick.name}${pick.blitz ? ' — Blitz !' : ''}.`);
+        pushLog(state, `${labelFor(ownerId)} invoque spécialement ${pick.name} depuis son deck${pick.blitz ? ' — Blitz !' : ''}.`);
       } else succeeded = false;
+      break;
+    }
+    case 'board_wipe': {
+      if (opponent.field.length === 0) { succeeded = false; break; }
+      const destroyed = opponent.field.length;
+      for (const unit of opponent.field) opponent.graveyard.push(unit.cardId);
+      opponent.field = [];
+      pushLog(state, labelFor(ownerId) + ' déclenche un nettoyage de terrain : ' + destroyed + ' unité(s) adverse(s) détruite(s).');
       break;
     }
   }
@@ -362,7 +380,7 @@ export function playCard(rawState: GameState, playerId: PlayerId, cardId: string
     p.field.push(unit);
     p.normalSummonUsed = true;
     pushLog(state, `${labelFor(playerId)} joue ${def.name}${cost < def.cost ? ` (Rang Sacré : ${cost}◆ au lieu de ${def.cost}◆)` : ''}${def.blitz ? ' — Blitz !' : ''}.`);
-    if (def.effect && def.text.toLowerCase().includes('à l’invocation')) resolveEffect(state, playerId, def.effect, unit.instanceId);
+    if (def.effect && isOnSummonEffect(def)) resolveEffect(state, playerId, def.effect, unit.instanceId);
   } else {
     const support = { instanceId: instanceId(), cardId: def.id, slot: resolveSlot(p.support, MAX_SUPPORT, slotIndex) };
     p.support.push(support);
@@ -386,6 +404,11 @@ export function declareAttack(
 
   const opponent = state[other(playerId)];
   const attackerDef = getCard(attacker.cardId);
+  if ((attackerDef.attackDelayTurns ?? 0) > attacker.turnsOnField) {
+    const remaining = (attackerDef.attackDelayTurns ?? 0) - attacker.turnsOnField;
+    pushLog(state, attackerDef.name + ' doit encore attendre ' + remaining + ' tour(s) avant de pouvoir attaquer.');
+    return state;
+  }
   const canAttackDirectly = attackerDef.text.toLowerCase().includes('attaque directe');
 
   const reachableUnits = opponent.field.filter((u) => canFightTarget(attackerDef, getCard(u.cardId)));
@@ -449,9 +472,10 @@ function startTurn(state: GameState, id: PlayerId) {
   p.mana = p.maxMana;
   drawOne(state, id);
   for (const unit of p.field) {
-    unit.canAttack = true;
     unit.effectUsesThisTurn = 0;
     unit.turnsOnField += 1;
+    const unitDef = getCard(unit.cardId);
+    unit.canAttack = (unitDef.attackDelayTurns ?? 0) <= unit.turnsOnField;
     if (unit.stunnedTurns > 0) {
       unit.stunnedTurns -= 1;
       unit.canAttack = unit.stunnedTurns > 0 ? false : unit.canAttack;
@@ -597,7 +621,10 @@ export type AiBattlePlan = { attackerIds: string[]; lethal: boolean; keepBackId?
 export function aiPrepareBattlePlan(rawState: GameState): AiBattlePlan {
   if (rawState.winner || rawState.activePlayer !== 'enemy') return { attackerIds: [], lethal: false };
   const difficulty = rawState.aiDifficulty;
-  const attackers = rawState.enemy.field.filter((u) => u.canAttack && u.stunnedTurns === 0);
+  const attackers = rawState.enemy.field.filter((u) => {
+    const def = getCard(u.cardId);
+    return u.canAttack && u.stunnedTurns === 0 && (def.attackDelayTurns ?? 0) <= u.turnsOnField;
+  });
   const hasReachableTaunt = attackers.some((attacker) =>
     rawState.player.field.some((defender) => defender.taunt && defender.stunnedTurns === 0 && canFightTarget(getCard(attacker.cardId), getCard(defender.cardId)))
   );
@@ -612,7 +639,25 @@ export function aiPrepareBattlePlan(rawState: GameState): AiBattlePlan {
   return { attackerIds: attackers.map((u) => u.instanceId), lethal, keepBackId };
 }
 
-export type AiAttackStep = { state: GameState; attackerId: string; targetId: string | null; skipped: boolean };
+export function availableReactionSupportIds(state: GameState, respondingPlayer: PlayerId, trigger: import('./types').ReactionTrigger): string[] {
+  const p = state[respondingPlayer];
+  return p.support
+    .filter((support) => {
+      const def = getCard(support.cardId);
+      return def.supportKind === 'reaction' && Boolean(def.reactionTriggers?.includes(trigger)) && Boolean(def.effect) && def.cost <= p.mana;
+    })
+    .map((support) => support.instanceId);
+}
+
+export function passReactionWindow(rawState: GameState, respondingPlayer: PlayerId): GameState {
+  const state = clone(rawState);
+  if (!state.reactionWindow || state.reactionWindow.respondingPlayer !== respondingPlayer) return state;
+  pushLog(state, `${labelFor(respondingPlayer)} passe sans activer de Sortilège.`);
+  delete state.reactionWindow;
+  return state;
+}
+
+export type AiAttackStep = { state: GameState; attackerId: string; targetId: string | null; skipped: boolean; pendingReaction?: boolean };
 
 export function aiResolveOneAttack(rawState: GameState, attackerId: string, lethal: boolean, keepBackId: string | undefined): AiAttackStep {
   const state = clone(rawState);
@@ -637,6 +682,20 @@ export function aiResolveOneAttack(rawState: GameState, attackerId: string, leth
   } else {
     const trade = bestTradeTarget(currentAttacker, reachable);
     targetId = trade.trade !== 'bad' && trade.target ? trade.target.instanceId : null;
+  }
+
+  const reactionIds = availableReactionSupportIds(state, 'player', 'attack_declared');
+  if (reactionIds.length > 0 && !state.reactionWindow) {
+    state.reactionWindow = {
+      trigger: 'attack_declared',
+      actingPlayer: 'enemy',
+      respondingPlayer: 'player',
+      sourceInstanceId: attackerId,
+      targetInstanceId: targetId,
+      sourceCardId: currentAttacker.cardId,
+    };
+    pushLog(state, `Fenêtre de réponse : ${getCard(currentAttacker.cardId).name} déclare une attaque.`);
+    return { state, attackerId, targetId, skipped: false, pendingReaction: true };
   }
 
   const before = currentAttacker.canAttack;
@@ -683,7 +742,7 @@ export function activateUnitEffect(rawState: GameState, playerId: PlayerId, unit
   const unit = findUnit(state[playerId], unitInstanceId);
   if (!unit) return state;
   const def = getCard(unit.cardId);
-  if (!def.effect || def.text.toLowerCase().includes('à l’invocation')) return state;
+  if (!def.effect || isOnSummonEffect(def)) return state;
   const maxUses = def.text.toLowerCase().includes('2 fois par tour') ? 2 : 1;
   if ((unit.effectUsesThisTurn ?? 0) >= maxUses) {
     pushLog(state, def.name + ' a déjà utilisé toutes ses activations ce tour.');
@@ -698,13 +757,27 @@ export function activateUnitEffect(rawState: GameState, playerId: PlayerId, unit
 
 export function activateSupportCard(rawState: GameState, playerId: PlayerId, supportInstanceId: string): GameState {
   const state = clone(rawState);
-  if (state.winner || state.activePlayer !== playerId) return state;
+  if (state.winner) return state;
   const p = state[playerId];
   const idx = p.support.findIndex((s) => s.instanceId === supportInstanceId);
   if (idx < 0) return state;
   const support = p.support[idx];
   const def = getCard(support.cardId);
   if (!def.effect) return state;
+
+  const ownTurn = state.activePlayer === playerId;
+  const reactionWindow = state.reactionWindow;
+  const validReaction = !ownTurn && Boolean(
+    reactionWindow &&
+    reactionWindow.respondingPlayer === playerId &&
+    def.supportKind === 'reaction' &&
+    def.reactionTriggers?.includes(reactionWindow.trigger)
+  );
+  if (!ownTurn && !validReaction) return state;
+  if (ownTurn && def.supportKind === 'reaction') {
+    pushLog(state, `${def.name} est un Sortilège : il attend une action adverse pour se déclencher.`);
+    return state;
+  }
   if (def.cost > p.mana) {
     pushLog(state, `${def.name} reste face cachée : pas assez de runes pour l'activer (${def.cost}◆).`);
     return state;
@@ -716,6 +789,7 @@ export function activateSupportCard(rawState: GameState, playerId: PlayerId, sup
     p.support.splice(idx, 1);
     p.graveyard.push(def.id);
     pushLog(state, `${def.name} se révèle et son effet s'active.`);
+    if (validReaction) delete state.reactionWindow;
   } else {
     pushLog(state, `${def.name} reste face cachée : conditions non réunies pour l'activer.`);
   }

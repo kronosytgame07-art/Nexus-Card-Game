@@ -6,6 +6,7 @@ import {
   getDoc,
   onSnapshot,
   query,
+  runTransaction,
   serverTimestamp,
   setDoc,
   updateDoc,
@@ -124,6 +125,7 @@ export default function Trades() {
     const sentQuery = query(collection(db, 'trades'), where('fromUid', '==', uid));
     const receivedQuery = query(collection(db, 'trades'), where('toUid', '==', uid));
     const marketQuery = query(collection(db, 'market'), where('status', '==', 'open'));
+    const sellerMarketQuery = query(collection(db, 'market'), where('sellerUid', '==', uid));
     const unsubSent = onSnapshot(sentQuery, (snap) => {
       const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() } as TradeDoc));
       setSent(rows);
@@ -131,7 +133,19 @@ export default function Trades() {
     });
     const unsubReceived = onSnapshot(receivedQuery, (snap) => setReceived(snap.docs.map((d) => ({ id: d.id, ...d.data() } as TradeDoc))));
     const unsubMarket = onSnapshot(marketQuery, (snap) => setMarket(snap.docs.map((d) => ({ id: d.id, ...d.data() } as MarketDoc))));
-    return () => { unsubSent(); unsubReceived(); unsubMarket(); };
+    const unsubSellerMarket = onSnapshot(sellerMarketQuery, (snap) => {
+      for (const row of snap.docs) {
+        const listing = { id: row.id, ...row.data() } as MarketDoc;
+        const appliedId = 'market-seller-' + listing.id;
+        if (listing.status !== 'accepted' || s.appliedTradeIds.includes(appliedId)) continue;
+        const offer = cardById(listing.offerCardId);
+        const request = cardById(listing.requestCardId);
+        if (!offer || !request || offer.rarity !== request.rarity || listing.rarity !== offer.rarity) continue;
+        s.applyTradeDelta({ [offer.id]: 1 }, { [request.id]: 1 });
+        s.markTradeApplied(appliedId);
+      }
+    });
+    return () => { unsubSent(); unsubReceived(); unsubMarket(); unsubSellerMarket(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uid]);
 
@@ -162,7 +176,8 @@ export default function Trades() {
     const offer = cardById(marketOffer);
     const request = cardById(marketRequest);
     if (!offer || !request) { setMarketError('Choisis une carte à proposer et une carte à demander.'); return; }
-    if ((s.inventory[offer.id] ?? 0) <= 0) { setMarketError('Tu ne possèdes pas cette carte.'); return; }
+    const alreadyListed = market.filter((listing) => listing.sellerUid === uid && listing.status === 'open' && listing.offerCardId === offer.id).length;
+    if ((s.inventory[offer.id] ?? 0) - alreadyListed <= 0) { setMarketError('Tous tes exemplaires disponibles de cette carte sont déjà engagés sur le marché.'); return; }
     if (offer.rarity !== request.rarity) { setMarketError('Le marché public impose strictement la même rareté des deux côtés.'); return; }
     await addDoc(collection(db, 'market'), { sellerUid: uid, sellerCode: s.friendCode, offerCardId: offer.id, requestCardId: request.id, rarity: offer.rarity, status: 'open', createdAt: serverTimestamp() });
     setMarketOffer(''); setMarketRequest('');
@@ -174,10 +189,21 @@ export default function Trades() {
     const request = cardById(listing.requestCardId);
     if (!offer || !request || offer.rarity !== request.rarity || listing.rarity !== offer.rarity) return;
     if ((s.inventory[request.id] ?? 0) <= 0) { setMarketError(`Il te manque ${request.name}.`); return; }
-    await updateDoc(doc(db, 'market', listing.id), { status: 'accepted', acceptedByUid: uid, acceptedByCode: s.friendCode, acceptedAt: serverTimestamp() });
-    if (!s.appliedTradeIds.includes(`market-${listing.id}`)) {
+    const listingRef = doc(db, 'market', listing.id);
+    try {
+      await runTransaction(db, async (transaction) => {
+        const snapshot = await transaction.get(listingRef);
+        if (!snapshot.exists()) throw new Error('Cette annonce n’existe plus.');
+        const live = snapshot.data() as Omit<MarketDoc, 'id'>;
+        if (live.status !== 'open') throw new Error('Cette annonce vient déjà d’être prise par un autre joueur.');
+        if (live.sellerUid === uid) throw new Error('Tu ne peux pas accepter ta propre annonce.');
+        transaction.update(listingRef, { status: 'accepted', acceptedByUid: uid, acceptedByCode: s.friendCode, acceptedAt: serverTimestamp() });
+      });
+    } catch (err) { setMarketError(err instanceof Error ? err.message : 'Impossible de valider cet échange.'); return; }
+    const buyerAppliedId = 'market-buyer-' + listing.id;
+    if (!s.appliedTradeIds.includes(buyerAppliedId)) {
       s.applyTradeDelta({ [request.id]: 1 }, { [offer.id]: 1 });
-      s.markTradeApplied(`market-${listing.id}`);
+      s.markTradeApplied(buyerAppliedId);
     }
   };
 
