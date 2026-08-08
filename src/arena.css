@@ -451,29 +451,6 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 
 .dmg-float, .battle-log { pointer-events: none; }
 
-/* ---------- Aperçu / panneau d'action d'une unité --------------------------- */
-.unit-actions {
-  position: fixed;
-  right: max(14px, env(safe-area-inset-right));
-  bottom: max(60px, calc(env(safe-area-inset-bottom) + 54px));
-  z-index: 70;
-  width: min(300px, 90vw);
-  max-height: min(52vh, 360px);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border: 1px solid #e6bd6355;
-  border-radius: 14px;
-  background: linear-gradient(180deg, rgba(9, 15, 17, .97), rgba(4, 9, 10, .98));
-  box-shadow: 0 20px 50px rgba(0, 0, 0, .5);
-}
-.unit-actions-art { width: 100%; height: min(38vh, 220px); flex: 0 0 auto; object-fit: contain; display: block; border-bottom: 1px solid #e6bd6355; background: #04090b; }
-.unit-actions-body { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; min-height: 0; flex: 1 1 auto; overflow-y: auto; }
-.unit-actions-body b { font: 700 15px "Playfair Display"; color: var(--gold); }
-.unit-actions-stats { font: 700 12px "DM Mono"; color: #83efd3; }
-.unit-actions-body p { margin: 0; color: #c1d0cb; font-size: 12px; line-height: 1.4; }
-.unit-actions-body button { margin: 0; height: 34px; border-radius: 8px; font: 700 11px "DM Mono"; letter-spacing: .5px; cursor: pointer; }
-
 /* Aperçu d'une carte de la main avant de la jouer — remplace l'ancien
    script vanilla hand-confirmation.ts, piloté uniquement par previewCardId. */
 .hand-preview-overlay { position: fixed; inset: 0; z-index: 500; display: grid; place-items: center; padding: 24px; background: rgba(1, 5, 8, .82); backdrop-filter: blur(10px); }
@@ -525,8 +502,6 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 .duel-log { flex: 1; min-height: 0; overflow-y: auto; margin: 0; padding: 10px 16px; list-style: none; display: flex; flex-direction: column; gap: 2px; }
 .duel-log li { padding: 7px 9px; border-radius: 8px; background: #ffffff08; font: 12px "DM Mono"; color: #cfe0d8; line-height: 1.4; }
 .duel-log li:first-child { background: #56dab814; color: #eef8f0; }
-
-.enemy-unit-actions { right: auto; left: max(14px, env(safe-area-inset-left)); bottom: auto; top: max(60px, calc(env(safe-area-inset-top) + 54px)); }
 
 .evolution-flash { position: fixed; inset: 0; z-index: 80; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(255, 55, 75, .32), rgba(0, 0, 0, .94) 60%); text-align: center; pointer-events: none; }
 .evolution-flash span { font: 12px "DM Mono"; letter-spacing: 6px; color: #ff7185; }
@@ -608,7 +583,6 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
   .hud-pill { height: 22px; padding: 0 8px; font-size: 8px; }
   .enemy-hand-row { top: 16px; gap: 4px; }
   .hand { gap: 4px; padding-bottom: max(6px, env(safe-area-inset-bottom)); }
-  .unit-actions { bottom: calc(env(safe-area-inset-bottom) + 40px); padding: 8px; }
   .draw-pile-stack { width: clamp(80px, 22vw, 110px); height: clamp(112px, 30vw, 154px); }
   /* L'aperçu d'une carte (image + nom + stats + texte + boutons) empilé
      verticalement dépassait vite la hauteur dispo et forçait un scroll
@@ -690,34 +664,6 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
   .hand-preview-actions button { height: 32px; }
 }
 
-
-/* NEXUS SIDE PREVIEW NON BLOCKING */
-.hand-preview-overlay {
-  pointer-events: none !important;
-  background: transparent !important;
-  backdrop-filter: none !important;
-  display: flex !important;
-  align-items: stretch !important;
-  justify-content: flex-end !important;
-  padding: 0 !important;
-}
-.hand-preview {
-  pointer-events: auto !important;
-  position: fixed !important;
-  top: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  width: clamp(250px, 24vw, 360px) !important;
-  max-width: 42vw !important;
-  height: 100dvh !important;
-  max-height: none !important;
-  border-radius: 0 !important;
-  border-width: 0 0 0 1px !important;
-  box-shadow: -18px 0 48px rgba(0,0,0,.58) !important;
-}
-@media (max-width: 900px), (orientation: landscape) and (max-height: 600px) {
-  .hand-preview { width: clamp(210px, 38vw, 300px) !important; max-width: 44vw !important; }
-}
 
 @keyframes nexus-effect-pulse-ally {
   0% { box-shadow: 0 0 0 0 rgba(65,226,179,0), 0 0 0 rgba(95,220,255,0); filter: brightness(1); }
