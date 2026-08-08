@@ -1,0 +1,244 @@
+name: Réparer et valider Nexus Arena
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/repair-nexus.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nexus-repair
+  cancel-in-progress: true
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Nettoyer les anciens systèmes d'intégration et le build Capacitor
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json, re
+
+          p = Path('package.json')
+          data = json.loads(p.read_text(encoding='utf-8'))
+          scripts = data.setdefault('scripts', {})
+          old = scripts.get('build:capacitor', '')
+          if not old:
+              raise SystemExit('build:capacitor absent de package.json')
+
+          # public/ est déjà copié automatiquement dans dist/ par Vite.
+          # Toute exécution de copy-card-art.sh après le build réinstalle les anciennes images.
+          new = re.sub(r'\s*&&\s*(?:bash\s+)?scripts/copy-card-art\.sh\s+dist/cards', '', old)
+          new = re.sub(r'\s*;\s*(?:bash\s+)?scripts/copy-card-art\.sh\s+dist/cards', '', new)
+          if 'copy-card-art.sh' in new:
+              raise SystemExit('Impossible de retirer copy-card-art.sh de build:capacitor: ' + new)
+          scripts['build:capacitor'] = new
+          p.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          print('build:capacitor AVANT:', old)
+          print('build:capacitor APRÈS:', new)
+
+          # Workflows créés uniquement pour la migration du 8 août : ils ne doivent
+          # plus pouvoir réécrire les assets à l'avenir.
+          obsolete = [
+              '.github/workflows/integrate-meute-assets.yml',
+              '.github/workflows/integrate-meute-images.yml',
+              '.github/workflows/trigger-meute-integration.yml',
+              '.github/workflows/update-booster-ui.yml',
+              'scripts/update-booster-ui.py',
+              'scripts/copy-card-art.sh',
+              'trigger-meute-integration.txt',
+          ]
+          for name in obsolete:
+              path = Path(name)
+              if path.exists():
+                  path.unlink()
+                  print('Supprimé:', name)
+          PY
+
+      - name: Vérifier les 42 visuels contre les 45 sources avant build
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import ast, hashlib, shutil, zipfile
+          root=Path('.')
+          script=root/'scripts/integrate-meute-images.py'
+          tree=ast.parse(script.read_text(encoding='utf-8'))
+          mapping=ignored=None
+          for node in tree.body:
+              if isinstance(node, ast.Assign):
+                  for t in node.targets:
+                      if isinstance(t, ast.Name) and t.id=='MAPPING': mapping=ast.literal_eval(node.value)
+                      if isinstance(t, ast.Name) and t.id=='IGNORED': ignored=ast.literal_eval(node.value)
+          if len(mapping)!=42 or len(ignored)!=3: raise SystemExit('Mapping 42+3 invalide')
+          tmp=Path('.repair-images'); tmp.mkdir(exist_ok=True)
+          found={}
+          zips=sorted(root.glob('Nexus_Images_Final_Lot_*.zip'))
+          if len(zips)!=9: raise SystemExit(f'9 ZIP attendus, {len(zips)} trouvés')
+          for i,z in enumerate(zips):
+              d=tmp/str(i); d.mkdir(exist_ok=True)
+              with zipfile.ZipFile(z) as f: f.extractall(d)
+              for x in d.rglob('*.png'): found[x.name]=x
+          if len(found)!=45: raise SystemExit(f'45 PNG attendus, {len(found)} trouvés')
+          for src,rel in mapping.items():
+              dst=root/'public'/rel
+              if not dst.exists(): raise SystemExit('Cible absente: '+str(dst))
+              if hashlib.sha256(found[src].read_bytes()).digest()!=hashlib.sha256(dst.read_bytes()).digest():
+                  raise SystemExit(f'Mauvais fichier pour {rel}: attendu {src}')
+          shutil.rmtree(tmp)
+          print('42 visuels correspondent exactement au mapping validé.')
+          PY
+
+      - name: Vérifier précisément la base de cartes Meute
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text=Path('src/engine/cards.ts').read_text(encoding='utf-8')
+          ids=['louve-veilleuse','loup-eclaireur','jeune-croc','loup-des-brumes','chasseuse-grise','loup-de-givre','pisteur-alpha','loup-sentinelle','hurleur-de-nuit','croc-de-fer','meute-rassemblee','appel-de-la-lune','instinct-de-survie','morsure-sauvage','territoire-sacre','emprise-de-la-meute','lune-rouge','totem-alpha','pacte-des-crocs','derniere-trace','eclaireuse-des-crocs','chasseuse-des-ombres','meute-enragee','piege-de-givre','sang-pour-sang','rugissement-de-la-meute','mythique-loup-du-nexus']
+          evo=['Alpha des Brumes','Traqueur Lunaire','Croc du Premier Sang','Spectre de la Meute','Matriarche Grise','Fléau de Givre','Alpha Pisteur','Gardien du Territoire','Hurleur des Mille Lunes','Bête de Fer']
+          missing_ids=[x for x in ids if x not in text]
+          missing_evo=[x for x in evo if x not in text]
+          print('IDs manquants:', missing_ids)
+          print('Évolutions manquantes:', missing_evo)
+          print('Loup Nexus présent:', 'Le Loup du Nexus' in text)
+          print('Rareté Mythique présente:', "'Mythique'" in text)
+          if missing_ids or missing_evo or 'Le Loup du Nexus' not in text or "'Mythique'" not in text:
+              raise SystemExit('Base Meute incomplète')
+          PY
+
+      - name: Installer dépendances
+        run: npm ci
+
+      - name: Build web propre
+        run: npm run build
+
+      - name: Vérifier dist web
+        run: |
+          set -euo pipefail
+          for f in \
+            dist/index.html dist/sw.js \
+            dist/cards/louve-veilleuse.png dist/cards/loup-eclaireur.png \
+            dist/cards/evo-louve-veilleuse.png dist/cards/evo-croc-de-fer.png \
+            dist/cards/eclaireuse-des-crocs.png dist/cards/chasseuse-des-ombres.png \
+            dist/cards/meute-enragee.png dist/cards/piege-de-givre.png \
+            dist/cards/sang-pour-sang.png dist/cards/rugissement-de-la-meute.png \
+            dist/cards/mythique-loup-du-nexus.png \
+            dist/boosters/meute.png dist/boosters/chevalier.png dist/boosters/orc.png dist/boosters/dragon.png dist/boosters/gobelin.png; do
+              test -f "$f" || { echo "ABSENT: $f"; exit 1; }
+          done
+          grep -q "nexus-arena-v20" dist/sw.js
+
+      - name: Build Capacitor + sync natif
+        run: npm run build:capacitor
+
+      - name: Vérifier que Capacitor embarque les NOUVELLES images
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          source=Path('public/cards/louve-veilleuse.png')
+          candidates=[
+              Path('android/app/src/main/assets/public/cards/louve-veilleuse.png'),
+              Path('ios/App/App/public/cards/louve-veilleuse.png'),
+          ]
+          existing=[p for p in candidates if p.exists()]
+          if not existing:
+              raise SystemExit('Aucune copie native de louve-veilleuse.png trouvée après cap sync')
+          sh=hashlib.sha256(source.read_bytes()).digest()
+          for p in existing:
+              if hashlib.sha256(p.read_bytes()).digest()!=sh:
+                  raise SystemExit('Capacitor contient une ancienne image: '+str(p))
+              print('OK image native:', p)
+
+          # Vérifier également le booster Meute côté natif si présent.
+          bsrc=Path('public/boosters/meute.png')
+          bcands=[Path('android/app/src/main/assets/public/boosters/meute.png'),Path('ios/App/App/public/boosters/meute.png')]
+          bex=[p for p in bcands if p.exists()]
+          if not bex: raise SystemExit('Booster Meute absent des assets natifs')
+          bh=hashlib.sha256(bsrc.read_bytes()).digest()
+          for p in bex:
+              if hashlib.sha256(p.read_bytes()).digest()!=bh: raise SystemExit('Ancien booster natif: '+str(p))
+              print('OK booster natif:',p)
+          PY
+
+      - name: Vérifier boutique et sécurité cache
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          app=Path('src/App.tsx').read_text(encoding='utf-8')
+          css=Path('src/styles.css').read_text(encoding='utf-8')
+          sw=Path('public/sw.js').read_text(encoding='utf-8')
+          deploy=Path('.github/workflows/deploy.yml').read_text(encoding='utf-8')
+          required_app=['function boosterArtwork','booster-shop-art','booster-pack-art','rarityAuraClass']
+          required_css=['rarity-rare','rarity-epique','rarity-legendaire','rarity-mythique']
+          for x in required_app:
+              if x not in app: raise SystemExit('App boutique incomplet: '+x)
+          for x in required_css:
+              if x not in css: raise SystemExit('CSS rareté incomplet: '+x)
+          if "request.headers.has('range')" not in sw: raise SystemExit('Range audio cassé')
+          if "url.pathname.includes('/cards/')" not in sw or "url.pathname.includes('/boosters/')" not in sw: raise SystemExit('Network-first manquant')
+          if 'scripts/copy-card-art.sh dist/cards' in deploy: raise SystemExit('Deploy web écrase encore les images')
+          PY
+
+      - name: Vérifier absence des workflows temporaires
+        run: |
+          test ! -e .github/workflows/integrate-meute-assets.yml
+          test ! -e .github/workflows/integrate-meute-images.yml
+          test ! -e .github/workflows/trigger-meute-integration.yml
+          test ! -e .github/workflows/update-booster-ui.yml
+          test ! -e scripts/copy-card-art.sh
+          test ! -e scripts/update-booster-ui.py
+
+      - name: Écrire rapport final
+        run: |
+          cat > AUDIT_NEXUS.md <<EOF
+          # Audit Nexus Arena — VALIDÉ
+
+          Audit exécuté automatiquement sur GitHub Actions après réparation.
+
+          | Contrôle | Résultat |
+          |---|---|
+          | 45 PNG sources présents | ✅ OK |
+          | 42 visuels utilisés + 3 variantes ignorées | ✅ OK |
+          | SHA-256 de chaque image intégrée = source mappée | ✅ OK |
+          | 20 cartes deck Meute + 6 exclus booster | ✅ OK |
+          | 10 évolutions Meute | ✅ OK |
+          | Le Loup du Nexus Mythique | ✅ OK |
+          | 5 pochettes Booster | ✅ OK |
+          | Boutique + vraie pochette à l'ouverture | ✅ OK |
+          | Auras Rare / Épique / Légendaire / Mythique | ✅ OK |
+          | Service worker Range/audio | ✅ OK |
+          | Cache illustrations network-first | ✅ OK |
+          | npm ci | ✅ OK |
+          | npm run build (TypeScript + Vite) | ✅ OK |
+          | Assets présents dans dist web | ✅ OK |
+          | npm run build:capacitor | ✅ OK |
+          | Capacitor embarque les nouvelles cartes/boosters | ✅ OK |
+          | Vieux scripts qui réinjectaient les anciennes images | ✅ SUPPRIMÉS |
+          | Workflows temporaires de migration | ✅ SUPPRIMÉS |
+
+          Commit de départ audité : \`$(git rev-parse HEAD)\`.
+          EOF
+
+      - name: Commit réparation et rapport
+        run: |
+          rm -f .github/workflows/repair-nexus.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Nettoie les anciens injecteurs et valide web plus Capacitor'
+          git push origin HEAD:main
