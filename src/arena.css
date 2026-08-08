@@ -130,8 +130,13 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
   border-radius: 999px;
   font: 800 12px "DM Mono";
   white-space: nowrap;
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: "DM Mono";
+  cursor: default;
 }
 .life { border: 2px solid #ef6c6c; background: radial-gradient(circle at 30% 20%, #4a1620, #170609); color: #ffb3b3; }
+.life-attackable { cursor: pointer; border-color: #ffd76a; box-shadow: 0 0 0 2px rgba(255, 215, 106, .3), 0 0 16px rgba(255, 215, 106, .45); animation: placeable-pulse 1.2s ease-in-out infinite; }
 .mana { border: 2px solid var(--gold); background: radial-gradient(circle at 30% 20%, #3a2f10, #100c04); color: #ffe9a8; }
 /* Gros nombre de dégâts qui flotte au-dessus du profil touché — doit être
    impossible à manquer, même en jetant un oeil rapide au plateau. */
@@ -289,22 +294,40 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 .board { grid-template-columns: repeat(3, var(--creature-w)); }
 .support-row { grid-template-columns: repeat(5, var(--support-w)); }
 
-.field-slot, .field-card, .support-row > div, .support-card {
+.field-slot, .field-card, .support-slot, .support-card {
   box-sizing: border-box;
   border-radius: 11px;
 }
 .field-slot, .field-card { width: var(--creature-w); height: var(--creature-h); }
-.support-row > div, .support-card { width: var(--support-w); height: var(--support-h); }
+.support-slot, .support-card { width: var(--support-w); height: var(--support-h); }
 
-.field-slot, .support-row > div {
+.field-slot, .support-slot {
   display: grid;
   place-items: center;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0;
+  color: inherit;
+  font-family: inherit;
   border: 1px dashed currentColor;
   background: rgba(4, 13, 15, .38);
   font-size: 22px;
   opacity: .55;
+  cursor: default;
 }
-.support-row > div { font-size: 16px; }
+.support-slot { font-size: 16px; }
+.field-slot.placeable, .support-slot.placeable {
+  opacity: 1;
+  cursor: pointer;
+  border: 1px dashed #ffd76a;
+  background: rgba(255, 215, 106, .16);
+  box-shadow: 0 0 0 2px rgba(255, 215, 106, .3), 0 0 18px rgba(255, 215, 106, .35);
+  animation: placeable-pulse 1.2s ease-in-out infinite;
+}
+@keyframes placeable-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(255, 215, 106, .3), 0 0 14px rgba(255, 215, 106, .3); }
+  50% { box-shadow: 0 0 0 2px rgba(255, 215, 106, .55), 0 0 24px rgba(255, 215, 106, .6); }
+}
 
 .field-card {
   position: relative;
