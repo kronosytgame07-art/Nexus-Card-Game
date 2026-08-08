@@ -30,10 +30,6 @@ const wolfRows: Row[] = [
   ['totem-alpha', 'Totem Alpha', 2, 0, 4, { kind: 'buff', value: 1 }],
   ['pacte-des-crocs', 'Pacte des Crocs', 1, 0, 0, { kind: 'draw', value: 1 }],
   ['derniere-trace', 'Dernière Trace', 2, 0, 0, { kind: 'search', target: 'Meute' }],
-
-  // --- Cartes de booster (obtenues uniquement en ouvrant un Booster Meute) ---
-  // Renforcent l'identité de l'archétype : agressivité, tempo (étourdissement),
-  // et synergie de meute (buffs/invocations), sans utiliser de mécanique nouvelle.
   ['eclaireuse-des-crocs', 'Éclaireuse des Crocs', 1, 2, 2, { kind: 'draw', value: 1 }, true],
   ['chasseuse-des-ombres', 'Chasseuse des Ombres', 2, 3, 2, { kind: 'protect' }, true],
   ['meute-enragee', 'Meute Enragée', 3, 4, 2, { kind: 'buff', value: 2 }, true],
@@ -63,10 +59,6 @@ const knightRows: Row[] = [
   ['reliquaire-du-roi', 'Reliquaire du Roi', 2, 0, 4, { kind: 'buff', value: 1 }],
   ['serment-de-garde', 'Serment de Garde', 1, 0, 0, { kind: 'draw', value: 1 }],
   ['voie-du-paladin', 'Voie du Paladin', 2, 0, 0, { kind: 'search', target: 'Chevalier' }],
-
-  // --- Cartes de booster (obtenues uniquement en ouvrant un Booster Chevalier) ---
-  // Renforcent l'identité de l'archétype : défense (provocation), contrôle
-  // (étourdissement/dégâts), sans utiliser de mécanique nouvelle.
   ['recrue-du-serment', 'Recrue du Serment', 1, 1, 3, { kind: 'protect' }, true],
   ['bibliothecaire-royale', 'Bibliothécaire Royale', 2, 2, 3, { kind: 'draw', value: 1 }, true],
   ['veteran-des-remparts', 'Vétéran des Remparts', 3, 3, 6, { kind: 'protect' }, true],
@@ -75,12 +67,6 @@ const knightRows: Row[] = [
   ['renfort-du-royaume', 'Renfort du Royaume', 5, 0, 0, { kind: 'summon', target: 'Chevalier' }, true],
 ];
 
-// Troisième faction : la Horde Orc, un archétype berserker/agressif — sa
-// mécanique d'archétype (Fureur Sauvage, voir applyPackBonuses/declareAttack
-// dans engine.ts) récompense le fait de laisser ses unités descendre sous la
-// moitié de leurs points de vie plutôt que la synergie de terrain (Meute) ou
-// la réduction de coût (Chevalier). Courbe de coût/stats calquée sur celle,
-// déjà équilibrée, de la Meute pour garantir la parité compétitive.
 const orcRows: Row[] = [
   ['brute-des-tourbieres', 'Brute des Tourbières', 1, 2, 3, { kind: 'protect' }],
   ['eclaireur-vert-de-gris', 'Éclaireur Vert-de-Gris', 1, 2, 2, { kind: 'search', target: 'Orc' }],
@@ -102,10 +88,6 @@ const orcRows: Row[] = [
   ['totem-de-guerre', 'Totem de Guerre', 2, 0, 4, { kind: 'buff', value: 1 }],
   ['pacte-du-sang', 'Pacte du Sang', 1, 0, 0, { kind: 'draw', value: 1 }],
   ['derniere-charge', 'Dernière Charge', 2, 0, 0, { kind: 'search', target: 'Orc' }],
-
-  // --- Cartes de booster (obtenues uniquement en ouvrant un Booster Orc) ---
-  // Renforcent l'identité de l'archétype : agressivité et tempo, sans
-  // utiliser de mécanique nouvelle — cohérent avec les boosters Meute/Chevalier.
   ['eclaireuse-des-cendres', 'Éclaireuse des Cendres', 1, 2, 2, { kind: 'draw', value: 1 }, true],
   ['chasseuse-des-tourbieres', 'Chasseuse des Tourbières', 2, 3, 2, { kind: 'protect' }, true],
   ['horde-dechainee', 'Horde Déchaînée', 3, 4, 2, { kind: 'buff', value: 2 }, true],
@@ -115,78 +97,49 @@ const orcRows: Row[] = [
 ];
 
 const evolutionNames: Record<Faction, string[]> = {
-  Meute: [
-    'Alpha des Brumes', 'Traqueur Lunaire', 'Croc du Premier Sang', 'Spectre de la Meute',
-    'Matriarche Grise', 'Fléau de Givre', 'Alpha Pisteur', 'Gardien du Territoire',
-    'Hurleur des Mille Lunes', 'Bête de Fer',
-  ],
-  Chevalier: [
-    "Chevalier d'Or", 'Paladin du Serment', "Lame de l'Aube", 'Rempart Royal',
-    'Flamme du Royaume', 'Croisé Azur', 'Maréchal des Bannières', 'Gardien du Trône',
-    'Champion de la Couronne', 'Seigneur du Royaume',
-  ],
-  Orc: [
-    'Brute Sanguinaire', 'Traqueur des Cendres', 'Massacreur Ivre de Sang', 'Guerrier Déchaîné',
-    'Collectionneuse de Crânes', 'Berserker Infernal', 'Grand Chaman de Guerre', 'Garde du Chef de Guerre',
-    'Hurleur des Enfers', 'Seigneur de Guerre',
-  ],
+  Meute: ['Alpha des Brumes','Traqueur Lunaire','Croc du Premier Sang','Spectre de la Meute','Matriarche Grise','Fléau de Givre','Alpha Pisteur','Gardien du Territoire','Hurleur des Mille Lunes','Bête de Fer'],
+  Chevalier: ["Chevalier d'Or",'Paladin du Serment',"Lame de l'Aube",'Rempart Royal','Flamme du Royaume','Croisé Azur','Maréchal des Bannières','Gardien du Trône','Champion de la Couronne','Seigneur du Royaume'],
+  Orc: ['Brute Sanguinaire','Traqueur des Cendres','Massacreur Ivre de Sang','Guerrier Déchaîné','Collectionneuse de Crânes','Berserker Infernal','Grand Chaman de Guerre','Garde du Chef de Guerre','Hurleur des Enfers','Seigneur de Guerre'],
 };
 
+const REACTION_IDS = new Set(['piege-de-givre', 'serment-inebranlable', 'sceau-immobilite', 'piege-a-ours']);
+const BLITZ_IDS = new Set(['loup-eclaireur', 'eclaireuse-des-crocs', 'eclaireur-vert-de-gris', 'eclaireuse-des-cendres']);
+const RANGED_IDS = new Set(['chaman-de-guerre']);
+
 function buildFaction(faction: Faction, rows: Row[]): CardDef[] {
-  // Seules les 10 premières unités niveau 1 possèdent une évolution imprimée (une évolution
-  // par archétype clé) — calculé AVANT de construire les cartes pour ne pas promettre une
-  // évolution (waitTurns/evolvesTo) à une unité qui n'en aura jamais réellement une.
-  const evolvableIds = new Set(
-    rows.filter(([, , , , health]) => health > 0).slice(0, 10).map(([id]) => id)
-  );
-  // Nom de l'évolution imprimée de chaque carte de base évoluable — précalculé
-  // dans le même ordre que `evolutions` plus bas, pour l'annoncer dans le texte
-  // de la carte de base (collection + aperçus en jeu) avant même de l'obtenir.
-  const evolutionNameById = new Map(
-    rows.filter(([id]) => evolvableIds.has(id)).map(([id], i) => [id, evolutionNames[faction][i]])
-  );
+  const evolvableIds = new Set(rows.filter(([, , , , health]) => health > 0).slice(0, 10).map(([id]) => id));
+  const evolutionNameById = new Map(rows.filter(([id]) => evolvableIds.has(id)).map(([id], i) => [id, evolutionNames[faction][i]]));
 
   const base: CardDef[] = rows.map(([id, name, cost, attack, health, effect, boosterOnly]) => ({
-    id,
-    name,
-    faction,
-    level: 1,
+    id, name, faction, level: 1,
     type: health > 0 ? 'unit' : 'spell',
-    cost,
-    attack,
-    health,
-    effect,
+    supportKind: health <= 0 ? (REACTION_IDS.has(id) ? 'reaction' : 'enchantment') : undefined,
+    reactionTriggers: REACTION_IDS.has(id) ? ['attack_declared'] : undefined,
+    cost, attack, health, effect,
+    blitz: BLITZ_IDS.has(id) || undefined,
+    ranged: RANGED_IDS.has(id) || undefined,
     waitTurns: evolvableIds.has(id) ? 3 : undefined,
     evolvesTo: evolvableIds.has(id) ? `evo-${id}` : undefined,
     copies: 3,
     rarity: rarityForCost(cost),
     image: `${import.meta.env.BASE_URL}cards/${id}.png`,
-    text: describeEffect(effect) + (evolvableIds.has(id) ? ` Évolue en ${evolutionNameById.get(id)}.` : ''),
+    text: describeEffect(effect) + (BLITZ_IDS.has(id) ? ' Blitz.' : '') + (RANGED_IDS.has(id) ? ' À distance.' : '') + (evolvableIds.has(id) ? ` Évolue en ${evolutionNameById.get(id)}.` : ''),
     boosterOnly: boosterOnly || undefined,
   }));
 
   const evolvables = base.filter((c) => evolvableIds.has(c.id));
   const names = evolutionNames[faction];
-  const evolutions: CardDef[] = evolvables.map((from, i) => {
-    const id = `evo-${from.id}`;
-    return {
-      id,
-      name: names[i],
-      faction,
-      level: 2,
-      type: 'unit',
-      cost: from.cost + 1,
-      attack: from.attack + 2,
-      health: from.health + 2,
-      effect: { kind: 'buff', value: 1 },
-      waitTurns: undefined,
-      evolvesFrom: from.id,
-      copies: 3,
-      rarity: 'Mythique',
-      image: `${import.meta.env.BASE_URL}cards/${id}.png`,
-      text: `Évolution de ${from.name}. Cri de guerre : +1 attaque à une unité alliée.`,
-    };
-  });
+  const evolutions: CardDef[] = evolvables.map((from, i) => ({
+    id: `evo-${from.id}`,
+    name: names[i], faction, level: 2, type: 'unit',
+    cost: from.cost + 1, attack: from.attack + 2, health: from.health + 2,
+    effect: { kind: 'buff', value: 1 }, evolvesFrom: from.id,
+    copies: 3,
+    // Une évolution n'est PAS une Mythique. Mythique est réservée à l'unique chase card de chaque booster.
+    rarity: 'Légendaire',
+    image: `${import.meta.env.BASE_URL}cards/evo-${from.id}.png`,
+    text: `Évolution de ${from.name}. Cri de guerre : +1 attaque à une unité alliée.`,
+  }));
 
   return [...base, ...evolutions];
 }
@@ -194,49 +147,24 @@ function buildFaction(faction: Faction, rows: Row[]): CardDef[] {
 function describeEffect(effect?: EffectDef): string {
   if (!effect) return 'Aucun effet spécial.';
   switch (effect.kind) {
-    case 'protect':
-      return 'Provocation : les ennemis doivent attaquer cette unité en priorité.';
-    case 'draw':
-      return `Cri de guerre : pioche ${effect.value ?? 1} carte(s).`;
-    case 'search':
-      return `Cri de guerre : cherche une carte ${effect.target ?? ''} dans le deck.`;
-    case 'stun':
-      return `Cri de guerre : étourdit une unité ennemie pendant ${effect.value ?? 1} tour(s).`;
-    case 'damage':
-      return `Inflige ${effect.value ?? 0} dégâts.`;
-    case 'buff':
-      return `Cri de guerre : +${effect.value ?? 1} attaque à une unité alliée.`;
-    case 'summon':
-      return `Cri de guerre : invoque une unité ${effect.target ?? ''}.`;
-    default:
-      return 'Aucun effet spécial.';
+    case 'protect': return 'Provocation : les ennemis doivent attaquer cette unité en priorité.';
+    case 'draw': return `Cri de guerre : pioche ${effect.value ?? 1} carte(s).`;
+    case 'search': return `Cri de guerre : cherche une carte ${effect.target ?? ''} dans le deck.`;
+    case 'stun': return `Étourdît une unité ennemie pendant ${effect.value ?? 1} tour(s).`;
+    case 'damage': return `Inflige ${effect.value ?? 0} dégâts.`;
+    case 'buff': return `Cri de guerre : +${effect.value ?? 1} attaque à une unité alliée.`;
+    case 'summon': return `Cri de guerre : invoque une unité ${effect.target ?? ''}.`;
+    default: return 'Aucun effet spécial.';
   }
 }
 
-export const CARDS: CardDef[] = [
-  ...buildFaction('Meute', wolfRows),
-  ...buildFaction('Chevalier', knightRows),
-  ...buildFaction('Orc', orcRows),
-];
-
+export const CARDS: CardDef[] = [...buildFaction('Meute', wolfRows), ...buildFaction('Chevalier', knightRows), ...buildFaction('Orc', orcRows)];
 export const CARD_DB: Map<string, CardDef> = new Map(CARDS.map((c) => [c.id, c]));
-
-export function getCard(id: string): CardDef {
-  const card = CARD_DB.get(id);
-  if (!card) throw new Error(`Carte inconnue : ${id}`);
-  return card;
-}
-
-export function cardsByFaction(faction: Faction): CardDef[] {
-  return CARDS.filter((c) => c.faction === faction);
-}
-
-/** Construit la liste des 40 cartes (avec doublons) d'un deck de démarrage pour une faction. */
+export function getCard(id: string): CardDef { const card = CARD_DB.get(id); if (!card) throw new Error(`Carte inconnue : ${id}`); return card; }
+export function cardsByFaction(faction: Faction): CardDef[] { return CARDS.filter((c) => c.faction === faction); }
 export function starterDeck(faction: Faction): string[] {
   const level1 = cardsByFaction(faction).filter((c) => c.level === 1 && !c.boosterOnly);
   const deck: string[] = [];
-  for (const card of level1) {
-    for (let i = 0; i < 2; i++) deck.push(card.id);
-  }
+  for (const card of level1) for (let i = 0; i < 2; i++) deck.push(card.id);
   return deck;
 }
