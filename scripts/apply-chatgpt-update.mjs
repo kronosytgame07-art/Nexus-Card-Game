@@ -34,6 +34,11 @@ patchFile('src/engine/engine.ts', [
 
 patchFile('src/App.tsx', [
   {
+    label: 'Importer les règles de ciblage Vol/À distance dans l’UI',
+    from: "import { activateSupportCard, activateUnitEffect, aiDrawPhase, aiEndPhase, aiMainPhase, aiPrepareBattlePlan, aiResolveOneAttack, declareAttack, evolveUnit, MAX_FIELD_UNITS, MAX_SUPPORT, newGame, playCard } from './engine/engine';",
+    to: "import { activateSupportCard, activateUnitEffect, aiDrawPhase, aiEndPhase, aiMainPhase, aiPrepareBattlePlan, aiResolveOneAttack, declareAttack, evolveUnit, MAX_FIELD_UNITS, MAX_SUPPORT, newGame, playCard } from './engine/engine';\nimport { canFightTarget } from './engine/combat-rules';",
+  },
+  {
     label: 'Deck builder: pool multi-archétypes',
     from: "  const pool = savedDeck ? cardsByFaction(savedDeck.faction).filter((c) => c.level === 1 && s.owned.includes(c.id)) : [];",
     to: "  // Un deck garde une faction principale pour son identité visuelle, mais les cartes\n  // de toutes les factions débloquées peuvent être mélangées librement.\n  const pool = savedDeck ? ALL_CARDS.filter((c) => c.level === 1 && s.unlockedFactions.includes(c.faction) && s.owned.includes(c.id)) : [];",
@@ -62,6 +67,16 @@ patchFile('src/App.tsx', [
     label: 'Restart reprend en Draw Phase visible',
     from: "setPhase('draw'); setDrawStage('idle'); setPauseOpen(false);",
     to: "setPhase('draw'); setDrawStage('prompt'); setPauseOpen(false);",
+  },
+  {
+    label: 'Tags Vol / À distance / Blitz visibles sur le terrain',
+    from: "<span className=\"field-card-tags\">{unit.taunt && <em>PROVOCATION</em>}{unit.stunnedTurns > 0 && <em>ÉTOURDI</em>}</span>",
+    to: "<span className=\"field-card-tags\">{card.flying && <em>VOL</em>}{card.ranged && <em>À DISTANCE</em>}{card.blitz && <em>BLITZ</em>}{unit.taunt && <em>PROVOCATION</em>}{unit.stunnedTurns > 0 && <em>ÉTOURDI</em>}</span>",
+  },
+  {
+    label: 'Provocation UI respecte Vol et portée',
+    from: "  const enemyHasTaunt = match.enemy.field.some((unit) => unit.taunt && unit.stunnedTurns === 0); const activePlayerUnit = inspectedUnit ? match.player.field.find((unit) => unit.instanceId === inspectedUnit) : undefined;",
+    to: "  const selectedAttackerUnit = selectedAttacker ? match.player.field.find((unit) => unit.instanceId === selectedAttacker) : undefined;\n  const selectedAttackerDef = selectedAttackerUnit ? getCard(selectedAttackerUnit.cardId) : undefined;\n  const enemyHasTaunt = match.enemy.field.some((unit) => unit.taunt && unit.stunnedTurns === 0 && (!selectedAttackerDef || canFightTarget(selectedAttackerDef, getCard(unit.cardId)))); const activePlayerUnit = inspectedUnit ? match.player.field.find((unit) => unit.instanceId === inspectedUnit) : undefined;",
   },
 ]);
 
