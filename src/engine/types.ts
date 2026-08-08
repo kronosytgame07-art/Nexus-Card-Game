@@ -20,6 +20,12 @@ export interface EffectDef {
 }
 
 export type CardType = 'unit' | 'spell';
+/** Sous-type des cartes de Soutien :
+ *  - enchantment : magie proactive, principalement utilisée pendant son propre tour ;
+ *  - reaction : Sortilège préparé pouvant répondre à une action adverse lorsque sa condition le permet.
+ *  Les cartes existantes sans supportKind restent des Enchantements pour compatibilité de sauvegarde. */
+export type SupportKind = 'enchantment' | 'reaction';
+export type ReactionTrigger = 'attack_declared' | 'unit_summoned' | 'effect_activated' | 'unit_evolved' | 'unit_destroyed';
 export type CardLevel = 1 | 2 | 3;
 export type Rarity = 'Commune' | 'Rare' | 'Épique' | 'Légendaire' | 'Mythique';
 
@@ -29,6 +35,10 @@ export interface CardDef {
   faction: Faction;
   level: CardLevel;
   type: CardType;
+  /** Uniquement pour type === 'spell'. Absent = enchantment pour rétrocompatibilité. */
+  supportKind?: SupportKind;
+  /** Événements adverses auxquels un Sortilège peut répondre. */
+  reactionTriggers?: ReactionTrigger[];
   cost: number;
   attack: number;
   health: number;
