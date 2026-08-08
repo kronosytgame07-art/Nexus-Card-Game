@@ -1,0 +1,42 @@
+name: Mettre à jour l'UI des boosters
+
+on:
+  push:
+    paths:
+      - '.github/workflows/update-booster-ui.yml'
+      - 'scripts/update-booster-ui.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-ui:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Appliquer la nouvelle UI boosters
+        run: python3 scripts/update-booster-ui.py
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Vérifier le build
+        run: npm run build
+
+      - name: Commit de la boutique boosters
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/App.tsx src/styles.css
+          if git diff --cached --quiet; then
+            echo "Aucun changement à enregistrer."
+            exit 0
+          fi
+          git commit -m "Utilise les vraies pochettes et auras de rareté en boutique"
+          git push
