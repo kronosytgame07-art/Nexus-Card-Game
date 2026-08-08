@@ -1,4 +1,5 @@
 import type { Language } from './store/game';
+import { EXTRA_TRANSLATIONS } from './i18n-extra';
 
 export type UiKey =
   | 'nav.play' | 'nav.collection' | 'nav.social' | 'nav.shop' | 'nav.settings'
@@ -67,5 +68,5 @@ const zh: Dict = { ...en,
 export const UI_TRANSLATIONS: Record<Language, Dict> = { fr, en, es, de, it, pt, ja, ko, zh };
 
 export function t(language: Language, key: UiKey): string {
-  return UI_TRANSLATIONS[language]?.[key] ?? fr[key] ?? key;
+  return EXTRA_TRANSLATIONS[language]?.[key] ?? UI_TRANSLATIONS[language]?.[key] ?? fr[key] ?? key;
 }

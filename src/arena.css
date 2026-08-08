@@ -689,3 +689,126 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
   .hand-preview p { font-size: 10px; line-height: 1.25; }
   .hand-preview-actions button { height: 32px; }
 }
+
+
+/* NEXUS SIDE PREVIEW NON BLOCKING */
+.hand-preview-overlay {
+  pointer-events: none !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  display: flex !important;
+  align-items: stretch !important;
+  justify-content: flex-end !important;
+  padding: 0 !important;
+}
+.hand-preview {
+  pointer-events: auto !important;
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: clamp(250px, 24vw, 360px) !important;
+  max-width: 42vw !important;
+  height: 100dvh !important;
+  max-height: none !important;
+  border-radius: 0 !important;
+  border-width: 0 0 0 1px !important;
+  box-shadow: -18px 0 48px rgba(0,0,0,.58) !important;
+}
+@media (max-width: 900px), (orientation: landscape) and (max-height: 600px) {
+  .hand-preview { width: clamp(210px, 38vw, 300px) !important; max-width: 44vw !important; }
+}
+
+@keyframes nexus-effect-pulse-ally {
+  0% { box-shadow: 0 0 0 0 rgba(65,226,179,0), 0 0 0 rgba(95,220,255,0); filter: brightness(1); }
+  35% { box-shadow: 0 0 0 7px rgba(65,226,179,.5), 0 0 38px rgba(95,220,255,.95); filter: brightness(1.45) saturate(1.25); }
+  100% { box-shadow: 0 0 0 18px rgba(65,226,179,0), 0 0 8px rgba(95,220,255,0); filter: brightness(1); }
+}
+@keyframes nexus-effect-pulse-enemy {
+  0% { box-shadow: 0 0 0 0 rgba(239,73,97,0), 0 0 0 rgba(190,90,255,0); filter: brightness(1); }
+  35% { box-shadow: 0 0 0 7px rgba(239,73,97,.5), 0 0 38px rgba(190,90,255,.95); filter: brightness(1.45) saturate(1.3); }
+  100% { box-shadow: 0 0 0 18px rgba(239,73,97,0), 0 0 8px rgba(190,90,255,0); filter: brightness(1); }
+}
+.field-card.effect-active.ally-effect { animation: nexus-effect-pulse-ally .9s ease-out !important; z-index: 55 !important; }
+.field-card.effect-active.enemy-effect { animation: nexus-effect-pulse-enemy .9s ease-out !important; z-index: 55 !important; }
+
+
+
+/* NEXUS REACTION WINDOW */
+.reaction-window {
+  position: fixed;
+  z-index: 470;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  width: min(430px, 42vw);
+  max-height: 76vh;
+  padding: 14px;
+  border: 1px solid rgba(105, 225, 255, .72);
+  border-radius: 16px;
+  background: linear-gradient(155deg, rgba(5,18,26,.97), rgba(12,8,26,.97));
+  box-shadow: 0 0 0 1px rgba(170,90,255,.25), 0 0 38px rgba(80,210,255,.22), 0 20px 55px rgba(0,0,0,.62);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.reaction-window-head { display: flex; flex-direction: column; gap: 3px; }
+.reaction-window-head span { color: #74e9ff; font: 900 11px "DM Mono"; letter-spacing: 2px; }
+.reaction-window-head b { color: white; font: 800 18px "Space Grotesk"; }
+.reaction-window-head small { color: #adc5cb; }
+.reaction-window-cards { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+.reaction-window-cards > button { display: grid; grid-template-columns: 62px 1fr; gap: 10px; align-items: center; padding: 7px; border: 1px solid rgba(116,233,255,.35); border-radius: 12px; background: rgba(255,255,255,.05); color: white; text-align: left; cursor: pointer; }
+.reaction-window-cards > button:hover { border-color: #74e9ff; box-shadow: 0 0 20px rgba(116,233,255,.22); }
+.reaction-window-cards img { width: 62px; aspect-ratio: .7; object-fit: cover; border-radius: 7px; }
+.reaction-window-cards span { display: flex; flex-direction: column; gap: 3px; }
+.reaction-window-cards b { color: #e8fbff; }
+.reaction-window-cards small { color: #b6cbd0; line-height: 1.3; }
+.reaction-window-cards em { color: #ffe49a; font-style: normal; font: 700 10px "DM Mono"; }
+.reaction-pass { margin: 0; }
+@media (max-width: 900px), (orientation: landscape) and (max-height: 600px) {
+  .reaction-window { width: min(360px, 46vw); max-height: 88vh; padding: 10px; }
+  .reaction-window-head b { font-size: 14px; }
+  .reaction-window-cards > button { grid-template-columns: 46px 1fr; }
+  .reaction-window-cards img { width: 46px; }
+  .reaction-window-cards small { font-size: 9px; }
+}
+
+
+
+/* NEXUS EVOLUTION STATUS UI */
+.evolution-info {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 9px;
+  width: 100%;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(150,190,255,.35);
+  background: linear-gradient(135deg, rgba(65,100,170,.16), rgba(8,18,26,.72));
+  box-sizing: border-box;
+  text-align: left;
+}
+.evolution-info img { width: 54px; height: 74px; object-fit: cover; border-radius: 7px; border: 1px solid rgba(239,201,107,.48); }
+.evolution-info > div { display: flex; flex-direction: column; gap: 3px; justify-content: center; min-width: 0; }
+.evolution-info b { color: #dcecff; font: 800 11px "Space Grotesk"; white-space: normal; }
+.evolution-info span { color: #b8c9d8; font: 9px "DM Mono"; }
+.evolution-info small { color: #90a9bc; font: 8px "DM Mono"; line-height: 1.35; }
+.evolution-info.ready { border-color: rgba(100,255,195,.8); box-shadow: 0 0 18px rgba(65,226,179,.22); background: linear-gradient(135deg, rgba(40,155,120,.2), rgba(8,22,22,.82)); }
+.evolution-info.ready small { color: #76f2ca; font-weight: 800; }
+.evolution-info.missing { display: flex; flex-direction: column; color: #ffb3b3; border-color: rgba(255,90,110,.5); }
+.field-card-evo {
+  position: absolute;
+  top: 25px;
+  right: 4px;
+  z-index: 8;
+  padding: 2px 4px;
+  border-radius: 5px;
+  background: rgba(10,20,34,.9);
+  border: 1px solid rgba(150,190,255,.55);
+  color: #cfe5ff;
+  font: 700 clamp(5px, .55vw, 7px) "DM Mono";
+  pointer-events: none;
+}
+.field-card-evo.ready { color: #7bffd0; border-color: rgba(90,255,190,.8); box-shadow: 0 0 10px rgba(65,226,179,.45); animation: evo-ready-pulse 1.25s ease-in-out infinite; }
+@keyframes evo-ready-pulse { 0%,100% { opacity:.8; } 50% { opacity:1; filter:brightness(1.45); } }
+[data-animations="off"] .field-card-evo.ready { animation: none; }
+

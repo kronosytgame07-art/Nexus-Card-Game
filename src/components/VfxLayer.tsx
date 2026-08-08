@@ -8,7 +8,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 //  - des éclats texturés (la carte qui se déchire à sa mort), un petit
 //    groupe de quads par évènement, chacun animé de la même façon.
 
-export type BurstPreset = 'summon' | 'evolution' | 'attack' | 'draw' | 'crack';
+export type BurstPreset = 'summon' | 'evolution' | 'attack' | 'draw' | 'crack' | 'effect-ally' | 'effect-enemy';
 
 export type DashTone = 'fire' | 'frost' | 'blood';
 
@@ -150,6 +150,8 @@ const PRESETS: Record<BurstPreset, { count: number; speed: [number, number]; lif
   attack: { count: 24, speed: [140, 380], life: [0.22, 0.42], size: [2, 6], gravity: 260, colors: [[1, 0.9, 0.6], [1, 0.55, 0.2], [1, 1, 1]] },
   draw: { count: 18, speed: [25, 80], life: [0.6, 1.0], size: [2, 5], gravity: -40, colors: [[0.7, 0.85, 1], [1, 1, 1]] },
   crack: { count: 30, speed: [220, 540], life: [0.16, 0.3], size: [2, 5], gravity: 160, colors: [[1, 1, 1], [1, 0.9, 0.6]] },
+  'effect-ally': { count: 64, speed: [80, 270], life: [0.45, 0.9], size: [3, 9], gravity: -20, colors: [[0.2, 1, 0.8], [0.45, 0.85, 1], [1, 0.9, 0.4]] },
+  'effect-enemy': { count: 64, speed: [80, 270], life: [0.45, 0.9], size: [3, 9], gravity: -20, colors: [[1, 0.2, 0.4], [0.8, 0.25, 1], [1, 0.55, 0.25]] },
 };
 
 const DASH_COLORS: Record<DashTone, [number, number, number][]> = {

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { CARDS, cardsByFaction, getCard, starterDeck } from '../engine/cards';
 import { CardDef, Faction, GameState, Rarity } from '../engine/types';
+import { applyRankedResult } from '../engine/ranked';
 
 /** Nombre de chapitres de campagne à remporter pour débloquer la seconde faction. */
 export const UNLOCK_SECOND_FACTION_AT = 3;
@@ -72,6 +73,9 @@ interface GameMeta {
   xp: number;
   wins: number;
   losses: number;
+  rankedRating: number;
+  rankedWins: number;
+  rankedLosses: number;
   level: number;
   faction: Faction;
   /** Dérivé de `inventory` + `foilInventory` : id présent dès qu'on possède au moins un
@@ -162,6 +166,7 @@ interface GameMeta {
   setVibrationEnabled: (enabled: boolean) => void;
   resetSettings: () => void;
   record: (win: boolean) => void;
+  recordRanked: (win: boolean) => void;
   addGold: (amount: number) => void;
   addGems: (amount: number) => void;
   addXp: (amount: number) => void;
@@ -176,7 +181,7 @@ interface GameMeta {
 
 function startingOwnedFor(faction: Faction): string[] {
   return cardsByFaction(faction)
-    .filter((c) => c.level === 1 && !c.boosterOnly)
+    .filter((c) => c.level === 1 && !c.boosterOnly && !c.assetMissing)
     .map((c) => c.id);
 }
 
@@ -192,7 +197,7 @@ export function defaultAvatarFor(faction: Faction): string {
     prêtes (cartes affichées avec le dos de carte en attendant, inadapté
     comme avatar) — c'est une contrainte d'assets, pas de progression. */
 export function purchasableAvatarCards(): CardDef[] {
-  return ALL_CARDS.filter((c) => c.level === 2 && c.faction !== 'Orc');
+  return ALL_CARDS.filter((c) => c.level === 2 && c.faction !== 'Orc' && !c.assetMissing);
 }
 
 function applyXp(level: number, xp: number, gems: number, amount: number) {
@@ -290,6 +295,9 @@ export const useGame = create<GameMeta>()(
       xp: 0,
       wins: 0,
       losses: 0,
+      rankedRating: 0,
+      rankedWins: 0,
+      rankedLosses: 0,
       level: 1,
       faction: 'Meute',
       owned: [],
@@ -337,7 +345,8 @@ export const useGame = create<GameMeta>()(
         set((s) => {
           const totalCost = cost * count;
           if (s.gold < totalCost) return {};
-          const pool = cardsByFaction(faction).filter((c) => c.level === 1);
+          const pool = cardsByFaction(faction).filter((c) => c.level === 1 && !c.assetMissing);
+          if (pool.length === 0) return {};
           let inventory = s.inventory;
           let pity = s.packsSincePity[faction] ?? 0;
           const allPulled: string[] = [];
@@ -490,6 +499,12 @@ export const useGame = create<GameMeta>()(
             ? { wins: s.wins + 1, ...progression }
             : { losses: s.losses + 1, ...progression };
         }),
+      recordRanked: (win) =>
+        set((s) => ({
+          rankedRating: applyRankedResult(s.rankedRating ?? 0, win),
+          rankedWins: (s.rankedWins ?? 0) + (win ? 1 : 0),
+          rankedLosses: (s.rankedLosses ?? 0) + (win ? 0 : 1),
+        })),
       addGold: (amount) => set((s) => ({ gold: s.gold + amount })),
       addGems: (amount) => set((s) => ({ gems: s.gems + amount })),
       addXp: (amount) => set((s) => applyXp(s.level, s.xp, s.gems, amount)),
@@ -523,6 +538,9 @@ export const useGame = create<GameMeta>()(
           xp: 0,
           wins: 0,
           losses: 0,
+          rankedRating: 0,
+          rankedWins: 0,
+          rankedLosses: 0,
           level: 1,
           faction: 'Meute',
           owned: [],
@@ -592,7 +610,8 @@ export function copiesInDeck(deck: string[], cardId: string): number {
 }
 
 export function maxCopiesAllowed(cardId: string): number {
-  return getCard(cardId).copies;
+  const card = getCard(cardId);
+  return card.rarity === 'Mythique' ? 1 : Math.min(3, card.copies);
 }
 
 export const ALL_CARDS = CARDS;
