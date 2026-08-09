@@ -12,6 +12,7 @@ import { db, firebaseReady } from './firebase';
 import { useGame } from './store/game';
 
 const SAVE_KEY = 'nexus-save';
+const BACKUP_KEY = 'nexus-save-before-cloud-import';
 const COLLECTION = 'saves';
 
 function readLocalSaveRaw(): string | null {
@@ -38,6 +39,10 @@ export async function pushCloudSave(uid: string): Promise<void> {
 /** Remplace la sauvegarde locale par celle du cloud puis fait rejouer l'hydratation
     zustand (merge() dans store/game.ts s'occupe des migrations), sans recharger la page. */
 export async function applyCloudSave(raw: string): Promise<void> {
+  // Une connexion depuis un second appareil ne doit jamais écraser silencieusement
+  // la progression locale. On conserve la dernière sauvegarde avant import.
+  const localRaw = readLocalSaveRaw();
+  if (localRaw && localRaw !== raw) localStorage.setItem(BACKUP_KEY, localRaw);
   localStorage.setItem(SAVE_KEY, raw);
   await useGame.persist.rehydrate();
 }
