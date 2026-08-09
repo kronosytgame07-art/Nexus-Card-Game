@@ -321,6 +321,43 @@ function resolveEffect(state: GameState, ownerId: PlayerId, effect: EffectDef, s
       } else succeeded = false;
       break;
     }
+    case 'revive': {
+      let revived = 0;
+      const wanted = effect.target;
+      const amount = Math.max(1, effect.value ?? 1);
+      while (revived < amount && owner.field.length < MAX_FIELD_UNITS) {
+        let graveIndex = -1;
+        for (let index = owner.graveyard.length - 1; index >= 0; index -= 1) {
+          const card = getCard(owner.graveyard[index]);
+          if (card.level === 1 && card.type === 'unit' && (!wanted || card.faction === wanted)) {
+            graveIndex = index;
+            break;
+          }
+        }
+        if (graveIndex < 0) break;
+        const [cardId] = owner.graveyard.splice(graveIndex, 1);
+        const card = getCard(cardId);
+        owner.field.push({
+          instanceId: instanceId(),
+          cardId,
+          attack: card.attack,
+          health: card.health,
+          maxHealth: card.health,
+          turnsOnField: 0,
+          canAttack: Boolean(card.blitz),
+          stunnedTurns: 0,
+          buffs: 0,
+          taunt: false,
+          packBonus: 0,
+          effectUsesThisTurn: 0,
+          slot: resolveSlot(owner.field, MAX_FIELD_UNITS),
+        });
+        revived += 1;
+        pushLog(state, `${labelFor(ownerId)} réanime ${card.name} depuis sa fosse.`);
+      }
+      if (revived === 0) succeeded = false;
+      break;
+    }
     case 'board_wipe': {
       if (opponent.field.length === 0) { succeeded = false; break; }
       const destroyed = opponent.field.length;

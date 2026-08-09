@@ -2,7 +2,7 @@
 // Toute la logique de partie s'appuie sur ces types — aucune UI ne doit
 // dupliquer de règles, elle ne fait que lire GameState et appeler engine.ts.
 
-export type Faction = 'Meute' | 'Chevalier' | 'Orc' | 'Dragon' | 'Gobelin';
+export type Faction = 'Meute' | 'Chevalier' | 'Orc' | 'Dragon' | 'Gobelin' | 'Squelette';
 
 export type EffectKind =
   | 'protect'
@@ -12,6 +12,7 @@ export type EffectKind =
   | 'damage'
   | 'buff'
   | 'summon'
+  | 'revive'
   | 'board_wipe';
 
 export interface EffectDef {

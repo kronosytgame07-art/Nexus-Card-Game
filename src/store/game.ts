@@ -9,7 +9,7 @@ export const UNLOCK_SECOND_FACTION_AT = 3;
 /** Nombre de chapitres de campagne à remporter pour débloquer la Horde Orc
     (récompense narrative après avoir vaincu le clan aux chapitres 8 et 9). */
 export const UNLOCK_THIRD_FACTION_AT = 9;
-export const ALL_FACTIONS: Faction[] = ['Meute', 'Chevalier', 'Orc'];
+export const ALL_FACTIONS: Faction[] = ['Meute', 'Chevalier', 'Orc', 'Squelette'];
 export const XP_PER_LEVEL = 100;
 export const MAIN_DECK_MIN = 30;
 export const MAIN_DECK_MAX = 40;
@@ -455,15 +455,17 @@ export const useGame = create<GameMeta>()(
       chooseStartingFaction: (faction) =>
         set((s) => {
           const starter = makeStarterDeck(faction, []);
-          const inventory = inventoryFrom(startingOwnedFor(faction));
+          const skeletonStarter: SavedDeck = { id: 'deck-Squelette-structure', name: 'Légion Éternelle', faction: 'Squelette', main: starterDeck('Squelette') };
+          const grantedFactions = faction === 'Squelette' ? [faction] : [faction, 'Squelette' as Faction];
+          const inventory = inventoryFrom([...startingOwnedFor(faction), ...startingOwnedFor('Squelette')]);
           return {
             factionChosen: true,
             faction,
-            unlockedFactions: [faction],
+            unlockedFactions: grantedFactions,
             inventory,
             owned: ownedFromInventory(inventory),
             deck: starter.main,
-            decks: [starter],
+            decks: faction === 'Squelette' ? [starter] : [starter, skeletonStarter],
             activeDeckId: starter.id,
             avatarCardId: s.avatarCardId || defaultAvatarFor(faction),
           };
@@ -614,6 +616,17 @@ export const useGame = create<GameMeta>()(
         if (Object.keys(merged.inventory ?? {}).length === 0 && merged.owned.length > 0) {
           merged.inventory = inventoryFrom(merged.owned);
           merged.foilInventory = merged.foilInventory ?? {};
+        }
+
+        // La Légion Éternelle est un deck de structure offert à tous les joueurs :
+        // les sauvegardes existantes le reçoivent sans achat et sans perdre leur deck actif.
+        if (merged.factionChosen && !merged.unlockedFactions.includes('Squelette')) {
+          merged.unlockedFactions = [...merged.unlockedFactions, 'Squelette'];
+          for (const id of startingOwnedFor('Squelette')) merged.inventory[id] = Math.max(merged.inventory[id] ?? 0, 3);
+          if (!merged.decks.some((deck) => deck.faction === 'Squelette')) {
+            merged.decks = [...merged.decks, { id: 'deck-Squelette-structure', name: 'Légion Éternelle', faction: 'Squelette', main: starterDeck('Squelette') }];
+          }
+          merged.owned = ownedFromInventory(merged.inventory, merged.foilInventory);
         }
 
         return merged;
