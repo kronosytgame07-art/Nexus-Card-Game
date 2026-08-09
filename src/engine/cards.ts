@@ -38,7 +38,7 @@ const PLANNED_MYTHICS: CardDef[] = [
   { id:'mythique-roi-gobelin', name:'Roi Gobelin du Nexus', faction:'Gobelin', level:1, type:'unit', cost:4, attack:6, health:5, effect:{kind:'summon',target:'Gobelin'}, blitz:true, copies:1, rarity:'Mythique', boosterOnly:true, image:`${import.meta.env.BASE_URL}cards/mythique-roi-gobelin.png`, text:'Mythique — mène immédiatement la Ruée de la Horde. Blitz. Limitée à 1 exemplaire par deck.' },
 ];
 
-export const CARDS:CardDef[]=[...buildFaction('Meute',wolfRows),...buildFaction('Chevalier',knightRows),...buildFaction('Orc',orcRows),...buildFaction('Dragon',dragonRows),...buildFaction('Gobelin',goblinRows)].map((card)=>{const baseId=card.evolvesFrom??card.id;if(card.faction==='Dragon')return {...card,flying:PLANNED_FLYING_IDS.has(baseId)||undefined};if(card.faction==='Gobelin')return {...card,assetMissing:true,blitz:card.type==='unit'?true:card.blitz};return card;}).concat(PLANNED_MYTHICS);
+export const CARDS:CardDef[]=[...buildFaction('Meute',wolfRows),...buildFaction('Chevalier',knightRows),...buildFaction('Orc',orcRows),...buildFaction('Dragon',dragonRows),...buildFaction('Gobelin',goblinRows)].map((card)=>{const baseId=card.evolvesFrom??card.id;if(card.faction==='Dragon')return {...card,flying:PLANNED_FLYING_IDS.has(baseId)||undefined};if(card.faction==='Gobelin')return {...card,blitz:card.type==='unit'?true:card.blitz};return card;}).concat(PLANNED_MYTHICS);
 assertValidCardDatabase(CARDS);
 export const CARD_DB:Map<string,CardDef>=new Map(CARDS.map(c=>[c.id,c]));
 export function getCard(id:string):CardDef{const card=CARD_DB.get(id);if(!card)throw new Error(`Carte inconnue : ${id}`);return card;}
