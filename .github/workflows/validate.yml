@@ -93,7 +93,9 @@ jobs:
           test ! -e .github/workflows/integrate-meute-images.yml
           test ! -e .github/workflows/trigger-meute-integration.yml
           test ! -e .github/workflows/update-booster-ui.yml
-          if grep -R "copy-card-art.sh" package.json .github/workflows; then
-            echo "Ancienne référence copy-card-art.sh détectée"
+          legacy_refs="$({ grep -R -n --exclude='validate.yml' "copy-card-art.sh" package.json .github/workflows || true; } | grep -v -E '^[^:]+:[0-9]+:[[:space:]]*#' || true)"
+          if [ -n "$legacy_refs" ]; then
+            echo "$legacy_refs"
+            echo "Ancienne référence exécutable copy-card-art.sh détectée"
             exit 1
           fi
