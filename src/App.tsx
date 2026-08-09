@@ -831,7 +831,7 @@ const BOOSTERS: { id: Faction; name: string; price: number; blurb: string; avail
   { id: 'Meute', name: 'Booster Meute', price: 150, blurb: 'Nouvelles cartes Meute, pensées pour renforcer les decks qui possèdent déjà les 3 exemplaires maximum de chaque carte actuelle.' },
   { id: 'Chevalier', name: 'Booster Chevalier', price: 150, blurb: 'Nouvelles cartes Chevalier, pensées pour renforcer les decks qui possèdent déjà les 3 exemplaires maximum de chaque carte actuelle.' },
   { id: 'Orc', name: 'Booster Orc', price: 150, blurb: 'Nouvelles cartes Orc, pensées pour renforcer les decks qui possèdent déjà les 3 exemplaires maximum de chaque carte actuelle.' },
-  { id: 'Dragon', name: 'Booster Dragon', price: 150, available: false, blurb: 'Archétype lent et terrifiant : gros Dragons à forte puissance, inertie de 2 tours avant attaque et évolutions dévastatrices. En attente des illustrations définitives.' },
+  { id: 'Dragon', name: 'Booster Dragon', price: 150, blurb: 'Archétype lent et terrifiant : gros Dragons à forte puissance, inertie de 2 tours avant attaque et évolutions dévastatrices.' },
   { id: 'Gobelin', name: 'Booster Gobelin', price: 150, available: false, blurb: 'Archétype essaim ultra-agressif : petites unités fragiles avec Blitz et invocations spéciales depuis le deck. En attente des illustrations définitives.' },
 ];
 
