@@ -1,15 +1,12 @@
-Exit code: 0
-Wall time: 0.5 seconds
-Output:
 import { useEffect, useRef } from 'react';
 import { useGame } from '../store/game';
 
 const MENU_THEME = `${import.meta.env.BASE_URL}audio/menu-theme.mp3`;
 
 /**
- * Pont unique entre les prÃ©fÃ©rences persistÃ©es et les retours sonores du jeu.
- * La musique ne dÃ©marre qu'aprÃ¨s une interaction utilisateur, conformÃ©ment aux
- * rÃ¨gles des navigateurs et des webviews mobiles.
+ * Pont unique entre les préférences persistées et les retours sonores du jeu.
+ * La musique ne démarre qu'après une interaction utilisateur, conformément aux
+ * règles des navigateurs et des webviews mobiles.
  */
 export default function AudioDirector() {
   const musicEnabled = useGame((state) => state.musicEnabled);
@@ -100,4 +97,3 @@ declare global {
     webkitAudioContext?: typeof AudioContext;
   }
 }
-
