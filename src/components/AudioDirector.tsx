@@ -1,6 +1,3 @@
-Exit code: 0
-Wall time: 0.5 seconds
-Output:
 import { useEffect, useRef } from 'react';
 import { useGame } from '../store/game';
 
