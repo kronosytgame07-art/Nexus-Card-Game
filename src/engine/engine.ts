@@ -379,7 +379,7 @@ export function playCard(rawState: GameState, playerId: PlayerId, cardId: string
     };
     p.field.push(unit);
     p.normalSummonUsed = true;
-    pushLog(state, `${labelFor(playerId)} joue ${def.name}${cost < def.cost ? ` (Rang Sacré : ${cost}◆ au lieu de ${def.cost}◆)` : ''}${def.blitz ? ' — Blitz !' : ''}.`);
+    pushLog(state, `${labelFor(playerId)} joue ${def.name}${cost < def.cost ? ` (Rang Sacré : ${cost} runes au lieu de ${def.cost})` : ''}${def.blitz ? ' — Blitz !' : ''}.`);
     if (def.effect && isOnSummonEffect(def)) resolveEffect(state, playerId, def.effect, unit.instanceId);
   } else {
     const support = { instanceId: instanceId(), cardId: def.id, slot: resolveSlot(p.support, MAX_SUPPORT, slotIndex) };
@@ -779,7 +779,7 @@ export function activateSupportCard(rawState: GameState, playerId: PlayerId, sup
     return state;
   }
   if (def.cost > p.mana) {
-    pushLog(state, `${def.name} reste face cachée : pas assez de runes pour l'activer (${def.cost}◆).`);
+    pushLog(state, `${def.name} reste face cachée : pas assez de runes pour l'activer (${def.cost} requises).`);
     return state;
   }
 
