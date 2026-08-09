@@ -22,6 +22,7 @@ const REACTION_IDS=new Set(['piege-de-givre','serment-inebranlable','sceau-immob
 const BLITZ_IDS=new Set(['loup-eclaireur','eclaireuse-des-crocs','eclaireur-vert-de-gris','eclaireuse-des-cendres']);
 const RANGED_IDS=new Set(['chaman-de-guerre','gobelin-frondeur','gobelin-chaman']);
 const PLANNED_FLYING_IDS=new Set(['wyverne-du-brasier','dragon-de-givre','dragon-des-tempetes','dragon-solaire','dragon-abyssal','dragon-ancien','dragon-comete','dragon-de-cristal','tyran-des-cieux']);
+const INSTALLED_GOBLIN_IDS=new Set(['gobelin-au-couteau','gobelin-frondeur','gobelin-pillard']);
 function buildFaction(faction:Faction,rows:Row[]):CardDef[]{
  const evolvableIds=new Set(rows.filter(([, , , ,h])=>h>0).slice(0,10).map(([id])=>id));
  const namesForFaction=evolutionNames[faction] ?? [];
@@ -41,7 +42,7 @@ const PLANNED_MYTHICS: CardDef[] = [
   { id:'mythique-roi-gobelin', name:'Roi Gobelin du Nexus', faction:'Gobelin', level:1, type:'unit', cost:4, attack:6, health:5, effect:{kind:'summon',target:'Gobelin'}, blitz:true, copies:1, rarity:'Mythique', boosterOnly:true, image:`${import.meta.env.BASE_URL}cards/mythique-roi-gobelin.png`, text:'Mythique â€” mÃ¨ne immÃ©diatement la RuÃ©e de la Horde. Blitz. LimitÃ©e Ã  1 exemplaire par deck.' },
 ];
 
-export const CARDS:CardDef[]=[...buildFaction('Meute',wolfRows),...buildFaction('Chevalier',knightRows),...buildFaction('Orc',orcRows),...buildFaction('Dragon',dragonRows),...buildFaction('Gobelin',goblinRows)].map((card)=>{const baseId=card.evolvesFrom??card.id;if(card.faction==='Dragon')return {...card,flying:PLANNED_FLYING_IDS.has(baseId)||undefined};if(card.faction==='Gobelin')return {...card,assetMissing:true,blitz:card.type==='unit'?true:card.blitz};return card;}).concat(PLANNED_MYTHICS);
+export const CARDS:CardDef[]=[...buildFaction('Meute',wolfRows),...buildFaction('Chevalier',knightRows),...buildFaction('Orc',orcRows),...buildFaction('Dragon',dragonRows),...buildFaction('Gobelin',goblinRows)].map((card)=>{const baseId=card.evolvesFrom??card.id;if(card.faction==='Dragon')return {...card,flying:PLANNED_FLYING_IDS.has(baseId)||undefined};if(card.faction==='Gobelin')return {...card,assetMissing:!INSTALLED_GOBLIN_IDS.has(card.id)||undefined,blitz:card.type==='unit'?true:card.blitz};return card;}).concat(PLANNED_MYTHICS);
 assertValidCardDatabase(CARDS);
 export const CARD_DB:Map<string,CardDef>=new Map(CARDS.map(c=>[c.id,c]));
 export function getCard(id:string):CardDef{const card=CARD_DB.get(id);if(!card)throw new Error(`Carte inconnue : ${id}`);return card;}
