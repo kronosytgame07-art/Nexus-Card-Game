@@ -201,12 +201,9 @@ export function defaultAvatarFor(faction: Faction): string {
 
 /** Cartes d'évolution proposées comme image de profil en Boutique — disponibles
     pour toutes les factions dès lors qu'on paie en gemmes, même si la faction
-    n'est pas encore débloquée en jeu (achat cosmétique, indépendant de la
-    progression). Exclut l'Orc, dont les illustrations ne sont pas encore
-    prêtes (cartes affichées avec le dos de carte en attendant, inadapté
-    comme avatar) — c'est une contrainte d'assets, pas de progression. */
+    n'est pas encore débloquée en jeu. */
 export function purchasableAvatarCards(): CardDef[] {
-  return ALL_CARDS.filter((c) => c.level === 2 && c.faction !== 'Orc' && !c.assetMissing);
+  return ALL_CARDS.filter((c) => c.level === 2 && !c.assetMissing);
 }
 
 function applyXp(level: number, xp: number, gems: number, amount: number) {
