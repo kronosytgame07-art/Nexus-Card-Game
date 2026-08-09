@@ -1,19 +1,18 @@
-Wall time: 0.6 seconds
-Output:
-4a358bb918b313cc15738af62e8ce3daa5bcdf9a
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 
-// Couche d'effets de combat en WebGL, posÃ©e au-dessus du plateau (DOM) mais
-// sous les fenÃªtres modales. Deux systÃ¨mes dans un seul contexte GL :
-//  - des particules point-sprite (invocation, Ã©volution, impacts, pioche,
-//    flash de fissure) simulÃ©es analytiquement dans le vertex shader Ã 
-//    partir de leur temps de dÃ©part â€” aucune boucle CPU par frame ;
-//  - des Ã©clats texturÃ©s (la carte qui se dÃ©chire Ã  sa mort), un petit
-//    groupe de quads par Ã©vÃ¨nement, chacun animÃ© de la mÃªme faÃ§on.
+// Couche d'effets de combat en WebGL, posée au-dessus du plateau (DOM) mais
+// sous les fenêtres modales. Deux systèmes dans un seul contexte GL :
+//  - des particules point-sprite (invocation, évolution, impacts, pioche,
+//    flash de fissure) simulées analytiquement dans le vertex shader à
+//    partir de leur temps de départ — aucune boucle CPU par frame ;
+//  - des éclats texturés (la carte qui se déchire à sa mort), un petit
+//    groupe de quads par évènement, chacun animé de la même façon.
 
 export type BurstPreset = 'summon' | 'evolution' | 'attack' | 'draw' | 'crack' | 'effect-ally' | 'effect-enemy';
 
 export type DashTone = 'fire' | 'frost' | 'blood';
+
+type VfxQuality = 'auto' | 'low' | 'balanced' | 'high' | 'ultra';
 
 export type VfxHandle = {
   spawnBurst: (x: number, y: number, preset: BurstPreset) => void;
@@ -173,13 +172,11 @@ type ShatterEvent = {
   centerY: number;
 };
 
-type VfxQuality = 'auto' | 'low' | 'balanced' | 'high' | 'ultra';
-
 const VfxLayer = forwardRef<VfxHandle, { active?: boolean; quality?: VfxQuality }>(function VfxLayer({ active = true, quality = 'auto' }, ref) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const activeRef = useRef(active);
-  const qualityRef = useRef<VfxQuality>(quality);
   activeRef.current = active;
+  const qualityRef = useRef<VfxQuality>('auto');
   qualityRef.current = quality === 'auto' ? ((document.documentElement.dataset.quality as VfxQuality | undefined) ?? 'auto') : quality;
   const spawnQueue = useRef<Array<{ x: number; y: number; preset: BurstPreset }>>([]);
   const shatterQueue = useRef<Array<{ x: number; y: number; w: number; h: number; url: string }>>([]);
@@ -284,10 +281,10 @@ const VfxLayer = forwardRef<VfxHandle, { active?: boolean; quality?: VfxQuality 
       }
     };
 
-    // TraÃ®nÃ©e d'attaque : au lieu d'une explosion isotrope, des Ã©tincelles
-    // rÃ©parties le long du trajet attaquant â†’ cible, chacune allumÃ©e Ã  un
-    // instant dÃ©calÃ© proportionnel Ã  sa position sur le chemin â€” elles
-    // s'illuminent donc en sÃ©quence, comme une comÃ¨te qui prend de la
+    // Traînée d'attaque : au lieu d'une explosion isotrope, des étincelles
+    // réparties le long du trajet attaquant → cible, chacune allumée à un
+    // instant décalé proportionnel à sa position sur le chemin — elles
+    // s'illuminent donc en séquence, comme une comète qui prend de la
     // vitesse, en phase avec la propre animation de saut de la carte.
     const trailScratch = new Float32Array(TRAIL_PARTICLES * FLOATS_PER_PARTICLE);
     const consumeTrailQueue = (elapsed: number) => {
@@ -402,8 +399,11 @@ const VfxLayer = forwardRef<VfxHandle, { active?: boolean; quality?: VfxQuality 
     };
 
     const renderDpr = () => {
-      const limit = qualityRef.current === 'low' ? 1 : qualityRef.current === 'balanced' ? 1.35 : qualityRef.current === 'high' ? 1.75 : 2;
-      return Math.min(window.devicePixelRatio || 1, limit);
+      const deviceDpr = window.devicePixelRatio || 1;
+      if (qualityRef.current === 'low') return Math.min(deviceDpr, 1);
+      if (qualityRef.current === 'balanced') return Math.min(deviceDpr, 1.35);
+      if (qualityRef.current === 'high') return Math.min(deviceDpr, 1.75);
+      return Math.min(deviceDpr, 2);
     };
     const particleBudget = () => qualityRef.current === 'low' ? 700 : qualityRef.current === 'balanced' ? 1200 : qualityRef.current === 'high' ? 1900 : MAX_PARTICLES;
     const resize = () => {
@@ -507,4 +507,3 @@ const VfxLayer = forwardRef<VfxHandle, { active?: boolean; quality?: VfxQuality 
 });
 
 export default VfxLayer;
-
