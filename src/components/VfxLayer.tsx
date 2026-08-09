@@ -1,12 +1,15 @@
+Wall time: 0.6 seconds
+Output:
+4a358bb918b313cc15738af62e8ce3daa5bcdf9a
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 
-// Couche d'effets de combat en WebGL, posée au-dessus du plateau (DOM) mais
-// sous les fenêtres modales. Deux systèmes dans un seul contexte GL :
-//  - des particules point-sprite (invocation, évolution, impacts, pioche,
-//    flash de fissure) simulées analytiquement dans le vertex shader à
-//    partir de leur temps de départ — aucune boucle CPU par frame ;
-//  - des éclats texturés (la carte qui se déchire à sa mort), un petit
-//    groupe de quads par évènement, chacun animé de la même façon.
+// Couche d'effets de combat en WebGL, posÃ©e au-dessus du plateau (DOM) mais
+// sous les fenÃªtres modales. Deux systÃ¨mes dans un seul contexte GL :
+//  - des particules point-sprite (invocation, Ã©volution, impacts, pioche,
+//    flash de fissure) simulÃ©es analytiquement dans le vertex shader Ã 
+//    partir de leur temps de dÃ©part â€” aucune boucle CPU par frame ;
+//  - des Ã©clats texturÃ©s (la carte qui se dÃ©chire Ã  sa mort), un petit
+//    groupe de quads par Ã©vÃ¨nement, chacun animÃ© de la mÃªme faÃ§on.
 
 export type BurstPreset = 'summon' | 'evolution' | 'attack' | 'draw' | 'crack' | 'effect-ally' | 'effect-enemy';
 
@@ -170,10 +173,14 @@ type ShatterEvent = {
   centerY: number;
 };
 
-const VfxLayer = forwardRef<VfxHandle, { active?: boolean }>(function VfxLayer({ active = true }, ref) {
+type VfxQuality = 'auto' | 'low' | 'balanced' | 'high' | 'ultra';
+
+const VfxLayer = forwardRef<VfxHandle, { active?: boolean; quality?: VfxQuality }>(function VfxLayer({ active = true, quality = 'auto' }, ref) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const activeRef = useRef(active);
+  const qualityRef = useRef<VfxQuality>(quality);
   activeRef.current = active;
+  qualityRef.current = quality === 'auto' ? ((document.documentElement.dataset.quality as VfxQuality | undefined) ?? 'auto') : quality;
   const spawnQueue = useRef<Array<{ x: number; y: number; preset: BurstPreset }>>([]);
   const shatterQueue = useRef<Array<{ x: number; y: number; w: number; h: number; url: string }>>([]);
   const trailQueue = useRef<Array<{ x1: number; y1: number; x2: number; y2: number; duration: number; tone: DashTone }>>([]);
@@ -277,10 +284,10 @@ const VfxLayer = forwardRef<VfxHandle, { active?: boolean }>(function VfxLayer({
       }
     };
 
-    // Traînée d'attaque : au lieu d'une explosion isotrope, des étincelles
-    // réparties le long du trajet attaquant → cible, chacune allumée à un
-    // instant décalé proportionnel à sa position sur le chemin — elles
-    // s'illuminent donc en séquence, comme une comète qui prend de la
+    // TraÃ®nÃ©e d'attaque : au lieu d'une explosion isotrope, des Ã©tincelles
+    // rÃ©parties le long du trajet attaquant â†’ cible, chacune allumÃ©e Ã  un
+    // instant dÃ©calÃ© proportionnel Ã  sa position sur le chemin â€” elles
+    // s'illuminent donc en sÃ©quence, comme une comÃ¨te qui prend de la
     // vitesse, en phase avec la propre animation de saut de la carte.
     const trailScratch = new Float32Array(TRAIL_PARTICLES * FLOATS_PER_PARTICLE);
     const consumeTrailQueue = (elapsed: number) => {
@@ -394,8 +401,13 @@ const VfxLayer = forwardRef<VfxHandle, { active?: boolean }>(function VfxLayer({
       }
     };
 
+    const renderDpr = () => {
+      const limit = qualityRef.current === 'low' ? 1 : qualityRef.current === 'balanced' ? 1.35 : qualityRef.current === 'high' ? 1.75 : 2;
+      return Math.min(window.devicePixelRatio || 1, limit);
+    };
+    const particleBudget = () => qualityRef.current === 'low' ? 700 : qualityRef.current === 'balanced' ? 1200 : qualityRef.current === 'high' ? 1900 : MAX_PARTICLES;
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = renderDpr();
       const width = Math.round(window.innerWidth * dpr);
       const height = Math.round(window.innerHeight * dpr);
       if (canvas.width !== width || canvas.height !== height) {
@@ -434,7 +446,7 @@ const VfxLayer = forwardRef<VfxHandle, { active?: boolean }>(function VfxLayer({
       });
 
       gl.clear(gl.COLOR_BUFFER_BIT);
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = renderDpr();
 
       if (shatterEvents.length) {
         gl.useProgram(shardProgram);
@@ -473,7 +485,7 @@ const VfxLayer = forwardRef<VfxHandle, { active?: boolean }>(function VfxLayer({
         gl.uniform1f(pUniform.time, elapsed);
         gl.uniform2f(pUniform.resolution, canvas.clientWidth, canvas.clientHeight);
         gl.uniform1f(pUniform.dpr, dpr);
-        const drawCount = Math.min(totalSpawned, MAX_PARTICLES);
+        const drawCount = Math.min(totalSpawned, MAX_PARTICLES, particleBudget());
         gl.drawArrays(gl.POINTS, 0, drawCount);
       }
     };
@@ -495,3 +507,4 @@ const VfxLayer = forwardRef<VfxHandle, { active?: boolean }>(function VfxLayer({
 });
 
 export default VfxLayer;
+
