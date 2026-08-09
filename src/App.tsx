@@ -13,6 +13,7 @@ import cardBack from './assets/cards/nexus-card-back.jpg';
 import ArenaBackground, { ArenaBackgroundHandle } from './components/ArenaBackground';
 import VfxLayer, { DashTone, VfxHandle } from './components/VfxLayer';
 import HomeSparkles from './components/HomeSparkles';
+import AudioDirector from './components/AudioDirector';
 import { t, type UiKey } from './i18n';
 
 // Chargé à la demande : embarque le SDK Firebase (auth + firestore), inutile pour le reste
@@ -1041,4 +1042,4 @@ function DisplaySettingsBridge() {
   return null;
 }
 
-export default function App() { const factionChosen = useGame((s) => s.factionChosen); const hasLegacyDeck = useGame((s) => s.deck.length > 0); if (!factionChosen && !hasLegacyDeck) return <FactionOnboarding />; return <><DisplaySettingsBridge /><Suspense fallback={null}><GoogleSignInGate /></Suspense><Shell><Routes><Route path="/" element={<Home />} /><Route path="/campagne" element={<Campaign />} /><Route path="/collection" element={<CollectionHub />} /><Route path="/decks" element={<CollectionHub />} /><Route path="/échanges" element={<SocialHub />} /><Route path="/profil" element={<SocialHub />} /><Route path="/replay/:id" element={<Replay />} /><Route path="/combat" element={<Combat />} /><Route path="/multijoueur" element={<Multiplayer />} /><Route path="/paramètres" element={<Options />} /><Route path="/classement" element={<SocialHub />} /><Route path="/boutique" element={<Shop />} /><Route path="/tutoriel" element={<Tutorial />} /></Routes></Shell></>; }
+export default function App() { const factionChosen = useGame((s) => s.factionChosen); const hasLegacyDeck = useGame((s) => s.deck.length > 0); if (!factionChosen && !hasLegacyDeck) return <><AudioDirector /><FactionOnboarding /></>; return <><DisplaySettingsBridge /><AudioDirector /><Suspense fallback={null}><GoogleSignInGate /></Suspense><Shell><Routes><Route path="/" element={<Home />} /><Route path="/campagne" element={<Campaign />} /><Route path="/collection" element={<CollectionHub />} /><Route path="/decks" element={<CollectionHub />} /><Route path="/échanges" element={<SocialHub />} /><Route path="/profil" element={<SocialHub />} /><Route path="/replay/:id" element={<Replay />} /><Route path="/combat" element={<Combat />} /><Route path="/multijoueur" element={<Multiplayer />} /><Route path="/paramètres" element={<Options />} /><Route path="/classement" element={<SocialHub />} /><Route path="/boutique" element={<Shop />} /><Route path="/tutoriel" element={<Tutorial />} /></Routes></Shell></>; }
