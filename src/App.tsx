@@ -837,7 +837,7 @@ const BOOSTERS: { id: Faction; name: string; price: number; blurb: string; avail
 
 function Shop() {
   const s = useGame();
-  const [reveal, setReveal] = useState<{ faction: Faction; packs: { cards: CardDef[]; isNew: boolean[] }[]; packIndex: number; revealed: boolean; summary: boolean } | null>(null);
+  const [reveal, setReveal] = useState<{ faction: Faction; packs: { cards: CardDef[]; isNew: boolean[] }[]; packIndex: number; revealedCount: number; summary: boolean } | null>(null);
   const boosterVfxRef = useRef<VfxHandle>(null);
 
   const openBooster = (booster: (typeof BOOSTERS)[number], count = 1) => {
@@ -851,18 +851,19 @@ function Shop() {
       const cards = pulledCards.slice(start, start + BOOSTER_PULL_COUNT);
       return { cards, isNew: pulledIds.slice(start, start + BOOSTER_PULL_COUNT).map((id) => (before[id] ?? 0) === 0) };
     });
-    setReveal({ faction: booster.id, packs, packIndex: 0, revealed: false, summary: false });
+    setReveal({ faction: booster.id, packs, packIndex: 0, revealedCount: 0, summary: false });
     requestAnimationFrame(() => boosterVfxRef.current?.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 'evolution'));
   };
   const closeReveal = () => setReveal(null);
-  const revealCurrentPack = () => setReveal((current) => current ? { ...current, revealed: true } : current);
+  const revealCurrentPack = () => setReveal((current) => current ? { ...current, revealedCount: Math.min(current.revealedCount + 1, current.packs[current.packIndex].cards.length) } : current);
+  const revealAllCurrentPack = () => setReveal((current) => current ? { ...current, revealedCount: current.packs[current.packIndex].cards.length } : current);
   const nextRevealPack = () => setReveal((current) => {
     if (!current) return current;
-    if (current.packIndex >= current.packs.length - 1) return { ...current, summary: true, revealed: true };
+    if (current.packIndex >= current.packs.length - 1) return { ...current, summary: true, revealedCount: current.packs[current.packIndex].cards.length };
     requestAnimationFrame(() => boosterVfxRef.current?.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 'evolution'));
-    return { ...current, packIndex: current.packIndex + 1, revealed: false };
+    return { ...current, packIndex: current.packIndex + 1, revealedCount: 0 };
   });
-  const skipRevealPacks = () => setReveal((current) => current ? { ...current, summary: true, revealed: true } : current);
+  const skipRevealPacks = () => setReveal((current) => current ? { ...current, summary: true, revealedCount: current.packs[current.packIndex].cards.length } : current);
 
   return (
     <section className="shop-screen">
@@ -929,9 +930,9 @@ function Shop() {
       {reveal && (() => {
         const currentPack = reveal.packs[reveal.packIndex];
         const allCards = reveal.packs.flatMap((pack) => pack.cards);
-        const allNew = reveal.packs.flatMap((pack) => pack.isNew);
+        const allNew = reveal.packs.flatMap((pack) => pack.isNew); const allRevealed = reveal.revealedCount >= currentPack.cards.length;
         if (reveal.summary) return <div className="booster-opening-overlay" role="dialog" aria-modal="true"><div className="booster-summary"><header><div><small>OUVERTURE TERMINÉE</small><h3>{reveal.packs.length} booster{reveal.packs.length > 1 ? 's' : ''} {reveal.faction}</h3></div><button onClick={closeReveal}>×</button></header><div className="booster-summary-grid">{allCards.map((card, i) => <motion.div key={`${card.id}-${i}`} className={card.rarity === 'Mythique' ? 'mythic-pull' : ''} initial={{ opacity: 0, scale: .88 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: Math.min(i * .025, .6), duration: .28 }}><CardView card={card} badge={allNew[i] ? 'Nouveau' : 'Doublon'} /></motion.div>)}</div><button className="primary booster-done" onClick={closeReveal}>Récupérer les cartes</button></div></div>;
-        return <div className="booster-opening-overlay" role="dialog" aria-modal="true"><div className="booster-opening-stage"><header><div><small>BOOSTER {reveal.packIndex + 1}/{reveal.packs.length}</small><h3>{reveal.faction}</h3></div><div className="booster-opening-actions">{reveal.packs.length > 1 && <button className="secondary" onClick={skipRevealPacks}>Passer</button>}<button className="secondary" onClick={closeReveal}>×</button></div></header><div className="booster-pack-animation" aria-hidden="true"><img className="booster-pack-art" src={boosterArtwork(reveal.faction)} alt={`Booster ${reveal.faction}`} /><div className="booster-tear-line" /></div><button type="button" className={'booster-card-fan' + (reveal.revealed ? ' revealed' : '')} onClick={reveal.revealed ? undefined : revealCurrentPack} aria-label={reveal.revealed ? 'Cartes révélées' : 'Révéler toutes les cartes'}>{currentPack.cards.map((card, i) => <motion.div key={`${card.id}-${i}`} className={'booster-pull-card ' + rarityAuraClass(card.rarity) + (card.rarity === 'Mythique' ? ' mythic-pull' : '')} initial={{ opacity: 0, y: -80, rotate: (i - 2) * 5, scale: .7 }} animate={{ opacity: 1, y: 0, rotate: (i - 2) * 4, scale: 1 }} transition={{ delay: .55 + i * .08, duration: .42, ease: 'easeOut' }}>{reveal.revealed ? <CardView card={card} badge={currentPack.isNew[i] ? 'Nouveau' : 'Doublon'} /> : <div className="booster-card-back" style={{ backgroundImage: `url(${CARD_BACK_URL})` }} />}</motion.div>)}</button><div className="booster-opening-footer">{!reveal.revealed ? <><b>Touche une fois pour tout révéler</b><small>Les {BOOSTER_PULL_COUNT} cartes se retournent ensemble.</small></> : <button className="primary" onClick={nextRevealPack}>{reveal.packIndex < reveal.packs.length - 1 ? 'Booster suivant' : 'Voir tout le tirage'}</button>}</div></div></div>;
+        return <div className="booster-opening-overlay" role="dialog" aria-modal="true"><div className="booster-opening-stage"><header><div><small>BOOSTER {reveal.packIndex + 1}/{reveal.packs.length}</small><h3>{reveal.faction}</h3></div><div className="booster-opening-actions">{reveal.packs.length > 1 && <button className="secondary" onClick={skipRevealPacks}>Passer</button>}<button className="secondary" onClick={closeReveal}>×</button></div></header><div className="booster-pack-animation" aria-hidden="true"><img className="booster-pack-art" src={boosterArtwork(reveal.faction)} alt={`Booster ${reveal.faction}`} /><div className="booster-tear-line" /></div><button type="button" className={'booster-card-fan' + (allRevealed ? ' revealed' : '')} onClick={allRevealed ? undefined : revealCurrentPack} aria-label={allRevealed ? 'Cartes révélées' : 'Révéler la prochaine carte'}>{currentPack.cards.map((card, i) => <motion.div key={`${card.id}-${i}`} className={'booster-pull-card ' + rarityAuraClass(card.rarity) + (card.rarity === 'Mythique' ? ' mythic-pull' : '')} initial={{ opacity: 0, y: -80, rotate: (i - 2) * 5, scale: .7 }} animate={{ opacity: 1, y: 0, rotate: (i - 2) * 4, scale: 1 }} transition={{ delay: .55 + i * .08, duration: .42, ease: 'easeOut' }}>{i < reveal.revealedCount ? <CardView card={card} badge={currentPack.isNew[i] ? 'Nouveau' : 'Doublon'} /> : <div className="booster-card-back" style={{ backgroundImage: `url(${CARD_BACK_URL})` }} />}</motion.div>)}</button><div className="booster-opening-footer">{!allRevealed ? <><b>Touche le paquet pour révéler une carte</b><small>Carte {reveal.revealedCount + 1}/{currentPack.cards.length}</small><button className="secondary" onClick={revealAllCurrentPack}>Tout révéler</button></> : <button className="primary" onClick={nextRevealPack}>{reveal.packIndex < reveal.packs.length - 1 ? 'Booster suivant' : 'Voir tout le tirage'}</button>}</div></div></div>;
       })()}
     </section>
   );
