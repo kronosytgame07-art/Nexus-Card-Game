@@ -12,6 +12,8 @@ export type BurstPreset = 'summon' | 'evolution' | 'attack' | 'draw' | 'crack' |
 
 export type DashTone = 'fire' | 'frost' | 'blood';
 
+type VfxQuality = 'auto' | 'low' | 'balanced' | 'high' | 'ultra';
+
 export type VfxHandle = {
   spawnBurst: (x: number, y: number, preset: BurstPreset) => void;
   spawnShatter: (x: number, y: number, width: number, height: number, imageUrl: string) => void;
@@ -170,10 +172,12 @@ type ShatterEvent = {
   centerY: number;
 };
 
-const VfxLayer = forwardRef<VfxHandle, { active?: boolean }>(function VfxLayer({ active = true }, ref) {
+const VfxLayer = forwardRef<VfxHandle, { active?: boolean; quality?: VfxQuality }>(function VfxLayer({ active = true, quality = 'auto' }, ref) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const activeRef = useRef(active);
   activeRef.current = active;
+  const qualityRef = useRef<VfxQuality>('auto');
+  qualityRef.current = quality === 'auto' ? ((document.documentElement.dataset.quality as VfxQuality | undefined) ?? 'auto') : quality;
   const spawnQueue = useRef<Array<{ x: number; y: number; preset: BurstPreset }>>([]);
   const shatterQueue = useRef<Array<{ x: number; y: number; w: number; h: number; url: string }>>([]);
   const trailQueue = useRef<Array<{ x1: number; y1: number; x2: number; y2: number; duration: number; tone: DashTone }>>([]);
@@ -394,8 +398,16 @@ const VfxLayer = forwardRef<VfxHandle, { active?: boolean }>(function VfxLayer({
       }
     };
 
+    const renderDpr = () => {
+      const deviceDpr = window.devicePixelRatio || 1;
+      if (qualityRef.current === 'low') return Math.min(deviceDpr, 1);
+      if (qualityRef.current === 'balanced') return Math.min(deviceDpr, 1.35);
+      if (qualityRef.current === 'high') return Math.min(deviceDpr, 1.75);
+      return Math.min(deviceDpr, 2);
+    };
+    const particleBudget = () => qualityRef.current === 'low' ? 700 : qualityRef.current === 'balanced' ? 1200 : qualityRef.current === 'high' ? 1900 : MAX_PARTICLES;
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = renderDpr();
       const width = Math.round(window.innerWidth * dpr);
       const height = Math.round(window.innerHeight * dpr);
       if (canvas.width !== width || canvas.height !== height) {
@@ -434,7 +446,7 @@ const VfxLayer = forwardRef<VfxHandle, { active?: boolean }>(function VfxLayer({
       });
 
       gl.clear(gl.COLOR_BUFFER_BIT);
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = renderDpr();
 
       if (shatterEvents.length) {
         gl.useProgram(shardProgram);
@@ -473,7 +485,7 @@ const VfxLayer = forwardRef<VfxHandle, { active?: boolean }>(function VfxLayer({
         gl.uniform1f(pUniform.time, elapsed);
         gl.uniform2f(pUniform.resolution, canvas.clientWidth, canvas.clientHeight);
         gl.uniform1f(pUniform.dpr, dpr);
-        const drawCount = Math.min(totalSpawned, MAX_PARTICLES);
+        const drawCount = Math.min(totalSpawned, MAX_PARTICLES, particleBudget());
         gl.drawArrays(gl.POINTS, 0, drawCount);
       }
     };
