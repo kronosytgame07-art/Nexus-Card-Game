@@ -44,6 +44,13 @@ export const ARCHETYPE_IDENTITIES: Record<Faction, ArchetypeIdentity> = {
     strengths: ['Blitz', 'Invocations spéciales depuis le deck', 'Pression immédiate'],
     weaknesses: ['Très faibles ATK/PV', 'Évolutions difficiles à atteindre', 'Vulnérable aux dégâts de zone'],
   },
+  Squelette: {
+    faction: 'Squelette',
+    title: 'Légion Éternelle',
+    summary: 'Les Squelettes transforment leur fosse en réserve de guerre : leurs prêtres, oracles et liches réaniment les unités tombées pour épuiser l’adversaire.',
+    strengths: ['Réanimation depuis la fosse', 'Endurance', 'Invocations en chaîne'],
+    weaknesses: ['Dépend de la fosse', 'Départs plus lents', 'Terrain limité à trois unités'],
+  },
 };
 
 export function archetypeIdentity(faction: Faction): ArchetypeIdentity {

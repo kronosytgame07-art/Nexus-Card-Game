@@ -758,31 +758,19 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 @keyframes evo-ready-pulse { 0%,100% { opacity:.8; } 50% { opacity:1; filter:brightness(1.45); } }
 [data-animations="off"] .field-card-evo.ready { animation: none; }
 
-/* Official runic mana bar: every crystal is a real charged rune. */
-.rune-meter {
-  --rune-color: #67d8ff;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  min-width: 164px;
-  padding: 4px 8px 4px 5px;
-  border: 1px solid rgba(103,216,255,.58);
-  border-radius: 999px;
-  background: linear-gradient(100deg,rgba(7,35,53,.96),rgba(4,12,23,.93));
-  box-shadow: inset 0 1px rgba(255,255,255,.12),0 0 22px rgba(74,184,255,.16);
-  overflow: hidden;
-}
-.rune-meter.enemy { --rune-color:#bd8cff; border-color:rgba(189,140,255,.55); background:linear-gradient(100deg,rgba(38,17,54,.96),rgba(12,7,25,.93)); }
-.rune-meter-label { display:inline-flex;align-items:center;gap:2px;flex:0 0 auto;font:800 10px "DM Mono";color:#eefbff; }
-.rune-meter-label .currency-icon { width:24px;height:24px; }
-.rune-meter-label small { color:#8cb1c4;font-size:8px; }
-.rune-track { display:grid;grid-template-columns:repeat(var(--rune-count),minmax(5px,1fr));align-items:center;gap:2px;flex:1;min-width:66px;height:22px; }
-.rune-track i { position:relative;height:15px;border-radius:2px;background:rgba(88,144,174,.13);clip-path:polygon(50% 0,100% 32%,82% 100%,18% 100%,0 32%);opacity:.34;overflow:hidden; }
-.rune-track i:after { content:"";position:absolute;inset:0;background:linear-gradient(180deg,color-mix(in srgb,var(--rune-color) 88%,white),var(--rune-color));transform:translateY(105%);transition:transform .35s ease; }
-.rune-track i.charged { opacity:1;filter:drop-shadow(0 0 4px var(--rune-color)); }
-.rune-track i.charged:after { transform:translateY(0); }
-.rune-track .currency-icon { display:none; }
-.profile-float .rune-meter { min-width:148px; }
+/* Arcane mana reservoir: a readable glass orb plus ten physical crystal pips. */
+.rune-meter{--mana-bright:#67e8ff;--mana-deep:#096ec5;display:inline-flex;align-items:center;gap:0;min-width:178px;height:58px;overflow:visible;filter:drop-shadow(0 7px 12px rgba(0,0,0,.6))}
+.rune-meter.enemy{--mana-bright:#c597ff;--mana-deep:#6740bd}
+.mana-reservoir{position:relative;z-index:2;display:grid;place-items:center;width:58px;height:58px;flex:0 0 58px;border-radius:50%;background:radial-gradient(circle at 36% 28%,#e9ffff 0 5%,var(--mana-bright) 13%,var(--mana-deep) 52%,#061327 76%);border:3px solid #c8e1e8;box-shadow:inset 0 0 13px #fff,inset 0 -12px 18px rgba(0,20,50,.8),0 0 0 3px #314a58,0 0 18px var(--mana-bright)}
+.mana-reservoir:before{content:"";position:absolute;inset:-7px;border-radius:48% 52% 46% 54%;border:3px solid #a7b9bd;clip-path:polygon(50% 0,88% 12%,100% 50%,88% 88%,50% 100%,12% 88%,0 50%,12% 12%);box-shadow:inset 0 0 0 1px #f6ffff,0 3px 8px #02070a}
+.mana-reservoir .currency-icon{position:absolute;width:48px;height:48px;opacity:.34;filter:brightness(1.5) drop-shadow(0 0 6px #9cf2ff)}
+.mana-value{position:relative;z-index:2;display:flex;align-items:baseline;color:#fff;text-shadow:0 2px 2px #001324,0 0 7px #fff;font:900 23px "Space Grotesk"}
+.mana-value small{font:800 9px "DM Mono";color:#d8f8ff;text-shadow:0 1px 2px #001}
+.mana-pips{position:relative;z-index:1;display:grid;grid-template-columns:repeat(10,10px);gap:2px;align-items:center;margin-left:-5px;padding:8px 9px 8px 12px;border:2px solid #627a84;border-left:0;border-radius:0 15px 15px 0;background:linear-gradient(180deg,#263a45,#0a151d 48%,#03090e);box-shadow:inset 0 1px #c6d8dc,inset 0 -4px 9px #000,0 0 0 2px #192a32}
+.mana-pips i{display:block;width:10px;height:17px;clip-path:polygon(50% 0,100% 25%,84% 82%,50% 100%,16% 82%,0 25%);background:linear-gradient(145deg,#203341,#071019);opacity:.38;box-shadow:inset 0 0 0 1px #7690a0;transition:filter .25s ease,opacity .25s ease,transform .25s ease}
+.mana-pips i.unlocked{opacity:.62;background:linear-gradient(145deg,#355970,#102737)}
+.mana-pips i.charged{opacity:1;background:linear-gradient(145deg,#e8ffff 2%,var(--mana-bright) 28%,var(--mana-deep) 76%);filter:drop-shadow(0 0 4px var(--mana-bright));transform:translateY(-1px)}
+.profile-float .rune-meter{min-width:178px}
 
 /* Cinematic card-effect activation: graphic-novel reveal plus energy rings. */
 .support-reveal-overlay { isolation:isolate;overflow:hidden;background:radial-gradient(circle at 50% 47%,rgba(30,128,151,.42),rgba(1,5,8,.9) 42%,rgba(1,3,7,.98));backdrop-filter:blur(10px); }
@@ -809,7 +797,7 @@ body.in-battle .hud-buttons { flex-direction: column; top: 50%; transform: trans
 [data-animations="off"] .activation-rings i,[data-animations="off"] .activation-rings i:before,[data-animations="off"] .activation-scan,[data-animations="off"] .activation-flash,[data-animations="off"] .field-card.effect-active:after { animation:none; }
 
 @media (max-width:900px),(orientation:landscape) and (max-height:650px){
-  .profile-float .rune-meter{min-width:104px;padding:2px 5px;gap:4px}.rune-meter-label .currency-icon{width:18px;height:18px}.rune-track{min-width:42px;height:16px;gap:1px}.rune-track i{height:11px}.rune-meter-label{font-size:8px}
+  .rune-meter,.profile-float .rune-meter{min-width:130px;height:42px}.mana-reservoir{width:42px;height:42px;flex-basis:42px;border-width:2px}.mana-reservoir:before{inset:-5px;border-width:2px}.mana-reservoir .currency-icon{width:34px;height:34px}.mana-value{font-size:17px}.mana-value small{font-size:7px}.mana-pips{grid-template-columns:repeat(10,6px);gap:1px;padding:5px 6px 5px 8px;margin-left:-4px}.mana-pips i{width:6px;height:11px}
   .support-reveal-card{width:min(160px,27vw)}.activation-rings{width:min(52vw,360px)}.support-reveal-label b{font-size:16px}.support-reveal-label small{font-size:7px}
 }
 

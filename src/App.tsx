@@ -3,7 +3,7 @@ import { Link, Route, Routes, useLocation, useNavigate, useParams } from 'react-
 import { motion } from 'framer-motion';
 import { ALL_CARDS, ALL_FACTIONS, AnimationMode, AVATAR_PRICE_GEMS, BOOSTER_PULL_COUNT, copiesInDeck, defaultAvatarFor, EVOSPHERE_MAX, FOIL_CRAFT_COST, InterfaceScale, Language, MAIN_DECK_MAX, MAIN_DECK_MIN, maxCopiesAllowed, purchasableAvatarCards, TERRAIN_PRICE_GEMS, TERRAINS, UNLOCK_SECOND_FACTION_AT, UNLOCK_THIRD_FACTION_AT, useGame, VisualQuality, WIN_GEMS_REWARD, XP_PER_LEVEL } from './store/game';
 import { cardsByFaction, getCard } from './engine/cards';
-import { CardDef, Faction, FieldUnit, GameState, Rarity, SupportCard } from './engine/types';
+import { CardDef, Faction, FieldUnit, GameState, MAX_MANA, Rarity, SupportCard } from './engine/types';
 import { DEFAULT_RANKED_RATING, RANKED_LADDER, aiDifficultyForRating, formatRank, rankForRating, rankedRatingDelta, type RankedTier } from './engine/ranked';
 import { CHAPTERS, chapterById } from './engine/campaign';
 import { activateSupportCard, activateUnitEffect, aiDrawPhase, aiEndPhase, aiMainPhase, aiPrepareBattlePlan, aiResolveOneAttack, availableReactionSupportIds, declareAttack, evolveUnit, MAX_FIELD_UNITS, MAX_SUPPORT, newGame, passReactionWindow, playCard } from './engine/engine';
@@ -100,22 +100,15 @@ function RankBadge({ tier, className = '' }: { tier: RankedTier; className?: str
 function RuneMeter({ mana, maxMana, enemy = false }: { mana: number; maxMana: number; enemy?: boolean }) {
   const capacity = Math.max(1, maxMana);
   const safeMana = Math.max(0, Math.min(mana, capacity));
-  const style = {
-    '--rune-progress': `${(safeMana / capacity) * 100}%`,
-    '--rune-count': capacity,
-  } as CSSProperties;
   return (
-    <div className={`rune-meter${enemy ? ' enemy' : ''}`} style={style} aria-label={`${safeMana} runes disponibles sur ${maxMana}`}>
-      <span className="rune-meter-label">
+    <div className={`rune-meter${enemy ? ' enemy' : ''}`} aria-label={`${safeMana} runes disponibles sur ${maxMana}`}>
+      <span className="mana-reservoir" aria-hidden="true">
         <CurrencyIcon kind="mana" />
-        <b>{safeMana}</b>
-        <small>/{maxMana}</small>
+        <span className="mana-value"><b>{safeMana}</b><small>/{maxMana}</small></span>
       </span>
-      <span className="rune-track" aria-hidden="true">
-        {Array.from({ length: capacity }, (_, index) => (
-          <i key={index} className={index < safeMana ? 'charged' : ''}>
-            <CurrencyIcon kind="mana" />
-          </i>
+      <span className="mana-pips" aria-hidden="true">
+        {Array.from({ length: MAX_MANA }, (_, index) => (
+          <i key={index} className={`${index < capacity ? 'unlocked' : 'locked'}${index < safeMana ? ' charged' : ''}`} />
         ))}
       </span>
     </div>
@@ -317,6 +310,17 @@ function MenuAtmosphere({ theme }: { theme: MenuTheme | null }) {
     if (paused) video.pause();
     else video.play().catch(() => {});
   }, [paused, theme]);
+  useEffect(() => {
+    if (!theme || paused) return;
+    const move = (event: PointerEvent) => {
+      const x = (event.clientX / Math.max(1, window.innerWidth) - 0.5) * 2;
+      const y = (event.clientY / Math.max(1, window.innerHeight) - 0.5) * 2;
+      document.documentElement.style.setProperty('--scene-shift-x', `${(-x * 7).toFixed(2)}px`);
+      document.documentElement.style.setProperty('--scene-shift-y', `${(-y * 5).toFixed(2)}px`);
+    };
+    window.addEventListener('pointermove', move, { passive: true });
+    return () => window.removeEventListener('pointermove', move);
+  }, [paused, theme]);
   if (!theme) return null;
   const background = theme === 'campaign' ? `${import.meta.env.BASE_URL}story/chapter-1/scene-01-nexus-fragment.png` : theme === 'ranked' ? `${import.meta.env.BASE_URL}backgrounds/ranked-hall.png` : `${import.meta.env.BASE_URL}backgrounds/collection-archive.png`;
   return (
@@ -329,10 +333,25 @@ function MenuAtmosphere({ theme }: { theme: MenuTheme | null }) {
         <div className="menu-atmosphere-media menu-atmosphere-image" style={{ backgroundImage: `url(${background})` }} />
       )}
       <div className="menu-atmosphere-shade" />
+      <div className="menu-atmosphere-depth back" />
+      <div className="menu-atmosphere-depth front" />
+      <div className="menu-atmosphere-lantern one" />
+      <div className="menu-atmosphere-lantern two" />
       <div className="menu-atmosphere-rift one" />
       <div className="menu-atmosphere-rift two" />
       <HomeSparkles className="menu-atmosphere-sparkles" paused={paused} />
     </div>
+  );
+}
+
+function ShopMerchantReaction() {
+  const lines = ['Une relique pour ta collection ?', 'La chance sourit aux audacieux.', 'Tout se gagne dans l’arène, ami.'];
+  const [line, setLine] = useState(0);
+  return (
+    <button className="merchant-reaction" type="button" onClick={() => setLine((value) => (value + 1) % lines.length)}>
+      <span className="merchant-speech">{lines[line]}</span>
+      <span className="merchant-prompt">✦ Parler à Marrek</span>
+    </button>
   );
 }
 
@@ -349,6 +368,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <PortraitGate />
       <MusicManager />
       <MenuAtmosphere theme={theme} />
+      {theme === 'shop' && <ShopMerchantReaction />}
       <aside className="app-sidebar">
         <h1>
           <img className="brand-mark" src={LOGO_URL} alt="Nexus Arena" /> NEXUS <small>CARD ARENA</small>
@@ -2899,6 +2919,12 @@ const BOOSTERS: {
     price: 150,
     blurb: 'Archétype essaim ultra-agressif : petites unités fragiles avec Blitz et invocations spéciales depuis le deck.',
   },
+  {
+    id: 'Squelette',
+    name: 'Booster Squelette',
+    price: 150,
+    blurb: 'Archétype d’attrition : transforme la fosse en réserve et réanime les guerriers tombés pour bâtir une légion sans fin.',
+  },
 ];
 
 function Shop() {
@@ -3031,7 +3057,7 @@ function Shop() {
           const affordable = available && s.gold >= booster.price;
           return (
             <article key={booster.id} className="options-card booster-product-card">
-              <img className="booster-shop-art" src={boosterArtwork(booster.id)} alt={booster.name} loading="lazy" />
+              <img className={`booster-shop-art${booster.id === 'Squelette' ? ' booster-skeleton-art' : ''}`} src={boosterArtwork(booster.id)} alt={booster.name} loading="lazy" />
               <b className="booster-product-title">{booster.name}</b>
               <p className="hint">{booster.blurb}</p>
               <p className="hint booster-price">
@@ -3094,7 +3120,7 @@ function Shop() {
                 }}
               />
               <span>{card.name}</span>
-              <span className="hint">{owned ? '✓ Débloqué' : <CurrencyAmount kind="gem" amount={AVATAR_PRICE_GEMS} />}</span>
+              <span className="hint avatar-price">{owned ? '✓ Débloqué' : <CurrencyAmount kind="gem" amount={AVATAR_PRICE_GEMS} />}</span>
             </button>
           );
         })}
