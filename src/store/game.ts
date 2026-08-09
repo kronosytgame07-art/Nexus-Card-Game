@@ -76,6 +76,9 @@ interface GameMeta {
   rankedRating: number;
   rankedWins: number;
   rankedLosses: number;
+  rankedWinStreak: number;
+  dragonStructureUnlocked: boolean;
+  dragonStructureRewardPending: boolean;
   level: number;
   faction: Faction;
   /** Dérivé de `inventory` + `foilInventory` : id présent dès qu'on possède au moins un
@@ -167,6 +170,7 @@ interface GameMeta {
   resetSettings: () => void;
   record: (win: boolean) => void;
   recordRanked: (win: boolean) => void;
+  consumeDragonStructureReward: () => void;
   addGold: (amount: number) => void;
   addGems: (amount: number) => void;
   addXp: (amount: number) => void;
@@ -303,6 +307,9 @@ export const useGame = create<GameMeta>()(
       rankedRating: 0,
       rankedWins: 0,
       rankedLosses: 0,
+      rankedWinStreak: 0,
+      dragonStructureUnlocked: false,
+      dragonStructureRewardPending: false,
       level: 1,
       faction: 'Meute',
       owned: [],
@@ -505,12 +512,15 @@ export const useGame = create<GameMeta>()(
             ? { wins: s.wins + 1, ...progression }
             : { losses: s.losses + 1, ...progression };
         }),
-      recordRanked: (win) =>
-        set((s) => ({
-          rankedRating: applyRankedResult(s.rankedRating ?? 0, win),
-          rankedWins: (s.rankedWins ?? 0) + (win ? 1 : 0),
-          rankedLosses: (s.rankedLosses ?? 0) + (win ? 0 : 1),
-        })),
+      recordRanked: (win) => set((s) => {
+        const streak = win ? (s.rankedWinStreak ?? 0) + 1 : 0;
+        const unlockDragon = win && streak >= 10 && !s.dragonStructureUnlocked;
+        const inventory = { ...s.inventory };
+        const dragonDeck = makeStarterDeck('Dragon', s.decks.map((deck) => deck.name));
+        if (unlockDragon) for (const id of dragonDeck.main) inventory[id] = Math.max(inventory[id] ?? 0, 3);
+        return { rankedRating: applyRankedResult(s.rankedRating ?? 0, win), rankedWins:(s.rankedWins??0)+(win?1:0), rankedLosses:(s.rankedLosses??0)+(win?0:1), rankedWinStreak:streak, dragonStructureUnlocked:s.dragonStructureUnlocked||unlockDragon, dragonStructureRewardPending:unlockDragon||s.dragonStructureRewardPending, inventory:unlockDragon?inventory:s.inventory, owned:unlockDragon?ownedFromInventory(inventory,s.foilInventory):s.owned, unlockedFactions:unlockDragon&&!s.unlockedFactions.includes('Dragon')?[...s.unlockedFactions,'Dragon']:s.unlockedFactions, decks:unlockDragon?[...s.decks,dragonDeck]:s.decks };
+      }),
+      consumeDragonStructureReward: () => set({ dragonStructureRewardPending:false }),
       addGold: (amount) => set((s) => ({ gold: s.gold + amount })),
       addGems: (amount) => set((s) => ({ gems: s.gems + amount })),
       addXp: (amount) => set((s) => applyXp(s.level, s.xp, s.gems, amount)),
@@ -547,6 +557,9 @@ export const useGame = create<GameMeta>()(
           rankedRating: 0,
           rankedWins: 0,
           rankedLosses: 0,
+          rankedWinStreak: 0,
+          dragonStructureUnlocked: false,
+          dragonStructureRewardPending: false,
           level: 1,
           faction: 'Meute',
           owned: [],

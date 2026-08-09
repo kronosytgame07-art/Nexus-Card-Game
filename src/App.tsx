@@ -16,6 +16,7 @@ import HomeSparkles from './components/HomeSparkles';
 import AudioDirector from './components/AudioDirector';
 import { CodexPanel } from './components/CodexPanel';
 import { NarrativeCampaign } from './components/NarrativeCampaign';
+import { SecretDragonReward } from './components/SecretDragonReward';
 import { t, type UiKey } from './i18n';
 
 // Chargé à la demande : embarque le SDK Firebase (auth + firestore), inutile pour le reste
