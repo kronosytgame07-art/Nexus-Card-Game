@@ -1,6 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
 import { ALL_CARDS, useGame } from '../store/game';
 
+const GEM_ICON = `${import.meta.env.BASE_URL}ui/nexus-gem.png`;
+const COIN_ICON = `${import.meta.env.BASE_URL}ui/nexus-coin.png`;
+
 export default function HomeProfileBadge() {
   const location = useLocation();
   const state = useGame();
@@ -10,15 +13,15 @@ export default function HomeProfileBadge() {
   return (
     <Link to="/profil" className="home-profile-badge" aria-label="Ouvrir le profil">
       <span className="home-profile-avatar">
-        {avatar?.image ? <img src={avatar.image} alt="" draggable={false} /> : <b>✦</b>}
+        {avatar?.image ? <img src={avatar.image} alt="" draggable={false} /> : <span className="home-profile-avatar-fallback" aria-hidden="true" />}
       </span>
       <span className="home-profile-main">
         <b>{state.playerName}</b>
         <small>Niveau {state.level}</small>
       </span>
       <span className="home-profile-wallet">
-        <em>💎 {state.gems}</em>
-        <em>🪙 {state.gold}</em>
+        <em><img src={GEM_ICON} alt="" aria-hidden="true" />{state.gems}</em>
+        <em><img src={COIN_ICON} alt="" aria-hidden="true" />{state.gold}</em>
       </span>
     </Link>
   );
