@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import { useGame } from '../store/game';
 
+const TUTORIAL_KEY='nexus-tutorial-v1-complete';
+
 export default function BattleQuickSettings() {
   const location = useLocation();
   const s = useGame();
@@ -30,6 +32,7 @@ export default function BattleQuickSettings() {
       <label className="battle-settings-row"><span>Secousses écran</span><button type="button" className={'battle-switch ' + (s.screenShake ? 'on' : '')} onClick={() => s.setScreenShake(!s.screenShake)}><i /></button></label>
       <label className="battle-settings-row"><span>Mode économie</span><button type="button" className={'battle-switch ' + (s.batterySaver ? 'on' : '')} onClick={() => s.setBatterySaver(!s.batterySaver)}><i /></button></label>
       <label className="battle-settings-row"><span>Vibrations</span><button type="button" className={'battle-switch ' + (s.vibrationEnabled ? 'on' : '')} onClick={() => s.setVibrationEnabled(!s.vibrationEnabled)}><i /></button></label>
+      <button className="battle-tutorial-skip" type="button" onClick={() => {localStorage.setItem(TUTORIAL_KEY,'1');window.dispatchEvent(new Event('nexus:tutorial-skip'));}}>Passer définitivement le didacticiel</button>
     </div>, host
   );
 }
