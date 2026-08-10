@@ -16,6 +16,7 @@ import './faction-unlocks.css';
 import './battle-pass.css';
 import './ui-polish.css';
 import './visual-overhaul.css';
+import './profile-account.css';
 
 const isInteractiveGameElement = (target: EventTarget | null) =>
   target instanceof Element && Boolean(target.closest('#root button, #root a, #root .card, #root .field-card, #root .field-unit, #root .menu-card, #root .card-pile, #root img'));
