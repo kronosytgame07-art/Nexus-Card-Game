@@ -4,7 +4,7 @@ import { CHAPTERS } from '../engine/campaign';
 import { defaultAvatarFor, useGame, type SavedDeck } from '../store/game';
 
 const PURCHASE_KEY = 'nexus-faction-purchases-v1';
-export const FACTION_DECK_PRICE_GEMS = 1000;
+export const FACTION_DECK_PRICE_GEMS = 500;
 export const GOBLIN_AVATAR_REQUIREMENT = 10;
 
 function purchasedFactions(): Faction[] {
@@ -58,8 +58,6 @@ export function reconcileFactionUnlocks() {
   if (same && allowed.includes(state.faction)) return;
 
   reconciling = true;
-  // On conserve les decks des factions verrouillées : ils deviennent simplement
-  // inactifs jusqu'au déblocage. Cela évite toute perte de deck sur une ancienne sauvegarde.
   const decks = [...state.decks];
   for (const faction of allowed) {
     if (!decks.some((deck) => deck.faction === faction)) decks.push(structureDeck(faction));
@@ -70,13 +68,7 @@ export function reconcileFactionUnlocks() {
     decks.find((deck) => deck.faction === faction) ??
     structureDeck('Meute');
 
-  useGame.setState({
-    unlockedFactions: allowed,
-    faction,
-    decks,
-    activeDeckId: active.id,
-    deck: active.main,
-  });
+  useGame.setState({ unlockedFactions: allowed, faction, decks, activeDeckId: active.id, deck: active.main });
   reconciling = false;
 }
 
@@ -101,22 +93,13 @@ export function factionUnlockLabel(faction: Faction, state = useGame.getState())
 }
 
 function installProgressionActions() {
-  // L'ancien store contient encore les anciennes règles de campagne. On remplace
-  // uniquement les deux actions concernées au runtime afin qu'une seule source
-  // de vérité décide désormais des déblocages.
   useGame.setState({
     chooseStartingFaction: (requestedFaction: Faction) => {
       const current = useGame.getState();
       if (current.factionChosen) return;
-      // Meute est le seul deck de départ gratuit. Chevalier et Orc passent par la boutique.
       const faction: Faction = requestedFaction === 'Meute' ? 'Meute' : 'Meute';
       const main = starterDeck(faction);
-      const deck: SavedDeck = {
-        id: `deck-${faction}-${Date.now()}`,
-        name: `Deck ${faction} 1`,
-        faction,
-        main,
-      };
+      const deck: SavedDeck = { id: `deck-${faction}-${Date.now()}`, name: `Deck ${faction} 1`, faction, main };
       const inventory = startingInventory(faction);
       useGame.setState({
         factionChosen: true,
@@ -144,18 +127,17 @@ function refreshOnboardingLocks() {
     if (text.includes('Meute')) return;
     button.disabled = true;
     button.classList.add('locked-by-progression');
-    button.dataset.lockLabel = text.includes('Chevalier') ? 'Boutique · 1000 gemmes' : 'Verrouillé';
-    button.title = text.includes('Chevalier') ? 'Deck Chevalier disponible en boutique pour 1000 gemmes' : 'Faction verrouillée';
+    button.dataset.lockLabel = text.includes('Chevalier') ? `Boutique · ${FACTION_DECK_PRICE_GEMS} gemmes` : 'Verrouillé';
+    button.title = text.includes('Chevalier') ? `Deck Chevalier disponible en boutique pour ${FACTION_DECK_PRICE_GEMS} gemmes` : 'Faction verrouillée';
   });
 }
 
 export function installFactionUnlockRules() {
   installProgressionActions();
   reconcileFactionUnlocks();
-  refreshOnboardingLocks();
-
-  const observer = new MutationObserver(refreshOnboardingLocks);
-  observer.observe(document.getElementById('root') ?? document.body, { subtree: true, childList: true });
+  // Une passe au lancement suffit : l'ancien MutationObserver sur tout #root
+  // se déclenchait à chaque animation/changement de la boutique et ralentissait l'affichage.
+  queueMicrotask(refreshOnboardingLocks);
 
   let signature = '';
   const unsubscribe = useGame.subscribe((state) => {
@@ -165,8 +147,5 @@ export function installFactionUnlockRules() {
     reconcileFactionUnlocks();
   });
 
-  return () => {
-    observer.disconnect();
-    unsubscribe();
-  };
+  return unsubscribe;
 }
