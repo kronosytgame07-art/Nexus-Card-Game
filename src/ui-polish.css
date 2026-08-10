@@ -1,0 +1,103 @@
+/* UI pass — navigation Jouer, profil compact et boutique intégrée. */
+
+/* Le profil/résumé du joueur remonte en haut à gauche de la page Jouer. */
+body.on-home .home-hero{padding-top:112px!important;min-height:100%}
+body.on-home .home-hero .stats{
+  position:absolute!important;
+  top:18px!important;
+  left:24px!important;
+  right:auto!important;
+  z-index:12!important;
+  width:auto!important;
+  max-width:min(620px,calc(100% - 280px))!important;
+  min-height:66px;
+  padding:10px 15px!important;
+  gap:14px!important;
+  border-color:#e5c56b55!important;
+  background:linear-gradient(145deg,#061214f2,#101820e8)!important;
+  box-shadow:0 12px 34px #0007!important;
+  backdrop-filter:blur(8px);
+}
+body.on-home .home-hero .stats>b{font-size:13px;white-space:nowrap}
+body.on-home .home-hero .stats>span{font-size:10px}
+body.on-home .home-hero .stats .wallet{display:flex;gap:9px;align-items:center}
+
+/* Les trois modes deviennent trois grosses tuiles centrées. */
+body.on-home .menu-cards{
+  width:min(1050px,94%);
+  margin:34px auto 0!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:18px!important;
+}
+body.on-home .menu-card,
+body.on-home .menu-card:first-child,
+body.on-home .menu-card:nth-child(2),
+body.on-home .menu-card:nth-child(3){
+  grid-column:auto!important;
+  min-height:150px;
+  padding:24px 22px!important;
+  flex-direction:column!important;
+  justify-content:center!important;
+  align-items:center!important;
+  text-align:center!important;
+  border-radius:20px!important;
+  background:linear-gradient(155deg,#102328e8,#0a1118e8)!important;
+}
+body.on-home .menu-card-icon{width:62px!important;height:62px!important;font-size:27px!important}
+body.on-home .menu-card-body b{font-size:18px!important;margin-top:4px}
+body.on-home .menu-card-body small{font-size:8px!important}
+body.on-home .menu-card-body em{font-size:10px!important}
+body.on-home .menu-card-arrow{display:none!important}
+
+/* La section Decks fait partie du flux normal de la boutique. */
+.faction-unlock-dock.faction-unlock-section{
+  position:relative!important;
+  inset:auto!important;
+  width:100%!important;
+  max-width:none!important;
+  margin:34px 0 18px!important;
+  padding:20px!important;
+  border-radius:16px!important;
+  z-index:auto!important;
+  background:linear-gradient(145deg,#071214,#131722)!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+}
+.faction-unlock-section header{margin-bottom:8px!important}
+.faction-unlock-section header b{font-size:22px!important}
+.faction-unlock-intro{margin:0 0 14px;color:#9eb1ab;font-size:12px}
+.faction-unlock-section .faction-unlock-list{grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px!important}
+.faction-unlock-section .faction-unlock-list article{min-height:82px;padding:12px!important}
+.faction-unlock-section .faction-unlock-list article button{white-space:nowrap}
+
+/* Optimisation de rendu : le navigateur ne peint pas les grosses sections hors écran. */
+body:not(.on-home) .grid,
+body:not(.on-home) .terrain-grid,
+body:not(.on-home) .avatar-grid,
+.faction-unlock-section{
+  content-visibility:auto;
+  contain:layout style paint;
+  contain-intrinsic-size:auto 520px;
+}
+.terrain-card,.faction-unlock-list article{contain:layout paint style}
+
+/* Les flous plein écran coûtent cher sur les petites machines, surtout en Boutique. */
+body[data-page="shop"] .merchant-reaction,
+.faction-unlock-section{backdrop-filter:none!important}
+
+@media(max-width:900px){
+  body.on-home .home-hero{padding-top:92px!important}
+  body.on-home .home-hero .stats{top:10px!important;left:10px!important;max-width:calc(100% - 205px)!important;padding:8px 10px!important;gap:8px!important}
+  body.on-home .home-hero .stats>span:not(.wallet){display:none}
+  body.on-home .menu-cards{width:96%;gap:10px!important}
+  body.on-home .menu-card{min-height:118px!important;padding:14px 10px!important}
+  body.on-home .menu-card-icon{width:48px!important;height:48px!important;font-size:21px!important}
+  body.on-home .menu-card-body b{font-size:14px!important}
+  .faction-unlock-section .faction-unlock-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media(max-width:640px){
+  body.on-home .menu-cards{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  body.on-home .menu-card-body em{display:none}
+  .faction-unlock-section .faction-unlock-list{grid-template-columns:1fr}
+}
