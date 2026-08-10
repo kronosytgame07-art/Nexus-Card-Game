@@ -1,0 +1,35 @@
+/* Duel HUD polish — rectangular controls, readable pause settings, guided tutorial. */
+body.in-battle .card-pile{
+  width:clamp(58px,5.6vw,82px)!important;
+  height:clamp(54px,5.2vw,76px)!important;
+  border-radius:12px!important;
+  background:linear-gradient(155deg,rgba(30,26,16,.96),rgba(8,10,12,.98))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 8px 24px rgba(0,0,0,.38),0 0 16px rgba(239,201,107,.14)!important;
+}
+body.in-battle .card-pile:hover{transform:translateY(-2px);border-color:#ffe092!important}
+body.in-battle .card-pile .pile-stack{border-radius:8px!important}
+body.in-battle .nexus-phases{gap:5px!important}
+body.in-battle .nexus-phases button{
+  min-width:72px!important;height:34px!important;padding:0 12px!important;
+  border-radius:8px!important;border:1px solid rgba(255,255,255,.18)!important;
+  background:linear-gradient(180deg,rgba(18,29,34,.96),rgba(7,14,18,.98))!important;
+  font:800 9px "DM Mono"!important;letter-spacing:1px!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05)!important;
+}
+body.in-battle .nexus-phases button.active{border-color:#66e6c5!important;background:linear-gradient(180deg,rgba(33,93,80,.96),rgba(11,39,35,.98))!important;box-shadow:0 0 16px rgba(98,228,194,.2)!important}
+body.in-battle .attack-face,body.in-battle .battle-pause-btn,body.in-battle .hud-pill{border-radius:8px!important}
+body.in-battle .battle-pause-btn{width:42px!important;height:38px!important;background:rgba(6,15,18,.94)!important;border:1px solid rgba(232,198,111,.35)!important}
+body.in-battle .profile-float{border-radius:12px!important}
+body.in-battle .life,body.in-battle .mana{border-radius:8px!important}
+
+.battle-settings-block{order:2;margin:2px 0 8px;padding:12px;border:1px solid rgba(98,228,194,.17);border-radius:10px;background:rgba(4,13,16,.7)}
+.battle-settings-title{display:flex;justify-content:space-between;align-items:end;gap:10px;margin-bottom:10px}.battle-settings-title span{font:800 10px "DM Mono";letter-spacing:1.5px;color:#66e6c5}.battle-settings-title small{font-size:9px;color:#80958f}
+.battle-settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}.battle-settings-grid label{display:grid;gap:5px;font-size:10px;color:#a9bcb6}.battle-settings-grid input[type=range]{width:100%}.battle-settings-grid select,.battle-setting-toggle{height:30px;border:1px solid #ffffff22;border-radius:7px;background:#071216;color:#eaf4ef;padding:0 8px;font-size:10px}.battle-setting-toggle{cursor:pointer;text-align:left}.battle-tutorial-skip{width:100%;margin-top:10px;padding:8px;border:1px solid rgba(255,255,255,.13);border-radius:7px;background:transparent;color:#93a7a1;font-size:9px;cursor:pointer}
+.battle-pause-menu{max-height:min(90vh,760px)!important;overflow:auto!important;min-width:min(560px,92vw)!important}
+
+.tutorial-offer-overlay{position:fixed;inset:0;z-index:3000;display:grid;place-items:center;padding:24px;background:rgba(2,6,8,.86);backdrop-filter:blur(10px)}
+.tutorial-offer{width:min(820px,94vw);display:grid;grid-template-columns:minmax(220px,36%) 1fr;overflow:hidden;border:1px solid rgba(232,198,111,.35);border-radius:18px;background:linear-gradient(150deg,#0b2021,#0b1018);box-shadow:0 30px 90px #000}.tutorial-offer>img{width:100%;height:100%;min-height:360px;object-fit:cover}.tutorial-offer>div{padding:30px}.tutorial-offer small,.tutorial-coach small{font:800 9px "DM Mono";letter-spacing:1.5px;color:#e7c66f}.tutorial-offer h2{font-size:36px;margin:7px 0 12px}.tutorial-offer p{line-height:1.6;color:#b7c8c2}.tutorial-offer>div>div{display:flex;flex-wrap:wrap;gap:8px}.tutorial-skip-link,.tutorial-next-link{border:0;background:none;color:#81958f;text-decoration:underline;cursor:pointer}
+.tutorial-coach{position:fixed;z-index:2800;left:50%;bottom:18px;transform:translateX(-50%);width:min(760px,92vw);display:grid;grid-template-columns:100px 1fr;overflow:hidden;border:1px solid rgba(232,198,111,.42);border-radius:14px;background:linear-gradient(145deg,rgba(7,20,22,.98),rgba(12,13,21,.98));box-shadow:0 22px 60px #000a}.tutorial-coach>img{width:100%;height:100%;object-fit:cover}.tutorial-coach-copy{padding:13px 16px}.tutorial-coach-copy>b{display:block;font:700 18px "Playfair Display";margin:3px 0}.tutorial-coach-copy p{margin:4px 0 9px;font-size:12px;line-height:1.45;color:#c0d0cb}.tutorial-coach-copy>div{display:flex;gap:8px;align-items:center}.tutorial-coach .primary,.tutorial-coach .secondary{margin:0!important;padding:7px 11px!important;font-size:9px!important}
+.tutorial-focus{position:relative!important;z-index:2700!important;outline:3px solid #f0cd70!important;outline-offset:4px!important;box-shadow:0 0 0 8px rgba(240,205,112,.16),0 0 34px rgba(240,205,112,.55)!important;animation:tutorial-focus-pulse 1.05s ease-in-out infinite alternate!important}
+@keyframes tutorial-focus-pulse{from{filter:brightness(1)}to{filter:brightness(1.22)}}
+@media(max-width:800px){.battle-settings-grid{grid-template-columns:1fr}.tutorial-offer{grid-template-columns:150px 1fr}.tutorial-offer>img{min-height:300px}.tutorial-coach{grid-template-columns:72px 1fr;bottom:8px}.tutorial-coach-copy p{font-size:10px}.tutorial-coach-copy>b{font-size:15px}}
