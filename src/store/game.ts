@@ -6,10 +6,14 @@ import { applyRankedResult } from '../engine/ranked';
 
 /** Nombre de chapitres de campagne à remporter pour débloquer la seconde faction. */
 export const UNLOCK_SECOND_FACTION_AT = 3;
+/** Le deck Gobelin rejoint la collection après l'affrontement des Archives. */
+export const UNLOCK_GOBLIN_FACTION_AT = 3;
 /** Nombre de chapitres de campagne à remporter pour débloquer la Horde Orc
     (récompense narrative après avoir vaincu le clan aux chapitres 8 et 9). */
 export const UNLOCK_THIRD_FACTION_AT = 9;
-export const ALL_FACTIONS: Faction[] = ['Meute', 'Chevalier', 'Orc', 'Squelette'];
+/** Toutes les factions réellement jouables doivent apparaître dans les sélecteurs.
+    Leur disponibilité effective reste contrôlée par `unlockedFactions`. */
+export const ALL_FACTIONS: Faction[] = ['Meute', 'Chevalier', 'Gobelin', 'Orc', 'Dragon', 'Squelette'];
 export const XP_PER_LEVEL = 100;
 export const MAIN_DECK_MIN = 30;
 export const MAIN_DECK_MAX = 40;
@@ -529,6 +533,7 @@ export const useGame = create<GameMeta>()(
           const toUnlock: Faction[] = [];
           const missingStarter = (['Meute', 'Chevalier'] as Faction[]).find((f) => !s.unlockedFactions.includes(f));
           if (campaignChapter >= UNLOCK_SECOND_FACTION_AT && missingStarter) toUnlock.push(missingStarter);
+          if (campaignChapter >= UNLOCK_GOBLIN_FACTION_AT && !s.unlockedFactions.includes('Gobelin')) toUnlock.push('Gobelin');
           if (campaignChapter >= UNLOCK_THIRD_FACTION_AT && !s.unlockedFactions.includes('Orc')) toUnlock.push('Orc');
           if (toUnlock.length === 0) return { campaignChapter };
           const existingNames = s.decks.map((d) => d.name);
@@ -612,7 +617,7 @@ export const useGame = create<GameMeta>()(
 
         // Migration douce pour les joueurs qui avaient un `owned` sans compteur de copies :
         // on leur donne 3 exemplaires de chaque carte déjà débloquée (comportement équivalent
-        // à l'ancien système, où une carte "possédée" donnait un accès illimité à 3 exemplaires).
+        // à l'ancien système, où une carte "possédée" donnait un accès illimité aux 3 exemplaires).
         if (Object.keys(merged.inventory ?? {}).length === 0 && merged.owned.length > 0) {
           merged.inventory = inventoryFrom(merged.owned);
           merged.foilInventory = merged.foilInventory ?? {};
@@ -625,6 +630,18 @@ export const useGame = create<GameMeta>()(
           for (const id of startingOwnedFor('Squelette')) merged.inventory[id] = Math.max(merged.inventory[id] ?? 0, 3);
           if (!merged.decks.some((deck) => deck.faction === 'Squelette')) {
             merged.decks = [...merged.decks, { id: 'deck-Squelette-structure', name: 'Légion Éternelle', faction: 'Squelette', main: starterDeck('Squelette') }];
+          }
+          merged.owned = ownedFromInventory(merged.inventory, merged.foilInventory);
+        }
+
+        // Le Gobelin a désormais une vraie récompense de campagne. Les joueurs ayant
+        // déjà dépassé le chapitre concerné sont migrés automatiquement sans perdre
+        // leur deck actif ni leurs copies existantes.
+        if (merged.factionChosen && merged.campaignChapter >= UNLOCK_GOBLIN_FACTION_AT && !merged.unlockedFactions.includes('Gobelin')) {
+          merged.unlockedFactions = [...merged.unlockedFactions, 'Gobelin'];
+          for (const id of startingOwnedFor('Gobelin')) merged.inventory[id] = Math.max(merged.inventory[id] ?? 0, 3);
+          if (!merged.decks.some((deck) => deck.faction === 'Gobelin')) {
+            merged.decks = [...merged.decks, { id: 'deck-Gobelin-structure', name: 'Casse du Nexus', faction: 'Gobelin', main: starterDeck('Gobelin') }];
           }
           merged.owned = ownedFromInventory(merged.inventory, merged.foilInventory);
         }
