@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 // Poussière de magie flottant au-dessus de la vidéo du menu principal — un
 // calque WebGL discret (dérive lente de particules dorées/turquoise/violettes,
 // assorties à la palette du site) pour donner plus de vie au fond sans rien
-// changer à la vidéo elle-même.
+// changer à la vidéo elle-même. Le coût GPU suit le réglage de qualité global.
 
 const VERTEX_SHADER = `
 attribute vec2 a_position;
@@ -99,8 +99,17 @@ export default function HomeSparkles({ className, paused }: { className?: string
     const u_time = gl.getUniformLocation(program, 'u_time');
     const u_resolution = gl.getUniformLocation(program, 'u_resolution');
 
+    const quality = () => document.documentElement.dataset.quality ?? 'balanced';
+    const renderDpr = () => {
+      const device = window.devicePixelRatio || 1;
+      if (quality() === 'eco') return Math.min(device, 1);
+      if (quality() === 'balanced') return Math.min(device, 1.5);
+      return Math.min(device, 2);
+    };
+    const targetFrameMs = () => quality() === 'eco' ? 1000 / 30 : 0;
+
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = renderDpr();
       const width = Math.round(canvas.clientWidth * dpr);
       const height = Math.round(canvas.clientHeight * dpr);
       if (canvas.width !== width || canvas.height !== height) {
@@ -116,17 +125,35 @@ export default function HomeSparkles({ className, paused }: { className?: string
     const onContextLost = (event: Event) => event.preventDefault();
     canvas.addEventListener('webglcontextlost', onContextLost);
 
+    let hidden = document.hidden;
+    const onVisibility = () => {
+      hidden = document.hidden;
+      lastFrame = performance.now();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
     let rafId = 0;
     let elapsed = 0;
     let lastFrame = performance.now();
+    let lastPaint = 0;
+    let previousQuality = quality();
     const render = (now: number) => {
       rafId = requestAnimationFrame(render);
       const dt = Math.min((now - lastFrame) / 1000, 0.1);
       lastFrame = now;
-      if (pausedRef.current) return;
+      if (pausedRef.current || hidden) return;
+
+      const currentQuality = quality();
+      if (currentQuality !== previousQuality) {
+        previousQuality = currentQuality;
+        resize();
+      }
+      const minFrameMs = targetFrameMs();
+      if (minFrameMs > 0 && now - lastPaint < minFrameMs) return;
+      lastPaint = now;
       elapsed += dt;
 
       gl.clear(gl.COLOR_BUFFER_BIT);
@@ -143,6 +170,7 @@ export default function HomeSparkles({ className, paused }: { className?: string
     return () => {
       cancelAnimationFrame(rafId);
       resizeObserver.disconnect();
+      document.removeEventListener('visibilitychange', onVisibility);
       canvas.removeEventListener('webglcontextlost', onContextLost);
       gl.deleteProgram(program);
       gl.deleteShader(vertexShader);
