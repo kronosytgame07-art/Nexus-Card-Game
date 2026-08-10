@@ -1,0 +1,4 @@
+/* Nexus Arena cinematic campaign layer */
+.cinematic-story{position:fixed!important;inset:0!important;z-index:1200!important;overflow:hidden!important;background:#010204!important}
+.cinematic-frame{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;overflow:hidden!important;border:0!important;border-radius:0!important}
+.cinematic-backdrop{position:absolute!important;inset:-4%!important;width:108%!important;height:108%!important;object-fit:cover!important;will-change:transform;filter:saturate(1.05) contrast(1.06) brightness(.78)}
