@@ -1,0 +1,133 @@
+/* Nexus visual overhaul — vector icons, cleaner hierarchy, premium interaction. */
+
+:root{
+  --nexus-panel:linear-gradient(155deg,rgba(14,31,36,.96),rgba(8,17,24,.97));
+  --nexus-line:rgba(233,200,120,.24);
+  --nexus-teal:#62e4c2;
+  --nexus-gold:#e8c66f;
+  --nexus-red:#db746f;
+  --nexus-ink:#071012;
+}
+
+/* --- Shared SVG mask icon system: no emoji glyph rendering --- */
+.nav-link-icon,.menu-card-icon,.hud-buttons .help-toggle,.fullscreen-toggle,.music-toggle{
+  font-size:0!important;
+  position:relative;
+  overflow:hidden;
+}
+.nav-link-icon::before,.menu-card-icon::before,.hud-buttons .help-toggle::before,.fullscreen-toggle::before,.music-toggle::before{
+  content:"";
+  display:block;
+  width:58%;height:58%;margin:auto;
+  background:currentColor;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+  -webkit-mask-position:center;mask-position:center;
+  -webkit-mask-size:contain;mask-size:contain;
+}
+/* play / crossed swords */
+.nav-link:nth-of-type(1) .nav-link-icon::before,.menu-card:nth-child(2) .menu-card-icon::before{
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M3 2l7 7-2 2-7-7V2h2zm18 0v2l-7 7-2-2 7-7h2zM7 13l2 2-5 5H2v-2l5-5zm10 0l5 5v2h-2l-5-5 2-2zM8.5 8.5l7 7-1.5 1.5-7-7L8.5 8.5zm7 0L17 10l-7 7-1.5-1.5 7-7z'/%3E%3C/svg%3E");
+  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M3 2l7 7-2 2-7-7V2h2zm18 0v2l-7 7-2-2 7-7h2zM7 13l2 2-5 5H2v-2l5-5zm10 0l5 5v2h-2l-5-5 2-2zM8.5 8.5l7 7-1.5 1.5-7-7L8.5 8.5zm7 0L17 10l-7 7-1.5-1.5 7-7z'/%3E%3C/svg%3E");
+}
+/* collection / stacked cards */
+.nav-link:nth-of-type(2) .nav-link-icon::before{
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M6 3h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2zm1.5 3v10h9V6h-9zM2 7h1v12h12v2H4a2 2 0 01-2-2V7z'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M6 3h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2zm1.5 3v10h9V6h-9zM2 7h1v12h12v2H4a2 2 0 01-2-2V7z'/%3E%3C/svg%3E");
+}
+/* social / heraldic people */
+.nav-link:nth-of-type(3) .nav-link-icon::before,.menu-card:nth-child(3) .menu-card-icon::before{
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M9 11a4 4 0 110-8 4 4 0 010 8zm6.5 1a3.5 3.5 0 110-7 3.5 3.5 0 010 7zM2 21v-3.2C2 14.6 5 13 9 13s7 1.6 7 4.8V21H2zm14.5 0v-2.5c0-1.7-.6-3-1.7-4 4.2-.2 7.2 1.2 7.2 4V21h-5.5z'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M9 11a4 4 0 110-8 4 4 0 010 8zm6.5 1a3.5 3.5 0 110-7 3.5 3.5 0 010 7zM2 21v-3.2C2 14.6 5 13 9 13s7 1.6 7 4.8V21H2zm14.5 0v-2.5c0-1.7-.6-3-1.7-4 4.2-.2 7.2 1.2 7.2 4V21h-5.5z'/%3E%3C/svg%3E");
+}
+/* shop / chest */
+.nav-link:nth-of-type(4) .nav-link-icon::before{
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M3 5h18l-1.5 5H4.5L3 5zm1.5 7h15v8H4.5v-8zM10 12v3h4v-3h-4zM7 3h10l1 2H6l1-2z'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M3 5h18l-1.5 5H4.5L3 5zm1.5 7h15v8H4.5v-8zM10 12v3h4v-3h-4zM7 3h10l1 2H6l1-2z'/%3E%3C/svg%3E");
+}
+/* settings / rune gear */
+.nav-link:nth-of-type(5) .nav-link-icon::before{
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M10.7 2h2.6l.5 2.2c.6.2 1.2.4 1.7.7l1.9-1.2 1.9 1.9-1.2 1.9c.3.5.5 1.1.7 1.7L21 9.7v2.6l-2.2.5c-.2.6-.4 1.2-.7 1.7l1.2 1.9-1.9 1.9-1.9-1.2c-.5.3-1.1.5-1.7.7l-.5 2.2h-2.6l-.5-2.2a7 7 0 01-1.7-.7l-1.9 1.2-1.9-1.9 1.2-1.9a7 7 0 01-.7-1.7L3 12.3V9.7l2.2-.5c.2-.6.4-1.2.7-1.7L4.7 5.6l1.9-1.9 1.9 1.2c.5-.3 1.1-.5 1.7-.7L10.7 2zM12 8a4 4 0 100 8 4 4 0 000-8z'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M10.7 2h2.6l.5 2.2c.6.2 1.2.4 1.7.7l1.9-1.2 1.9 1.9-1.2 1.9c.3.5.5 1.1.7 1.7L21 9.7v2.6l-2.2.5c-.2.6-.4 1.2-.7 1.7l1.2 1.9-1.9 1.9-1.9-1.2c-.5.3-1.1.5-1.7.7l-.5 2.2h-2.6l-.5-2.2a7 7 0 01-1.7-.7l-1.9 1.2-1.9-1.9 1.2-1.9a7 7 0 01-.7-1.7L3 12.3V9.7l2.2-.5c.2-.6.4-1.2.7-1.7L4.7 5.6l1.9-1.9 1.9 1.2c.5-.3 1.1-.5 1.7-.7L10.7 2zM12 8a4 4 0 100 8 4 4 0 000-8z'/%3E%3C/svg%3E");
+}
+/* campaign / Nexus crystal */
+.menu-card:nth-child(1) .menu-card-icon::before{
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2l5 5-2 11-3 4-3-4L7 7l5-5zm0 3.2L9.7 7.5l1.5 8.3.8 1.2.8-1.2 1.5-8.3L12 5.2z'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2l5 5-2 11-3 4-3-4L7 7l5-5zm0 3.2L9.7 7.5l1.5 8.3.8 1.2.8-1.2 1.5-8.3L12 5.2z'/%3E%3C/svg%3E");
+}
+
+/* --- Play menu cards: one visual language, three identities --- */
+body.on-home .menu-cards{align-items:stretch!important}
+body.on-home .menu-card{
+  isolation:isolate;
+  min-height:164px!important;
+  border:1px solid rgba(255,255,255,.13)!important;
+  background:linear-gradient(160deg,rgba(15,34,39,.96),rgba(7,14,21,.96))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 18px 42px rgba(0,0,0,.34)!important;
+  transform-style:preserve-3d;
+}
+body.on-home .menu-card::after{
+  content:"";position:absolute;inset:auto 14% -45px;height:70px;border-radius:50%;filter:blur(28px);opacity:.16;z-index:-1;transition:.25s ease;
+}
+body.on-home .menu-card:nth-child(1)::after{background:var(--nexus-gold)}
+body.on-home .menu-card:nth-child(2)::after{background:var(--nexus-teal)}
+body.on-home .menu-card:nth-child(3)::after{background:var(--nexus-red)}
+body.on-home .menu-card:hover{transform:translateY(-6px) scale(1.015)!important}
+body.on-home .menu-card:hover::after{opacity:.34;transform:translateY(-10px)}
+body.on-home .menu-card-icon{
+  width:70px!important;height:70px!important;border-radius:18px!important;
+  background:linear-gradient(145deg,rgba(255,255,255,.10),rgba(255,255,255,.025))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 0 28px -11px currentColor!important;
+  transform:rotate(45deg);
+}
+body.on-home .menu-card-icon::before{width:52%;height:52%;transform:rotate(-45deg)}
+body.on-home .menu-card:nth-child(1) .menu-card-icon{color:var(--nexus-gold)!important}
+body.on-home .menu-card:nth-child(2) .menu-card-icon{color:var(--nexus-teal)!important}
+body.on-home .menu-card:nth-child(3) .menu-card-icon{color:var(--nexus-red)!important}
+body.on-home .menu-card-body{display:grid;gap:4px;justify-items:center}
+body.on-home .menu-card-body small{letter-spacing:1.7px!important;opacity:.75}
+body.on-home .menu-card-body b{font-family:"Playfair Display",serif!important;font-size:20px!important;letter-spacing:.1px}
+body.on-home .menu-card-body em{font-style:normal!important;color:#9fb4ad!important}
+
+/* --- Sidebar: premium tab treatment --- */
+.app-sidebar{background:linear-gradient(180deg,rgba(5,17,19,.97),rgba(5,12,16,.98))!important;border-right-color:rgba(232,198,111,.15)!important}
+.nav-link{position:relative;overflow:hidden;border:1px solid transparent!important;border-left:1px solid transparent!important;padding:11px 12px!important}
+.nav-link::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(98,228,194,.09),transparent 72%);opacity:0;transition:.18s}
+.nav-link:hover::after,.nav-link.active::after{opacity:1}
+.nav-link.active{border-color:rgba(98,228,194,.20)!important;box-shadow:inset 3px 0 0 var(--nexus-teal),0 8px 22px rgba(0,0,0,.18)}
+.nav-link-icon{width:30px!important;height:30px!important;border-radius:9px;display:grid!important;place-items:center;background:rgba(255,255,255,.045);color:#9eb9b1!important;z-index:1}
+.nav-link.active .nav-link-icon{color:var(--nexus-teal)!important;background:rgba(98,228,194,.09);box-shadow:0 0 18px rgba(98,228,194,.10)}
+.nav-link>span,.nav-link{z-index:1}
+
+/* --- Profile badge visual cleanup --- */
+.home-profile-badge{
+  border:1px solid rgba(232,198,111,.28)!important;
+  background:linear-gradient(150deg,rgba(6,18,20,.97),rgba(13,20,28,.95))!important;
+  box-shadow:0 15px 36px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.05)!important;
+}
+.home-profile-wallet em{display:flex!important;align-items:center;gap:5px;font-style:normal!important}
+.home-profile-wallet img{width:16px;height:16px;object-fit:contain;filter:drop-shadow(0 0 5px rgba(255,255,255,.14))}
+.home-profile-avatar-fallback{width:52%;height:52%;display:block;background:var(--nexus-gold);clip-path:polygon(50% 0,64% 35%,100% 50%,64% 65%,50% 100%,36% 65%,0 50%,36% 35%)}
+
+/* --- Generic buttons: less web-app, more game UI --- */
+.primary,.secondary,.chapter button,.faction-unlock-list button,.terrain-card button,.battle-pass-premium{
+  border-radius:10px!important;
+  letter-spacing:.5px;
+  transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease,filter .14s ease!important;
+}
+.primary:hover:not(:disabled),.secondary:hover:not(:disabled),.chapter button:hover:not(:disabled),.faction-unlock-list button:hover:not(:disabled),.terrain-card button:hover:not(:disabled){transform:translateY(-2px);filter:brightness(1.06)}
+button:focus-visible,a:focus-visible{outline:2px solid var(--nexus-gold);outline-offset:3px}
+
+/* --- Subtabs and cards --- */
+.subtab{border:1px solid rgba(255,255,255,.10)!important;background:rgba(255,255,255,.035)!important}
+.subtab.active{background:linear-gradient(145deg,rgba(98,228,194,.15),rgba(98,228,194,.04))!important;border-color:rgba(98,228,194,.35)!important;box-shadow:inset 0 -2px 0 var(--nexus-teal)}
+.terrain-card,.options-card,.chapter,.faction-unlock-list article{box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 10px 30px rgba(0,0,0,.14)}
+
+/* Hide obsolete home stats block: HomeProfileBadge is now the sole summary. */
+body.on-home .home-hero>.stats{display:none!important}
+/* Hide the obsolete faction/deck selector in the Play menu. */
+body.on-home .home-copy .faction-pick{display:none!important}
+
+/* Smaller screens keep the same icon system. */
+@media(max-width:900px){
+  body.on-home .menu-card{min-height:126px!important}
+  body.on-home .menu-card-icon{width:54px!important;height:54px!important;border-radius:15px!important}
+  body.on-home .menu-card-body b{font-size:15px!important}
+  .nav-link-icon{width:28px!important;height:28px!important}
+}
+
+@media(prefers-reduced-motion:reduce){body.on-home .menu-card:hover{transform:none!important}.nav-link::after,body.on-home .menu-card::after{transition:none!important}}
