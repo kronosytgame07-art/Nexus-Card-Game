@@ -57,17 +57,12 @@ export function reconcileFactionUnlocks() {
   }
   const faction = allowed.includes(state.faction) ? state.faction : 'Meute';
   const active = decks.find((deck) => deck.id === state.activeDeckId && deck.faction === faction) ?? decks.find((deck) => deck.faction === faction) ?? decks[0];
-  useGame.setState({
-    unlockedFactions: allowed,
-    faction,
-    decks,
-    activeDeckId: active?.id ?? null,
-    deck: active?.main ?? starterDeck('Meute'),
-  });
+  useGame.setState({ unlockedFactions: allowed, faction, decks, activeDeckId: active?.id ?? null, deck: active?.main ?? starterDeck('Meute') });
   reconciling = false;
 }
 
-export function purchaseFactionDeck(faction: 'Chevalier' | 'Orc'): boolean {
+export function purchaseFactionDeck(faction: Faction): boolean {
+  if (faction !== 'Chevalier' && faction !== 'Orc') return false;
   const state = useGame.getState();
   const purchased = purchasedFactions();
   if (purchased.includes(faction) || state.gems < FACTION_DECK_PRICE_GEMS) return false;
