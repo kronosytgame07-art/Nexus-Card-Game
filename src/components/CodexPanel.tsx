@@ -1,3 +1,27 @@
 import { useStory } from '../narrative/story-state';
-const entries:Record<string,{title:string;text:string}>= {nexus:{title:'Le Nexus',text:'Une énergie ancienne présente à travers Elyndra.'},meute:{title:'La Meute',text:'Les gardiens sauvages considèrent le Nexus comme vivant.'},lyra:{title:'Lyra Croc-de-Lune',text:'Une gardienne qui sait plus qu’elle ne le dit.'},valdoren:{title:'Valdoren',text:'Le royaume chevalier conserve une histoire officielle de la Fracture.'},kael:{title:'Kael Varenn',text:'Un chevalier loyal dont les certitudes commencent à vaciller.'},gobelins:{title:'Les Gobelins',text:'Inventeurs, récupérateurs et détenteurs d’archives impossibles.'},fracture:{title:'La Fracture',text:'Le Nexus s’est brisé. Personne ne s’accorde sur la raison.'}};
+const entries:Record<string,{title:string;text:string}>= {
+ nexus:{title:'Le Nexus',text:'Une énergie ancienne présente à travers Elyndra. Les Évosphères semblent être des manifestations stabilisées de ses fragments.'},
+ meute:{title:'La Meute',text:'Les gardiens sauvages considèrent le Nexus comme vivant et refusent qu’il soit réduit à une simple source d’énergie.'},
+ lyra:{title:'Lyra Croc-de-Lune',text:'Une gardienne de la Meute au sarcasme sec, qui sait beaucoup plus de choses qu’elle ne le dit.'},
+ valdoren:{title:'Valdoren',text:'Le royaume chevalier conserve une histoire officielle de la Fracture, mais ses archives montrent désormais des contradictions.'},
+ kael:{title:'Kael Varenn',text:'Un chevalier loyal dont les certitudes commencent à vaciller à mesure que les preuves s’accumulent.'},
+ gobelins:{title:'Les Gobelins',text:'Inventeurs, récupérateurs et détenteurs d’archives impossibles. Ils transforment les fragments du Nexus en machines instables.'},
+ gribz:{title:'Gribz Trois-Mèches',text:'Inventeur gobelin génial et catastrophique. Ses appareils sont parmi les premiers à avoir détecté le signal commun des fragments.'},
+ fracture:{title:'La Fracture',text:'Le Nexus s’est brisé. Chaque peuple accuse un autre, mais les témoignages les plus anciens ne correspondent pas à l’Histoire officielle.'},
+ orcs:{title:'Les Orcs des Cendres',text:'Des clans guerriers liés par l’honneur et la mémoire. Leur brutalité apparente cache une culture de serments et de dette très codifiée.'},
+ rakh:{title:'Rakh Mordent',text:'Chef de guerre des Cendres. Stratège redoutable, il soupçonne que quelqu’un pousse volontairement les royaumes vers une nouvelle guerre.'},
+ 'terres-cendres':{title:'Les Terres de Cendre',text:'Une frontière volcanique où plusieurs fragments du Nexus ont commencé à résonner simultanément.'},
+ dragons:{title:'Les Dragons',text:'Les plus anciens témoins connus du Nexus. Ils affirment que les peuples modernes ont oublié la véritable fonction de la Fracture.'},
+ vaeloryx:{title:'Vaeloryx',text:'Dragon ancien ayant vécu avant la Fracture. Il reconnaît le joueur comme un Lié et semble craindre ce que ce retour signifie.'},
+ lies:{title:'Les Liés',text:'De rares individus capables d’entrer en résonance avec plusieurs signatures du Nexus. Leur existence avait presque disparu des archives.'},
+ squelettes:{title:'La Légion Éternelle',text:'Des morts que le Nexus refuse d’effacer complètement. Ils ne sont pas de simples revenants : certains conservent souvenirs, serments et volonté.'},
+ morvane:{title:'Morvane, Roi des Sans-Nom',text:'Souverain d’une nécropole oubliée. Il prétend que Valdoren a volontairement supprimé de l’Histoire ceux qui sont devenus sa légion.'},
+ 'memoire-des-morts':{title:'La Mémoire des morts',text:'Certains fragments semblent conserver des souvenirs appartenant à des personnes disparues depuis des siècles.'},
+ 'reine-effacee':{title:'La Reine effacée',text:'Une souveraine absente des chroniques publiques mais dont les sceaux apparaissent dans les archives interdites et les tombeaux.'},
+ 'archives-interdites':{title:'Les Archives interdites',text:'Une collection de documents scellés par la couronne de Valdoren. Leur existence suggère que le royaume connaissait une partie de la vérité.'},
+ 'guerre-des-cendres':{title:'La Guerre que quelqu’un prépare',text:'Des mouvements militaires semblent provoquer volontairement une escalade entre Valdoren et les clans orcs.'},
+ 'pacte-rakh':{title:'Le Pacte de Rakh',text:'Une alliance fragile entre le groupe du Lié et les Orcs, fondée non sur la confiance mais sur un ennemi commun.'},
+ 'tyran-des-cieux':{title:'Le Tyran des cieux',text:'Une présence draconique liée à une ancienne fonction du Nexus. Vaeloryx le décrit non comme un roi, mais comme une clef.'},
+ 'prison-du-nexus':{title:'La Prison du Nexus',text:'Première révélation majeure : le Nexus n’était peut-être pas seulement une source de pouvoir. Quelque chose semble avoir été enfermé derrière lui.'},
+};
 export function CodexPanel(){const unlocked=useStory(s=>s.codex);return <section><h2>Chroniques d’Elyndra</h2><div className="codex-grid">{unlocked.map(id=>entries[id]&&<article key={id} className="options-card"><small>ARCHIVE DÉVERROUILLÉE</small><h3>{entries[id].title}</h3><p>{entries[id].text}</p></article>)}</div></section>;}
