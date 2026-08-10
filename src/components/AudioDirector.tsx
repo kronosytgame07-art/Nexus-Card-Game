@@ -1,58 +1,26 @@
 import { useEffect, useRef } from 'react';
 import { useGame } from '../store/game';
 
-const MENU_THEME = `${import.meta.env.BASE_URL}audio/menu-theme.mp3`;
 type FeedbackTone = 'soft' | 'impact' | 'reward';
 
 /**
- * Pont unique entre les préférences persistées et les retours sonores du jeu.
- * La musique ne démarre qu'après une interaction utilisateur, conformément aux
- * règles des navigateurs et des webviews mobiles.
+ * Gestionnaire unique des retours sonores d'interface.
  *
- * Les SFX d'interface restent synthétiques pour ne pas ajouter de poids au
- * téléchargement, mais sont volontairement composés de plusieurs couches :
- * clic sec, impact grave + bruit filtré et petit accord de récompense. Cela
- * évite le simple "bip" d'application web tout en restant instantané.
+ * IMPORTANT : la musique n'est volontairement plus créée ici. Elle est gérée
+ * exclusivement par MusicManager dans App.tsx, qui sait basculer entre le menu
+ * et les pistes de combat. Garder un second HTMLAudio ici lançait deux fois le
+ * thème du menu et pouvait empiler les lectures à chaque remount/navigation.
  */
 export default function AudioDirector() {
-  const musicEnabled = useGame((state) => state.musicEnabled);
-  const musicVolume = useGame((state) => state.musicVolume);
   const sfxVolume = useGame((state) => state.sfxVolume);
   const vibrationEnabled = useGame((state) => state.vibrationEnabled);
-  const musicRef = useRef<HTMLAudioElement | null>(null);
   const contextRef = useRef<AudioContext | null>(null);
   const lastFeedbackRef = useRef(0);
 
-  useEffect(() => {
-    const music = new Audio(MENU_THEME);
-    music.loop = true;
-    music.preload = 'metadata';
-    musicRef.current = music;
-    return () => {
-      music.pause();
-      music.src = '';
-      musicRef.current = null;
-      contextRef.current?.close().catch(() => undefined);
-      contextRef.current = null;
-    };
+  useEffect(() => () => {
+    contextRef.current?.close().catch(() => undefined);
+    contextRef.current = null;
   }, []);
-
-  useEffect(() => {
-    const music = musicRef.current;
-    if (!music) return;
-    music.volume = Math.max(0, Math.min(1, musicVolume / 100));
-    if (!musicEnabled) music.pause();
-  }, [musicEnabled, musicVolume]);
-
-  useEffect(() => {
-    const unlockMusic = () => {
-      const music = musicRef.current;
-      if (!music || !musicEnabled) return;
-      music.play().catch(() => undefined);
-    };
-    window.addEventListener('pointerdown', unlockMusic, { passive: true });
-    return () => window.removeEventListener('pointerdown', unlockMusic);
-  }, [musicEnabled]);
 
   useEffect(() => {
     const getContext = () => {
