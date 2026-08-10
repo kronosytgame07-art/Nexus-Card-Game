@@ -126,6 +126,7 @@ export default function HomeSparkles({ className, paused }: { className?: string
     canvas.addEventListener('webglcontextlost', onContextLost);
 
     let hidden = document.hidden;
+    let lastFrame = performance.now();
     const onVisibility = () => {
       hidden = document.hidden;
       lastFrame = performance.now();
@@ -137,7 +138,6 @@ export default function HomeSparkles({ className, paused }: { className?: string
 
     let rafId = 0;
     let elapsed = 0;
-    let lastFrame = performance.now();
     let lastPaint = 0;
     let previousQuality = quality();
     const render = (now: number) => {
@@ -145,6 +145,7 @@ export default function HomeSparkles({ className, paused }: { className?: string
       const dt = Math.min((now - lastFrame) / 1000, 0.1);
       lastFrame = now;
       if (pausedRef.current || hidden) return;
+      elapsed += dt;
 
       const currentQuality = quality();
       if (currentQuality !== previousQuality) {
@@ -154,7 +155,6 @@ export default function HomeSparkles({ className, paused }: { className?: string
       const minFrameMs = targetFrameMs();
       if (minFrameMs > 0 && now - lastPaint < minFrameMs) return;
       lastPaint = now;
-      elapsed += dt;
 
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.useProgram(program);
