@@ -1,0 +1,85 @@
+/* Identité visuelle de combat par faction. Les cartes du plateau exposent déjà
+   data-card-faction : on peut donc différencier les six archétypes sans toucher
+   aux règles ni dupliquer le moteur d'animation. */
+.field-card[data-card-faction]::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .2s ease, transform .25s ease;
+  mix-blend-mode: screen;
+}
+.field-card[data-card-faction]:hover::after,
+.field-card[data-card-faction].selected::after,
+.field-card[data-card-faction].effect-active::after { opacity: .9; }
+
+/* Meute — givre, lune, brume froide */
+.field-card[data-card-faction='Meute']::after {
+  box-shadow: 0 0 16px rgba(118,220,255,.72), inset 0 0 13px rgba(198,244,255,.34);
+  background: radial-gradient(circle at 50% 15%, rgba(218,250,255,.28), transparent 42%), linear-gradient(135deg, transparent 45%, rgba(126,225,255,.24), transparent 55%);
+}
+/* Chevalier — or sacré, acier et serment */
+.field-card[data-card-faction='Chevalier']::after {
+  box-shadow: 0 0 18px rgba(255,205,92,.68), inset 0 0 12px rgba(255,244,190,.3);
+  background: linear-gradient(115deg, transparent 30%, rgba(255,241,177,.28) 48%, transparent 62%);
+}
+/* Gobelin — alchimie instable, étincelles toxiques */
+.field-card[data-card-faction='Gobelin']::after {
+  box-shadow: 0 0 18px rgba(137,255,62,.65), inset 0 0 14px rgba(210,255,83,.25);
+  background: radial-gradient(circle at 22% 75%, rgba(176,255,45,.32) 0 4%, transparent 5%), radial-gradient(circle at 78% 28%, rgba(255,214,55,.26) 0 3%, transparent 4%);
+}
+/* Orc — braises, rage, impact physique */
+.field-card[data-card-faction='Orc']::after {
+  box-shadow: 0 0 19px rgba(220,45,35,.68), inset 0 0 15px rgba(255,104,40,.24);
+  background: radial-gradient(ellipse at 50% 100%, rgba(255,68,25,.34), transparent 58%);
+}
+/* Dragon — magma, puissance antique */
+.field-card[data-card-faction='Dragon']::after {
+  box-shadow: 0 0 24px rgba(255,92,24,.78), 0 0 38px rgba(255,180,36,.22), inset 0 0 16px rgba(255,220,100,.25);
+  background: conic-gradient(from 210deg at 50% 55%, transparent, rgba(255,91,20,.22), rgba(255,218,90,.28), transparent 48%);
+}
+/* Squelette — nécromancie, âme spectrale */
+.field-card[data-card-faction='Squelette']::after {
+  box-shadow: 0 0 20px rgba(99,255,169,.62), 0 0 34px rgba(145,74,255,.2), inset 0 0 14px rgba(164,255,210,.2);
+  background: radial-gradient(circle at 50% 70%, rgba(86,255,158,.25), transparent 50%), linear-gradient(0deg, rgba(103,57,177,.16), transparent 55%);
+}
+
+/* Invocation : la signature de faction apparaît pendant l'entrée de carte. */
+.field-card[data-card-faction] { isolation: isolate; }
+.field-card[data-card-faction].effect-active::after { animation: faction-vfx-pulse .75s ease-out both; }
+@keyframes faction-vfx-pulse {
+  0% { opacity: 0; transform: scale(.78); filter: brightness(1.8); }
+  38% { opacity: 1; transform: scale(1.08); filter: brightness(1.45); }
+  100% { opacity: .35; transform: scale(1); filter: brightness(1); }
+}
+
+/* Les Mythiques doivent immédiatement paraître au-dessus du reste. */
+.field-card.Mythique::before,
+.card.Mythique::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 3;
+  background: linear-gradient(115deg, transparent 15%, rgba(255,255,255,.08) 32%, rgba(122,236,255,.34) 44%, rgba(255,217,107,.4) 51%, rgba(201,121,255,.32) 59%, transparent 76%);
+  background-size: 240% 100%;
+  mix-blend-mode: screen;
+  animation: mythic-prism 3.2s linear infinite;
+}
+@keyframes mythic-prism { to { background-position: -240% 0; } }
+
+/* Respect strict des options d'accessibilité/performance existantes. */
+html[data-glow='off'] .field-card[data-card-faction]::after,
+html[data-glow='off'] .field-card.Mythique::before,
+html[data-glow='off'] .card.Mythique::before { display: none; }
+html[data-animations='off'] .field-card[data-card-faction]::after,
+html[data-animations='off'] .field-card.Mythique::before,
+html[data-animations='off'] .card.Mythique::before { animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .field-card[data-card-faction]::after,
+  .field-card.Mythique::before,
+  .card.Mythique::before { animation: none !important; }
+}
