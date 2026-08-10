@@ -1,7 +1,7 @@
-import { starterDeck } from '../engine/cards';
+import { cardsByFaction, starterDeck } from '../engine/cards';
 import type { Faction } from '../engine/types';
 import { CHAPTERS } from '../engine/campaign';
-import { useGame, type SavedDeck } from '../store/game';
+import { defaultAvatarFor, useGame, type SavedDeck } from '../store/game';
 
 const PURCHASE_KEY = 'nexus-faction-purchases-v1';
 export const FACTION_DECK_PRICE_GEMS = 1000;
@@ -40,6 +40,14 @@ function structureDeck(faction: Faction): SavedDeck {
   };
 }
 
+function startingInventory(faction: Faction): Record<string, number> {
+  const inventory: Record<string, number> = {};
+  for (const card of cardsByFaction(faction)) {
+    if (card.level === 1 && !card.boosterOnly && !card.assetMissing) inventory[card.id] = 3;
+  }
+  return inventory;
+}
+
 let reconciling = false;
 export function reconcileFactionUnlocks() {
   if (reconciling) return;
@@ -47,17 +55,28 @@ export function reconcileFactionUnlocks() {
   if (!state.factionChosen) return;
   const allowed = allowedFactions(state);
   const same = allowed.length === state.unlockedFactions.length && allowed.every((f) => state.unlockedFactions.includes(f));
-  const illegalDeck = state.decks.some((deck) => !allowed.includes(deck.faction));
-  if (same && !illegalDeck && allowed.includes(state.faction)) return;
+  if (same && allowed.includes(state.faction)) return;
 
   reconciling = true;
-  const decks = state.decks.filter((deck) => allowed.includes(deck.faction));
+  // On conserve les decks des factions verrouillées : ils deviennent simplement
+  // inactifs jusqu'au déblocage. Cela évite toute perte de deck sur une ancienne sauvegarde.
+  const decks = [...state.decks];
   for (const faction of allowed) {
     if (!decks.some((deck) => deck.faction === faction)) decks.push(structureDeck(faction));
   }
   const faction = allowed.includes(state.faction) ? state.faction : 'Meute';
-  const active = decks.find((deck) => deck.id === state.activeDeckId && deck.faction === faction) ?? decks.find((deck) => deck.faction === faction) ?? decks[0];
-  useGame.setState({ unlockedFactions: allowed, faction, decks, activeDeckId: active?.id ?? null, deck: active?.main ?? starterDeck('Meute') });
+  const active =
+    decks.find((deck) => deck.id === state.activeDeckId && deck.faction === faction) ??
+    decks.find((deck) => deck.faction === faction) ??
+    structureDeck('Meute');
+
+  useGame.setState({
+    unlockedFactions: allowed,
+    faction,
+    decks,
+    activeDeckId: active.id,
+    deck: active.main,
+  });
   reconciling = false;
 }
 
@@ -81,13 +100,73 @@ export function factionUnlockLabel(faction: Faction, state = useGame.getState())
   return 'Disponible';
 }
 
+function installProgressionActions() {
+  // L'ancien store contient encore les anciennes règles de campagne. On remplace
+  // uniquement les deux actions concernées au runtime afin qu'une seule source
+  // de vérité décide désormais des déblocages.
+  useGame.setState({
+    chooseStartingFaction: (requestedFaction: Faction) => {
+      const current = useGame.getState();
+      if (current.factionChosen) return;
+      // Meute est le seul deck de départ gratuit. Chevalier et Orc passent par la boutique.
+      const faction: Faction = requestedFaction === 'Meute' ? 'Meute' : 'Meute';
+      const main = starterDeck(faction);
+      const deck: SavedDeck = {
+        id: `deck-${faction}-${Date.now()}`,
+        name: `Deck ${faction} 1`,
+        faction,
+        main,
+      };
+      const inventory = startingInventory(faction);
+      useGame.setState({
+        factionChosen: true,
+        faction,
+        unlockedFactions: [faction],
+        inventory,
+        owned: Object.keys(inventory),
+        deck: main,
+        decks: [deck],
+        activeDeckId: deck.id,
+        avatarCardId: current.avatarCardId || defaultAvatarFor(faction),
+      });
+    },
+    completeChapter: (chapterId: number) => {
+      const state = useGame.getState();
+      const campaignChapter = chapterId >= state.campaignChapter ? chapterId + 1 : state.campaignChapter;
+      useGame.setState({ campaignChapter });
+    },
+  });
+}
+
+function refreshOnboardingLocks() {
+  document.querySelectorAll<HTMLButtonElement>('.onboarding-card').forEach((button) => {
+    const text = button.textContent ?? '';
+    if (text.includes('Meute')) return;
+    button.disabled = true;
+    button.classList.add('locked-by-progression');
+    button.dataset.lockLabel = text.includes('Chevalier') ? 'Boutique · 1000 gemmes' : 'Verrouillé';
+    button.title = text.includes('Chevalier') ? 'Deck Chevalier disponible en boutique pour 1000 gemmes' : 'Faction verrouillée';
+  });
+}
+
 export function installFactionUnlockRules() {
+  installProgressionActions();
   reconcileFactionUnlocks();
+  refreshOnboardingLocks();
+
+  const observer = new MutationObserver(refreshOnboardingLocks);
+  observer.observe(document.getElementById('root') ?? document.body, { subtree: true, childList: true });
+
   let signature = '';
-  return useGame.subscribe((state) => {
+  const unsubscribe = useGame.subscribe((state) => {
     const next = `${state.factionChosen}|${state.campaignChapter}|${state.purchasedAvatars.length}|${state.dragonStructureUnlocked}|${state.gems}|${state.unlockedFactions.join(',')}`;
     if (next === signature) return;
     signature = next;
     reconcileFactionUnlocks();
   });
+
+  return () => {
+    observer.disconnect();
+    unsubscribe();
+  };
 }
