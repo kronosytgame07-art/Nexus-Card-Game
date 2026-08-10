@@ -10,12 +10,10 @@ export interface ChapterDef {
 }
 
 // Progression pensée pour monter en puissance sans devenir injuste :
-// deux chapitres par niveau d'IA, la vie adverse augmente à chaque étape.
-// La rotation fait découvrir les six factions actuellement jouables sans
-// modifier la courbe historique de difficulté, de PV ou de récompenses.
+// la rotation suit désormais exactement l'ordre narratif de la campagne.
 export const CHAPTERS: ChapterDef[] = [
-  { id: 0, title: 'Le serment brisé', opponentFaction: 'Chevalier', aiDifficulty: 'novice', enemyLifeBonus: 0, reward: 40 },
-  { id: 1, title: 'La route des crocs', opponentFaction: 'Meute', aiDifficulty: 'novice', enemyLifeBonus: 2, reward: 45 },
+  { id: 0, title: 'Le fragment de la forêt', opponentFaction: 'Meute', aiDifficulty: 'novice', enemyLifeBonus: 0, reward: 40 },
+  { id: 1, title: 'L’épreuve de Valdoren', opponentFaction: 'Chevalier', aiDifficulty: 'novice', enemyLifeBonus: 2, reward: 45 },
   { id: 2, title: 'Les archives éventrées', opponentFaction: 'Gobelin', aiDifficulty: 'veteran', enemyLifeBonus: 4, reward: 55 },
   { id: 3, title: 'Les cendres du clan', opponentFaction: 'Orc', aiDifficulty: 'veteran', enemyLifeBonus: 6, reward: 60 },
   { id: 4, title: 'L’œil dans la montagne', opponentFaction: 'Dragon', aiDifficulty: 'veteran', enemyLifeBonus: 8, reward: 70 },
