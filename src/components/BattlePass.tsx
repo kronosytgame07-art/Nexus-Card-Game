@@ -28,12 +28,18 @@ function load(wins: number, rankedWins: number): Save {
 }
 function save(value: Save) { localStorage.setItem(KEY, JSON.stringify(value)); }
 const factions = ALL_FACTIONS as Faction[];
-function freeReward(level: number): Reward | undefined {
+function boosterForLevel(level: number): Reward {
+  const faction = factions[(level - 1) % factions.length];
+  return { kind: 'booster', faction, label: `Booster ${faction}` };
+}
+function freeReward(level: number): Reward {
   if (level === 50) return { kind: 'gems', amount: 100, label: '100 gemmes' };
-  if (level % 10 === 0) return { kind: 'booster', faction: factions[(level / 10 - 1) % factions.length], label: `Booster ${factions[(level / 10 - 1) % factions.length]}` };
+  if (level % 10 === 0) return boosterForLevel(level);
   if (level % 5 === 0) return { kind: 'gems', amount: 25, label: '25 gemmes' };
   if (level % 2 === 0) return { kind: 'gold', amount: 100, label: '100 or' };
-  return undefined;
+  // Plus aucun niveau vide côté gratuit : les anciens emplacements « — »
+  // deviennent des boosters, ce qui donne une récompense concrète à chaque niveau.
+  return boosterForLevel(level);
 }
 function premiumReward(level: number, mythicId?: string): Reward | undefined {
   if (level === 50 && mythicId) return { kind: 'avatar', id: mythicId, label: 'Avatar Mythique exclusif' };
@@ -54,8 +60,6 @@ export default function BattlePass() {
   const progress = level === MAX_LEVEL ? 100 : data.xp % XP_PER_LEVEL;
 
   useEffect(() => {
-    // Si la progression générale a été réinitialisée, on recale les compteurs du Pass
-    // au lieu d'attendre que le joueur dépasse à nouveau son ancien total de victoires.
     if (game.wins < data.lastWins || game.rankedWins < data.lastRankedWins) {
       const next = { ...data, lastWins: game.wins, lastRankedWins: game.rankedWins };
       save(next);
@@ -66,8 +70,6 @@ export default function BattlePass() {
     const rankedWins = Math.max(0, game.rankedWins - data.lastRankedWins);
     if (!normalWins && !rankedWins) return;
     setData((current) => {
-      // Les victoires classées sont déjà comptées dans `wins` par le moteur : on ajoute
-      // seulement un bonus classé de 40 XP, pour un total de 100 XP par victoire classée.
       const next = {
         ...current,
         xp: Math.min(MAX_LEVEL * XP_PER_LEVEL, current.xp + normalWins * 60 + rankedWins * 40),
@@ -91,9 +93,7 @@ export default function BattlePass() {
     if (reward.kind === 'booster' && reward.faction) game.openBooster(reward.faction, 0, 1);
     if (reward.kind === 'terrain' && (reward.id === 'swamp' || reward.id === 'ruins')) {
       const id = reward.id as PassTerrain;
-      useGame.setState((state) => ({
-        purchasedTerrains: state.purchasedTerrains.includes(id as never) ? state.purchasedTerrains : [...state.purchasedTerrains, id as never],
-      }));
+      useGame.setState((state) => ({ purchasedTerrains: state.purchasedTerrains.includes(id as never) ? state.purchasedTerrains : [...state.purchasedTerrains, id as never] }));
     }
     if (reward.kind === 'avatar' && reward.id) {
       useGame.setState((state) => ({ purchasedAvatars: state.purchasedAvatars.includes(reward.id!) ? state.purchasedAvatars : [...state.purchasedAvatars, reward.id!] }));
@@ -120,7 +120,7 @@ export default function BattlePass() {
     </button>
     {open && <div className="battle-pass-overlay" onClick={() => setOpen(false)}>
       <section className="battle-pass-panel" onClick={(event) => event.stopPropagation()}>
-        <header><div><small>SAISON 1 · L’ÉCHO DU NEXUS</small><h2>Pass de combat</h2><p>Niveau {level} · Les victoires font progresser le pass.</p></div><button onClick={() => setOpen(false)}>×</button></header>
+        <header><div><small>SAISON 1 · L’ÉCHO DU NEXUS</small><h2>Pass de combat</h2><p>Niveau {level} · Une récompense gratuite est disponible à chaque niveau.</p></div><button onClick={() => setOpen(false)}>×</button></header>
         {!data.premium && <button className="battle-pass-premium" disabled={game.gems < PREMIUM_PRICE} onClick={buy}>Débloquer Premium · 💎 {PREMIUM_PRICE}</button>}
         {(ownsPassTerrain('ruins') || ownsPassTerrain('swamp')) && <div className="battle-pass-terrain-bar">
           <small>TERRAINS DU PASS</small>
@@ -130,7 +130,7 @@ export default function BattlePass() {
           const free = freeReward(rewardLevel), premium = premiumReward(rewardLevel, mythic?.id);
           return <article key={rewardLevel} className={rewardLevel <= level ? 'reached' : ''}>
             <strong>{rewardLevel}</strong>
-            <button disabled={!free || rewardLevel > level || data.claimedFree.includes(rewardLevel)} onClick={() => claim(rewardLevel, false, free)}><small>GRATUIT</small><b>{free?.label || '—'}</b><em>{data.claimedFree.includes(rewardLevel) ? '✓ Récupéré' : rewardLevel <= level && free ? 'Récupérer' : ''}</em></button>
+            <button disabled={rewardLevel > level || data.claimedFree.includes(rewardLevel)} onClick={() => claim(rewardLevel, false, free)}><small>GRATUIT</small><b>{free.label}</b><em>{data.claimedFree.includes(rewardLevel) ? '✓ Récupéré' : rewardLevel <= level ? 'Récupérer' : ''}</em></button>
             <button className="premium" disabled={!premium || rewardLevel > level || !data.premium || data.claimedPremium.includes(rewardLevel)} onClick={() => claim(rewardLevel, true, premium)}><small>PREMIUM</small><b>{premium?.label || '—'}</b><em>{data.claimedPremium.includes(rewardLevel) ? '✓ Récupéré' : rewardLevel <= level && data.premium && premium ? 'Récupérer' : ''}</em></button>
           </article>;
         })}</div>
