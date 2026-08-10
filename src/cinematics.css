@@ -18,8 +18,8 @@
 .cinematic-chapter.done{border-color:#5ce0bb55!important}
 .cinematic-chapter.locked{opacity:.72}.cinematic-chapter.locked .chapter-art{filter:grayscale(.7) brightness(.38)}
 
-.cinematic-story{position:fixed!important;inset:0!important;z-index:1200!important;overflow:hidden!important;background:#010204!important}
-.cinematic-frame{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;overflow:hidden!important;border:0!important;border-radius:0!important}
+.cinematic-story{position:fixed!important;inset:0!important;z-index:1200!important;overflow:hidden!important;background:#010204!important;isolation:isolate}
+.cinematic-frame{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;overflow:hidden!important;border:0!important;border-radius:0!important;z-index:0!important}
 .cinematic-backdrop{position:absolute!important;inset:-4%!important;width:108%!important;height:108%!important;object-fit:cover!important;will-change:transform;filter:saturate(1.05) contrast(1.06) brightness(.78)}
 .cinematic-depth-layer{position:absolute;inset:-4%;background-size:cover;background-position:center;opacity:.18;mix-blend-mode:screen;filter:blur(1px) contrast(1.08);clip-path:polygon(0 48%,100% 34%,100% 100%,0 100%);will-change:transform}
 .cinematic-frame .story-panel-ink{background:linear-gradient(90deg,#01030688,transparent 30%,transparent 70%,#01030688),linear-gradient(180deg,#01030622 0%,transparent 52%,#010306dd 100%)!important}
@@ -28,13 +28,16 @@
 .cinematic-portrait.portrait-left{left:3.5vw}.cinematic-portrait.portrait-right{right:3.5vw}
 .cinematic-portrait img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:50%;border:2px solid #e7c46699;box-shadow:0 0 0 7px #050708aa,0 0 36px #b65cff4a}
 .cinematic-portrait span{display:block;margin-top:9px;text-align:center;font:700 9px "DM Mono";letter-spacing:1px;color:#dbc777;text-shadow:0 2px 6px #000}
-.cinematic-bubble{z-index:8!important;max-width:min(720px,68vw)!important;background:linear-gradient(145deg,#05090df4,#0b1115e8)!important;border:1px solid #d4b75f55!important;box-shadow:0 22px 65px #000c,0 0 35px #6c3fc01c!important;backdrop-filter:blur(10px)}
+/* La bulle doit être une vraie couche opaque : aucun texte/élément du plan ne doit transparaître derrière. */
+.cinematic-bubble{z-index:20!important;max-width:min(720px,68vw)!important;background:#070c11!important;border:1px solid #d4b75f77!important;box-shadow:0 22px 65px #000f,0 0 0 1px #000,0 0 35px #6c3fc01c!important;backdrop-filter:none!important;isolation:isolate;overflow:hidden}
+.cinematic-bubble:before{background:#070c11!important}
+.cinematic-bubble>*{position:relative;z-index:2}
 .cinematic-bubble.left{left:max(3.5vw,280px)!important}.cinematic-bubble.right{right:max(3.5vw,280px)!important}
 .cinematic-bubble.narrator{left:50%!important;right:auto!important;transform:translateX(-50%);bottom:7vh!important}
-.cinematic-bubble p{font-size:clamp(14px,1.4vw,20px)!important;line-height:1.48!important}
+.cinematic-bubble p{font-size:clamp(14px,1.4vw,20px)!important;line-height:1.48!important;color:#f4f7f5!important;text-shadow:none!important}
 .cinematic-bubble .story-bubble-meta small{color:#f0cf74!important}.cinematic-bubble .story-bubble-meta em{color:#a8c9c1!important}
-.cinematic-skip{position:absolute;top:18px;right:62px;z-index:12;border:1px solid #ffffff26;background:#04090bcf;color:#b9c7c3;border-radius:8px;padding:9px 11px;font:700 9px "DM Mono";letter-spacing:.7px;cursor:pointer}
-.cinematic-story .story-scene-label,.cinematic-story .story-progress{z-index:12!important}.cinematic-story .story-close{z-index:13!important}
+.cinematic-skip{position:absolute;top:18px;right:62px;z-index:24;border:1px solid #ffffff26;background:#04090bcf;color:#b9c7c3;border-radius:8px;padding:9px 11px;font:700 9px "DM Mono";letter-spacing:.7px;cursor:pointer}
+.cinematic-story .story-scene-label,.cinematic-story .story-progress{z-index:22!important}.cinematic-story .story-close{z-index:25!important}
 .cinematic-atmosphere{position:absolute;inset:0;overflow:hidden;pointer-events:none}
 .cinematic-atmosphere i{position:absolute;left:var(--x);top:var(--y);width:var(--size);height:var(--size);border-radius:50%;opacity:.55;animation:cinema-float var(--duration) linear infinite;animation-delay:var(--delay)}
 .atmosphere-embers .cinematic-atmosphere i{background:#ff9d35;box-shadow:0 0 8px #ff5c19}
