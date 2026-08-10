@@ -6,6 +6,7 @@ import App from './App';
 import './styles.css';
 import './arena.css';
 import './mobile-fixes.css';
+import './faction-vfx.css';
 
 const isInteractiveGameElement = (target: EventTarget | null) =>
   target instanceof Element &&
