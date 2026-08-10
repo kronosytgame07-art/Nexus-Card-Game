@@ -1,68 +1,56 @@
-/* UI pass — navigation Jouer, profil compact et boutique intégrée. */
+/* UI pass — navigation Jouer, profil compact, collection propre et boutique intégrée. */
 
-/* Le profil/résumé du joueur remonte en haut à gauche de la page Jouer. */
+/* HOME — le menu Jouer ne montre plus les decks/factions. */
 body.on-home .home-hero{padding-top:112px!important;min-height:100%}
-body.on-home .home-hero .stats{
-  position:absolute!important;
-  top:18px!important;
-  left:24px!important;
-  right:auto!important;
-  z-index:12!important;
-  width:auto!important;
-  max-width:min(620px,calc(100% - 280px))!important;
-  min-height:66px;
-  padding:10px 15px!important;
-  gap:14px!important;
-  border-color:#e5c56b55!important;
-  background:linear-gradient(145deg,#061214f2,#101820e8)!important;
-  box-shadow:0 12px 34px #0007!important;
-  backdrop-filter:blur(8px);
+body.on-home .home-hero .stats{display:none!important}
+body.on-home .faction-pick.compact{display:none!important}
+
+/* Profil compact en haut à gauche : avatar + pseudo + niveau + monnaies uniquement. */
+.home-profile-badge{
+  position:fixed;top:18px;left:258px;z-index:75;
+  min-width:270px;max-width:min(430px,calc(100vw - 520px));
+  display:flex;align-items:center;gap:11px;padding:9px 13px;
+  border:1px solid #e5c56b55;border-radius:14px;
+  background:linear-gradient(145deg,#061214f5,#101820ef);
+  box-shadow:0 12px 34px #0008;color:#edf5ef;backdrop-filter:blur(8px);
+  transition:transform .15s,border-color .15s,background .15s;
 }
-body.on-home .home-hero .stats>b{font-size:13px;white-space:nowrap}
-body.on-home .home-hero .stats>span{font-size:10px}
-body.on-home .home-hero .stats .wallet{display:flex;gap:9px;align-items:center}
+.home-profile-badge:hover{transform:translateY(-2px);border-color:#e5c56b99;background:linear-gradient(145deg,#0a1b1df8,#151c27f5)}
+.home-profile-avatar{width:46px;height:46px;flex:0 0 46px;border-radius:50%;overflow:hidden;display:grid;place-items:center;border:2px solid #e8c86f;background:#071112}
+.home-profile-avatar img{width:100%;height:100%;object-fit:cover}
+.home-profile-main{display:grid;gap:2px;min-width:0;margin-right:auto}
+.home-profile-main b{font:700 14px "Space Grotesk";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.home-profile-main small{font:800 9px "DM Mono";letter-spacing:.7px;color:#6fe1c3}
+.home-profile-wallet{display:flex;align-items:center;gap:8px;margin-left:8px}
+.home-profile-wallet em{font:800 10px "DM Mono";font-style:normal;white-space:nowrap;color:#f0d78a}
 
 /* Les trois modes deviennent trois grosses tuiles centrées. */
-body.on-home .menu-cards{
-  width:min(1050px,94%);
-  margin:34px auto 0!important;
-  grid-template-columns:repeat(3,minmax(0,1fr))!important;
-  gap:18px!important;
-}
+body.on-home .menu-cards{width:min(1050px,94%);margin:34px auto 0!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:18px!important}
 body.on-home .menu-card,
 body.on-home .menu-card:first-child,
 body.on-home .menu-card:nth-child(2),
-body.on-home .menu-card:nth-child(3){
-  grid-column:auto!important;
-  min-height:150px;
-  padding:24px 22px!important;
-  flex-direction:column!important;
-  justify-content:center!important;
-  align-items:center!important;
-  text-align:center!important;
-  border-radius:20px!important;
-  background:linear-gradient(155deg,#102328e8,#0a1118e8)!important;
-}
+body.on-home .menu-card:nth-child(3){grid-column:auto!important;min-height:150px;padding:24px 22px!important;flex-direction:column!important;justify-content:center!important;align-items:center!important;text-align:center!important;border-radius:20px!important;background:linear-gradient(155deg,#102328e8,#0a1118e8)!important}
 body.on-home .menu-card-icon{width:62px!important;height:62px!important;font-size:27px!important}
 body.on-home .menu-card-body b{font-size:18px!important;margin-top:4px}
 body.on-home .menu-card-body small{font-size:8px!important}
 body.on-home .menu-card-body em{font-size:10px!important}
 body.on-home .menu-card-arrow{display:none!important}
 
+/* COLLECTION — aucun texte ne doit sortir d'une carte. */
+.collection-entry{min-width:0;height:100%;overflow:hidden}
+.collection-entry .card{width:100%;height:100%!important;min-height:300px;overflow:hidden;display:flex!important;flex-direction:column;min-width:0;padding:13px}
+.collection-entry .card>i{flex:0 0 auto;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:54px}
+.collection-entry .card>b{flex:0 0 auto;min-height:2.45em;max-width:100%;font-size:clamp(13px,1.25vw,18px)!important;line-height:1.15;display:-webkit-box!important;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.collection-entry .card .card-art{flex:0 0 85px;max-width:100%}
+.collection-entry .card>p{flex:1 1 auto;margin:4px 0 8px;max-width:100%;line-height:1.3;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.collection-entry .card>footer{position:static!important;flex:0 0 auto;margin-top:auto;display:flex;gap:8px;align-items:center;justify-content:space-between;min-width:0;font-size:11px}
+.collection-entry .card>footer span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.collection-entry .card-badge{top:8px!important;right:8px!important;left:auto!important;max-width:calc(100% - 16px);padding:3px 7px!important;border-radius:7px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:8px!important;line-height:1.2;background:#0b1718e8!important;border-color:#6fdcc070!important;color:#bff5e7!important;box-shadow:0 2px 8px #0007}
+.collection-entry .card.full-art{min-height:256px!important;padding:0!important}
+.collection-entry .card.full-art .card-name-tooltip{left:6px;right:6px;bottom:6px;max-width:calc(100% - 12px);border-radius:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
 /* La section Decks fait partie du flux normal de la boutique. */
-.faction-unlock-dock.faction-unlock-section{
-  position:relative!important;
-  inset:auto!important;
-  width:100%!important;
-  max-width:none!important;
-  margin:34px 0 18px!important;
-  padding:20px!important;
-  border-radius:16px!important;
-  z-index:auto!important;
-  background:linear-gradient(145deg,#071214,#131722)!important;
-  box-shadow:none!important;
-  backdrop-filter:none!important;
-}
+.faction-unlock-dock.faction-unlock-section{position:relative!important;inset:auto!important;width:100%!important;max-width:none!important;margin:34px 0 18px!important;padding:20px!important;border-radius:16px!important;z-index:auto!important;background:linear-gradient(145deg,#071214,#131722)!important;box-shadow:none!important;backdrop-filter:none!important}
 .faction-unlock-section header{margin-bottom:8px!important}
 .faction-unlock-section header b{font-size:22px!important}
 .faction-unlock-intro{margin:0 0 14px;color:#9eb1ab;font-size:12px}
@@ -70,34 +58,29 @@ body.on-home .menu-card-arrow{display:none!important}
 .faction-unlock-section .faction-unlock-list article{min-height:82px;padding:12px!important}
 .faction-unlock-section .faction-unlock-list article button{white-space:nowrap}
 
-/* Optimisation de rendu : le navigateur ne peint pas les grosses sections hors écran. */
-body:not(.on-home) .grid,
-body:not(.on-home) .terrain-grid,
-body:not(.on-home) .avatar-grid,
-.faction-unlock-section{
-  content-visibility:auto;
-  contain:layout style paint;
-  contain-intrinsic-size:auto 520px;
-}
+/* Rendu différé des grosses sections hors écran. */
+body:not(.on-home) .grid,body:not(.on-home) .terrain-grid,body:not(.on-home) .avatar-grid,.faction-unlock-section{content-visibility:auto;contain:layout style paint;contain-intrinsic-size:auto 520px}
 .terrain-card,.faction-unlock-list article{contain:layout paint style}
-
-/* Les flous plein écran coûtent cher sur les petites machines, surtout en Boutique. */
-body[data-page="shop"] .merchant-reaction,
-.faction-unlock-section{backdrop-filter:none!important}
+body[data-page="shop"] .merchant-reaction,.faction-unlock-section{backdrop-filter:none!important}
 
 @media(max-width:900px){
   body.on-home .home-hero{padding-top:92px!important}
-  body.on-home .home-hero .stats{top:10px!important;left:10px!important;max-width:calc(100% - 205px)!important;padding:8px 10px!important;gap:8px!important}
-  body.on-home .home-hero .stats>span:not(.wallet){display:none}
+  .home-profile-badge{top:10px;left:78px;min-width:220px;max-width:calc(100vw - 285px);padding:7px 9px;gap:8px}
+  .home-profile-avatar{width:38px;height:38px;flex-basis:38px}
+  .home-profile-main b{font-size:12px}.home-profile-main small,.home-profile-wallet em{font-size:8px}
   body.on-home .menu-cards{width:96%;gap:10px!important}
   body.on-home .menu-card{min-height:118px!important;padding:14px 10px!important}
   body.on-home .menu-card-icon{width:48px!important;height:48px!important;font-size:21px!important}
   body.on-home .menu-card-body b{font-size:14px!important}
   .faction-unlock-section .faction-unlock-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .collection-entry .card{min-height:270px}
+  .collection-entry .card>p{-webkit-line-clamp:3;font-size:10px}
 }
 
 @media(max-width:640px){
   body.on-home .menu-cards{grid-template-columns:repeat(3,minmax(0,1fr))!important}
   body.on-home .menu-card-body em{display:none}
+  .home-profile-badge{max-width:calc(100vw - 265px);min-width:0}
+  .home-profile-wallet{gap:4px}.home-profile-wallet em{font-size:7px}
   .faction-unlock-section .faction-unlock-list{grid-template-columns:1fr}
 }
