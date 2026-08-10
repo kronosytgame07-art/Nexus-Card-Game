@@ -2,11 +2,17 @@ import { useEffect, useRef } from 'react';
 import { useGame } from '../store/game';
 
 const MENU_THEME = `${import.meta.env.BASE_URL}audio/menu-theme.mp3`;
+type FeedbackTone = 'soft' | 'impact' | 'reward';
 
 /**
  * Pont unique entre les préférences persistées et les retours sonores du jeu.
  * La musique ne démarre qu'après une interaction utilisateur, conformément aux
  * règles des navigateurs et des webviews mobiles.
+ *
+ * Les SFX d'interface restent synthétiques pour ne pas ajouter de poids au
+ * téléchargement, mais sont volontairement composés de plusieurs couches :
+ * clic sec, impact grave + bruit filtré et petit accord de récompense. Cela
+ * évite le simple "bip" d'application web tout en restant instantané.
  */
 export default function AudioDirector() {
   const musicEnabled = useGame((state) => state.musicEnabled);
@@ -49,38 +55,117 @@ export default function AudioDirector() {
   }, [musicEnabled]);
 
   useEffect(() => {
+    const getContext = () => {
+      const Context = window.AudioContext ?? window.webkitAudioContext;
+      if (!Context) return null;
+      const context = contextRef.current ?? new Context();
+      contextRef.current = context;
+      if (context.state === 'suspended') context.resume().catch(() => undefined);
+      return context;
+    };
+
+    const masterGain = (context: AudioContext, multiplier = 1) => {
+      const gain = context.createGain();
+      gain.gain.value = Math.min(0.22, (sfxVolume / 100) * 0.18 * multiplier);
+      gain.connect(context.destination);
+      return gain;
+    };
+
+    const playSoft = (context: AudioContext) => {
+      const output = masterGain(context, 0.42);
+      const osc = context.createOscillator();
+      const envelope = context.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(520, context.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(390, context.currentTime + 0.045);
+      envelope.gain.setValueAtTime(0.7, context.currentTime);
+      envelope.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.055);
+      osc.connect(envelope).connect(output);
+      osc.start();
+      osc.stop(context.currentTime + 0.06);
+    };
+
+    const playImpact = (context: AudioContext) => {
+      const output = masterGain(context, 0.9);
+      const low = context.createOscillator();
+      const lowEnvelope = context.createGain();
+      low.type = 'triangle';
+      low.frequency.setValueAtTime(118, context.currentTime);
+      low.frequency.exponentialRampToValueAtTime(52, context.currentTime + 0.13);
+      lowEnvelope.gain.setValueAtTime(0.9, context.currentTime);
+      lowEnvelope.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.15);
+      low.connect(lowEnvelope).connect(output);
+
+      const noiseLength = Math.max(1, Math.floor(context.sampleRate * 0.09));
+      const noiseBuffer = context.createBuffer(1, noiseLength, context.sampleRate);
+      const data = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+      const noise = context.createBufferSource();
+      noise.buffer = noiseBuffer;
+      const filter = context.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(950, context.currentTime);
+      filter.frequency.exponentialRampToValueAtTime(280, context.currentTime + 0.09);
+      const noiseEnvelope = context.createGain();
+      noiseEnvelope.gain.setValueAtTime(0.42, context.currentTime);
+      noiseEnvelope.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.1);
+      noise.connect(filter).connect(noiseEnvelope).connect(output);
+
+      low.start();
+      low.stop(context.currentTime + 0.16);
+      noise.start();
+      noise.stop(context.currentTime + 0.11);
+    };
+
+    const playReward = (context: AudioContext) => {
+      const output = masterGain(context, 0.68);
+      const notes = [523.25, 659.25, 783.99];
+      notes.forEach((frequency, index) => {
+        const start = context.currentTime + index * 0.045;
+        const osc = context.createOscillator();
+        const envelope = context.createGain();
+        osc.type = index === 2 ? 'triangle' : 'sine';
+        osc.frequency.setValueAtTime(frequency, start);
+        osc.frequency.exponentialRampToValueAtTime(frequency * 1.035, start + 0.16);
+        envelope.gain.setValueAtTime(0.0001, start);
+        envelope.gain.exponentialRampToValueAtTime(0.55, start + 0.012);
+        envelope.gain.exponentialRampToValueAtTime(0.0001, start + 0.24);
+        osc.connect(envelope).connect(output);
+        osc.start(start);
+        osc.stop(start + 0.25);
+      });
+    };
+
     const feedbackFromUi = (event: MouseEvent) => {
       const target = event.target;
       if (!(target instanceof Element)) return;
       const interactive = target.closest('button, .card, .field-card, .field-unit, [data-sfx]');
       if (!interactive || (interactive instanceof HTMLButtonElement && interactive.disabled)) return;
-      const tone = interactive.matches('.primary, [data-sfx="reward"]') ? 'reward' : interactive.matches('.field-card, .field-unit, [data-sfx="impact"]') ? 'impact' : 'soft';
+      const tone: FeedbackTone = interactive.matches('.primary, [data-sfx="reward"]')
+        ? 'reward'
+        : interactive.matches('.field-card, .field-unit, [data-sfx="impact"]')
+          ? 'impact'
+          : 'soft';
       window.dispatchEvent(new CustomEvent('nexus:sfx', { detail: { tone } }));
     };
+
     const playFeedback = (event: Event) => {
-      const detail = (event as CustomEvent<{ tone?: 'soft' | 'impact' | 'reward' }>).detail;
+      const detail = (event as CustomEvent<{ tone?: FeedbackTone }>).detail;
       const now = performance.now();
       if (now - lastFeedbackRef.current < 35 || sfxVolume === 0) return;
       lastFeedbackRef.current = now;
-      const Context = window.AudioContext ?? window.webkitAudioContext;
-      if (!Context) return;
-      const context = contextRef.current ?? new Context();
-      contextRef.current = context;
-      if (context.state === 'suspended') context.resume().catch(() => undefined);
-      const oscillator = context.createOscillator();
-      const gain = context.createGain();
+      const context = getContext();
+      if (!context) return;
       const tone = detail?.tone ?? 'soft';
-      const base = tone === 'impact' ? 110 : tone === 'reward' ? 660 : 420;
-      oscillator.type = tone === 'impact' ? 'triangle' : 'sine';
-      oscillator.frequency.setValueAtTime(base, context.currentTime);
-      oscillator.frequency.exponentialRampToValueAtTime(tone === 'reward' ? base * 1.5 : base * .82, context.currentTime + .09);
-      gain.gain.setValueAtTime(Math.min(.13, sfxVolume / 800), context.currentTime);
-      gain.gain.exponentialRampToValueAtTime(.0001, context.currentTime + .11);
-      oscillator.connect(gain).connect(context.destination);
-      oscillator.start();
-      oscillator.stop(context.currentTime + .12);
-      if (vibrationEnabled && 'vibrate' in navigator && tone !== 'soft') navigator.vibrate(tone === 'impact' ? 18 : [12, 28, 16]);
+      if (tone === 'impact') playImpact(context);
+      else if (tone === 'reward') playReward(context);
+      else playSoft(context);
+
+      if (vibrationEnabled && 'vibrate' in navigator && tone !== 'soft') {
+        navigator.vibrate(tone === 'impact' ? 20 : [10, 24, 14]);
+      }
     };
+
     window.addEventListener('click', feedbackFromUi, true);
     window.addEventListener('nexus:sfx', playFeedback);
     return () => {
