@@ -14,17 +14,16 @@ export function NarrativeCampaign(){
  const [scene,setScene]=useState<number|null>(null);
  const [codex,setCodex]=useState(false);
 
- // Les archives du Codex suivent les vraies victoires de campagne : regarder
- // une cinématique ne suffit plus à déverrouiller sa récompense narrative.
  useEffect(()=>{
    CHAPTER_ONE.filter(duel=>duel.id<campaignChapter).forEach(duel=>completeDuel(duel.id,duel.rewardCodex));
  },[campaignChapter,completeDuel]);
 
  if(codex)return <><button className="secondary" onClick={()=>setCodex(false)}>← Campagne</button><CodexPanel/></>;
  const active=scene===null?null:CHAPTER_ONE[scene];
+ const completed=Math.min(campaignChapter,CHAPTER_ONE.length);
  return <section className="narrative-campaign cinematic-campaign">
    <header className="cinematic-campaign-hero">
-     <small>CHRONIQUES D'ELYNDRA</small>
+     <small>CHRONIQUES D'ELYNDRA · {completed}/{CHAPTER_ONE.length} ACTES TERMINÉS</small>
      <h2>La Fracture du Nexus</h2>
      <p>Une campagne mise en scène comme un vrai jeu : plans animés, personnages, atmosphères, choix de réponses et transitions directes vers les duels.</p>
      <div className="campaign-feature-row"><span>🎬 Cinématiques 2.5D</span><span>💬 Choix de dialogue</span><span>⚔ 6 factions</span><span>📜 Codex vivant</span></div>
@@ -39,7 +38,7 @@ export function NarrativeCampaign(){
         <span className="chapter-art" aria-hidden="true"/>
         <span className="number">{String(index+1).padStart(2,'0')}</span>
         <div className="chapter-body"><small className="chapter-faction">{duel.faction.toUpperCase()}</small><b>{duel.title}</b><small>{done?'✓ Scène et duel terminés':locked?'🔒 Poursuis l’histoire':'🎬 Cinématique 2.5D · Duel '+duel.faction}</small></div>
-        <button disabled={locked} onClick={()=>setScene(index)}>{done?'Rejouer':'Commencer'}</button>
+        <button disabled={locked} onClick={()=>setScene(index)} aria-label={`${done?'Rejouer':'Commencer'} ${duel.title}`}>{done?'Rejouer':'Commencer'}</button>
       </article>
     })}
    </div>
