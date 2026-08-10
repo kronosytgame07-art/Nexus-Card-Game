@@ -97,7 +97,16 @@ export function StoryDialog({ sceneId, lines, playerName, onComplete, onClose }:
         <motion.div className="story-panel-frame cinematic-frame" key={`${line.panel}-${index}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: animateCinematic ? 0.55 : 0.15, ease: 'easeOut' }}>
           <motion.img className="story-panel-art cinematic-backdrop" src={line.panel} alt="" initial={animateCinematic ? { scale: cameraMotion.scale[0], x: cameraMotion.x?.[0] ?? '0%', y: cameraMotion.y?.[0] ?? '0%' } : false} animate={animateCinematic ? { scale: cameraMotion.scale[1], x: cameraMotion.x?.[1] ?? '0%', y: cameraMotion.y?.[1] ?? '0%' } : { scale: 1.05 }} transition={{ duration: 8.5 + intensity * 1.5, ease: 'linear' }} />
           <motion.div className="cinematic-depth-layer" style={{ backgroundImage: `url(${line.panel})` }} initial={animateCinematic ? { scale: 1.12, x: side === 'left' ? '-1%' : '1%' } : false} animate={animateCinematic ? { scale: 1.18, x: side === 'left' ? '1.4%' : '-1.4%' } : { scale: 1.12 }} transition={{ duration: 10.5, ease: 'linear' }} />
-          <div className="cinematic-atmosphere" aria-hidden="true">{Array.from({ length: animateCinematic ? 18 + intensity * 10 : 0 }, (_, particle) => <i key={particle} style={{ '--p': particle } as CSSProperties} />)}</div>
+          <div className="cinematic-atmosphere" aria-hidden="true">{Array.from({ length: animateCinematic ? 18 + intensity * 10 : 0 }, (_, particle) => {
+            const style = {
+              '--x': `${(particle * 41) % 97}%`,
+              '--y': `${(particle * 67) % 93}%`,
+              '--delay': `${-((particle % 11) * 0.45)}s`,
+              '--duration': `${4 + (particle % 7) * 0.6}s`,
+              '--size': `${2 + (particle % 4)}px`,
+            } as CSSProperties;
+            return <i key={particle} style={style} />;
+          })}</div>
           {cinematic.flash && <motion.div className="cinematic-flash" initial={{ opacity: 0 }} animate={{ opacity: [0, .65, 0] }} transition={{ duration: .7 }} />}
           <div className="story-panel-ink" />
           <div className="story-panel-vignette" />
