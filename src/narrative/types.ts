@@ -1,7 +1,7 @@
 import type { Faction } from '../engine/types';
 
 export type DialogueTone = 'heroic' | 'sarcastic' | 'pragmatic';
-export type StoryCharacterId = 'lyra' | 'kael' | 'gribz' | 'rakh' | 'vaeloryx';
+export type StoryCharacterId = 'lyra' | 'kael' | 'gribz' | 'rakh' | 'vaeloryx' | 'morvane';
 export type CombatTrigger = 'first_summon' | 'first_damage' | 'big_damage' | 'player_low_hp' | 'enemy_low_hp' | 'evolution' | 'mythic_summon' | 'direct_attack' | 'board_wipe' | 'victory' | 'defeat';
 
 export interface StoryCharacter { id: StoryCharacterId; name: string; faction: Faction; role: string; description: string; portrait: string; }
