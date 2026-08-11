@@ -58,6 +58,9 @@ export function StoryDialog({ sceneId, lines, playerName, onComplete, onClose }:
   const isNarrator = line.speaker === 'narrator';
   const isPlayer = line.speaker === 'player';
   const character = !isNarrator && !isPlayer ? STORY_CHARACTERS[line.speaker] : undefined;
+  const characterPortrait = character
+    ? character.portraits?.[line.portraitEmotion ?? 'neutral'] ?? character.portrait
+    : undefined;
   const name = isPlayer ? playerName : isNarrator ? 'ELYNDRA' : character?.name ?? 'INCONNU';
   const side = isNarrator ? 'center' : (line.speakerSide ?? 'left');
   const cinematic = line.cinematic ?? {};
@@ -69,11 +72,11 @@ export function StoryDialog({ sceneId, lines, playerName, onComplete, onClose }:
   const next = () => (isLast ? onComplete() : setIndex((current) => current + 1));
 
   useEffect(() => {
-    [line.panel, lines[index + 1]?.panel].filter(Boolean).forEach((src) => {
+    [line.panel, lines[index + 1]?.panel, characterPortrait].filter(Boolean).forEach((src) => {
       const image = new Image();
-      image.src = src;
+      image.src = src as string;
     });
-  }, [index, line.panel, lines]);
+  }, [characterPortrait, index, line.panel, lines]);
 
   useEffect(() => {
     if (animateCinematic) cinematicCue(atmosphere, intensity, sfxVolume);
@@ -114,7 +117,7 @@ export function StoryDialog({ sceneId, lines, playerName, onComplete, onClose }:
       </AnimatePresence>
 
       <div className="story-scene-label" aria-hidden="true"><span>NEXUS ARENA</span><b>CHRONIQUES D'ELYNDRA</b></div>
-      {character && <motion.aside className={`cinematic-portrait portrait-${side}`} key={`${character.id}-${index}`} initial={{ opacity: 0, x: side === 'left' ? -42 : 42, scale: .92 }} animate={{ opacity: 1, x: 0, scale: 1 }} transition={{ delay: .2, duration: .42, ease: 'easeOut' }}><img src={character.portrait} alt="" style={character.portraitPosition ? { objectPosition: character.portraitPosition } : undefined} onError={(event)=>{event.currentTarget.style.display='none'}}/><span>{character.role}</span></motion.aside>}
+      {character && characterPortrait && <motion.aside className={`cinematic-portrait portrait-${side}`} key={`${character.id}-${line.portraitEmotion ?? 'neutral'}-${index}`} initial={{ opacity: 0, x: side === 'left' ? -42 : 42, scale: .92 }} animate={{ opacity: 1, x: 0, scale: 1 }} transition={{ delay: .2, duration: .42, ease: 'easeOut' }}><img src={characterPortrait} alt="" style={character.portraitPosition ? { objectPosition: character.portraitPosition } : undefined} onError={(event)=>{event.currentTarget.style.display='none'}}/><span>{character.role}</span></motion.aside>}
       {onClose && <button className="story-close" type="button" aria-label="Quitter la scène" onClick={onClose}>×</button>}
       <button className="cinematic-skip" type="button" onClick={onComplete}>PASSER LA CINÉMATIQUE</button>
 
