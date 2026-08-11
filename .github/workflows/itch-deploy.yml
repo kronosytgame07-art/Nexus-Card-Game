@@ -1,0 +1,49 @@
+name: Publier sur itch.io
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: itch-deploy
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build itch.io
+        run: npm run build:itch
+
+      - name: Installer butler
+        run: |
+          set -euo pipefail
+          curl -L -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
+          unzip -o butler.zip -d butler-bin
+          chmod +x butler-bin/butler
+          ./butler-bin/butler -V
+
+      # Ne s'exécute que si le secret BUTLER_API_KEY est configuré (Settings > Secrets
+      # and variables > Actions), pour ne pas faire échouer le workflow tant qu'il ne
+      # l'est pas encore.
+      - name: Publier sur itch.io
+        if: ${{ secrets.BUTLER_API_KEY != '' }}
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: ./butler-bin/butler push dist-itch kronosttv/nexuscardarena:web --userversion "${{ github.sha }}"
+
+      - name: Secret manquant
+        if: ${{ secrets.BUTLER_API_KEY == '' }}
+        run: |
+          echo "::warning::BUTLER_API_KEY n'est pas configuré (Settings > Secrets and variables > Actions) — publication itch.io ignorée."
