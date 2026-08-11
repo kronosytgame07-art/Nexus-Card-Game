@@ -31,6 +31,26 @@ const Trades = lazy(() => import('./Trades'));
 const GoogleAccountSection = lazy(() => import('./GoogleAccount'));
 const GoogleSignInGate = lazy(() => import('./GoogleAccount').then((m) => ({ default: m.GoogleSignInGate })));
 
+const UI_ICONS = {
+  play: `${import.meta.env.BASE_URL}ui/icons/play.webp`,
+  collection: `${import.meta.env.BASE_URL}ui/icons/collection.webp`,
+  social: `${import.meta.env.BASE_URL}ui/icons/social.webp`,
+  shop: `${import.meta.env.BASE_URL}ui/icons/shop.webp`,
+  settings: `${import.meta.env.BASE_URL}ui/icons/settings.webp`,
+  campaign: `${import.meta.env.BASE_URL}ui/icons/campaign.webp`,
+  duel: `${import.meta.env.BASE_URL}ui/icons/duel.webp`,
+  multiplayer: `${import.meta.env.BASE_URL}ui/icons/multiplayer.webp`,
+  classic: `${import.meta.env.BASE_URL}ui/icons/classic.webp`,
+  ranked: `${import.meta.env.BASE_URL}ui/icons/ranked.webp`,
+  audio: `${import.meta.env.BASE_URL}ui/icons/audio.webp`,
+  display: `${import.meta.env.BASE_URL}ui/icons/display.webp`,
+  language: `${import.meta.env.BASE_URL}ui/icons/language.webp`,
+  reset: `${import.meta.env.BASE_URL}ui/icons/reset.webp`,
+  danger: `${import.meta.env.BASE_URL}ui/icons/danger.webp`,
+} as const;
+
+type UiIconName = keyof typeof UI_ICONS;
+
 // Navigation consolidée : 5 sections au lieu de 10 onglets — Campagne/Duel/Replay
 // vivent sous "Jouer" (déjà la page d'accueil), Decks sous "Collection", et
 // Profil/Échanges/Classement sous "Social", chacune avec ses propres sous-onglets
@@ -38,32 +58,32 @@ const GoogleSignInGate = lazy(() => import('./GoogleAccount').then((m) => ({ def
 const NAV_SECTIONS: {
   label: string;
   to: string;
-  icon: string;
+  icon: UiIconName;
   matchPaths: string[];
 }[] = [
   {
     label: 'Jouer',
     to: '/',
-    icon: '⚔',
+    icon: 'play',
     matchPaths: ['/', '/campagne', '/combat', '/replay'],
   },
   {
     label: 'Collection',
     to: '/collection',
-    icon: '▣',
+    icon: 'collection',
     matchPaths: ['/collection', '/decks'],
   },
   {
     label: 'Social',
     to: '/profil',
-    icon: '👥',
+    icon: 'social',
     matchPaths: ['/profil', '/échanges', '/classement'],
   },
-  { label: 'Boutique', to: '/boutique', icon: '🛒', matchPaths: ['/boutique'] },
+  { label: 'Boutique', to: '/boutique', icon: 'shop', matchPaths: ['/boutique'] },
   {
     label: 'Paramètres',
     to: '/paramètres',
-    icon: '⚙',
+    icon: 'settings',
     matchPaths: ['/paramètres'],
   },
 ];
@@ -73,6 +93,10 @@ const UI_ASSET = {
   gem: `${import.meta.env.BASE_URL}ui/nexus-gem.webp`,
   mana: `${import.meta.env.BASE_URL}ui/mana-rune.webp`,
 } as const;
+
+function UiIcon({ name, className = '' }: { name: UiIconName; className?: string }) {
+  return <img className={`ui-emblem ${className}`} src={UI_ICONS[name]} alt="" aria-hidden="true" />;
+}
 
 const RANK_BADGES: Record<RankedTier, string> = {
   'Aspirant du Nexus': 'aspirant-du-nexus',
@@ -380,7 +404,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         </h1>
         {navItems.map(({ section, active }) => (
           <Link key={section.label} to={section.to} className={'nav-link' + (active ? ' active' : '')}>
-            <span className="nav-link-icon">{section.icon}</span>
+            <span className="nav-link-icon"><UiIcon name={section.icon} /></span>
             {navTranslationKey(section.label) ? t(language, navTranslationKey(section.label)!) : section.label}
           </Link>
         ))}
@@ -560,7 +584,7 @@ function Home() {
       </motion.div>
       <motion.div className="menu-cards" {...fadeUp(0.24)}>
         <button className="menu-card" onClick={() => go('/campagne')}>
-          <span className="menu-card-icon gold">✦</span>
+          <span className="menu-card-icon gold"><UiIcon name="campaign" /></span>
           <span className="menu-card-body">
             <small>HISTOIRE</small>
             <b>Mode Campagne</b>
@@ -571,7 +595,7 @@ function Home() {
           <span className="menu-card-arrow">→</span>
         </button>
         <button className="menu-card" onClick={() => go('/combat')}>
-          <span className="menu-card-icon teal">⚔</span>
+          <span className="menu-card-icon teal"><UiIcon name="duel" /></span>
           <span className="menu-card-body">
             <small>ENTRAÎNEMENT</small>
             <b>Duel rapide</b>
@@ -580,7 +604,7 @@ function Home() {
           <span className="menu-card-arrow">→</span>
         </button>
         <button className="menu-card" onClick={() => go('/multijoueur')}>
-          <span className="menu-card-icon red">👥</span>
+          <span className="menu-card-icon red"><UiIcon name="multiplayer" /></span>
           <span className="menu-card-body">
             <small>EN LIGNE</small>
             <b>Multijoueur</b>
@@ -2738,7 +2762,7 @@ function Options() {
       <div className="options-grid settings-grid">
         <article className="options-card settings-card">
           <div className="options-card-head">
-            <span className="menu-card-icon teal icon-audio" />
+            <span className="menu-card-icon teal"><UiIcon name="audio" /></span>
             <b>{t(s.language, 'settings.audio')}</b>
           </div>
           <div className="option-row">
@@ -2769,7 +2793,7 @@ function Options() {
         </article>
         <article className="options-card settings-card">
           <div className="options-card-head">
-            <span className="menu-card-icon violet icon-display" />
+            <span className="menu-card-icon violet"><UiIcon name="display" /></span>
             <b>{t(s.language, 'settings.display')}</b>
           </div>
           <div className="option-row">
@@ -2856,7 +2880,7 @@ function Options() {
         </article>
         <article className="options-card settings-card">
           <div className="options-card-head">
-            <span className="menu-card-icon gold icon-language" />
+            <span className="menu-card-icon gold"><UiIcon name="language" /></span>
             <b>{t(s.language, 'settings.language')}</b>
           </div>
           <div className="option-row">
@@ -2875,27 +2899,27 @@ function Options() {
         </article>
         <article className="options-card settings-card">
           <div className="options-card-head">
-            <span className="menu-card-icon teal icon-reset" />
+            <span className="menu-card-icon teal"><UiIcon name="reset" /></span>
             <b>{t(s.language, 'settings.reset')}</b>
           </div>
           <p className="hint">{t(s.language, 'settings.resetHint')}</p>
           <button
-            className="secondary"
+            className="secondary icon-button"
             onClick={() => {
               if (window.confirm(t(s.language, 'settings.resetConfirmPrompt'))) s.resetSettings();
             }}
           >
-            ↺ {t(s.language, 'settings.resetAll')}
+            <UiIcon name="reset" className="button-emblem" /> {t(s.language, 'settings.resetAll')}
           </button>
         </article>
         <article className="options-card settings-card danger">
           <div className="options-card-head">
-            <span className="menu-card-icon red icon-danger" />
+            <span className="menu-card-icon red"><UiIcon name="danger" /></span>
             <b>{t(s.language, 'settings.danger')}</b>
           </div>
           <p className="hint">{t(s.language, 'settings.dangerHint')}</p>
-          <button className="secondary danger" onClick={() => setResetConfirmOpen(true)}>
-            🗑 {t(s.language, 'settings.hardResetButton')}
+          <button className="secondary danger icon-button" onClick={() => setResetConfirmOpen(true)}>
+            <UiIcon name="danger" className="button-emblem" /> {t(s.language, 'settings.hardResetButton')}
           </button>
         </article>
       </div>
@@ -3502,7 +3526,7 @@ function Multiplayer() {
       <p className="hint">{pvpEnabled ? t(s.language, 'multiplayer.hintPvp') : t(s.language, 'multiplayer.hintBotOnly')}</p>
       <div className="multiplayer-modes">
         <article className="multiplayer-mode">
-          <span className="menu-card-icon teal icon-duel" />
+          <span className="menu-card-icon teal"><UiIcon name="classic" /></span>
           <h3>{t(s.language, 'multiplayer.classic')}</h3>
           <p>{t(s.language, 'multiplayer.classicDesc')}</p>
           <button className="primary" disabled={searching !== null} onClick={() => startSearch('classic')}>
@@ -3511,7 +3535,7 @@ function Multiplayer() {
           <small>{t(s.language, 'multiplayer.classicFallback')}</small>
         </article>
         <article className="multiplayer-mode ranked">
-          <span className="menu-card-icon gold icon-rank" />
+          <span className="menu-card-icon gold"><UiIcon name="ranked" /></span>
           <h3>{t(s.language, 'multiplayer.ranked')}</h3>
           <p>{t(s.language, 'multiplayer.rankedDesc')}</p>
           <div className="rank-card">
