@@ -1,0 +1,315 @@
+/* Generated frame assets. These overrides deliberately replace the previous
+   CSS-drawn borders and movement-heavy hover treatment. */
+
+:root{
+  --generated-frame:var(--frame-panel-nexus);
+  --generated-frame-slice:210;
+  --generated-frame-width:44px;
+  --generated-frame-outset:5px;
+}
+
+/* Decorative border outsets must never create a second, horizontal page axis. */
+#root>main{overflow-x:hidden}
+
+/* New shop diorama: crisp painted vault plus independent moving light layers. */
+.menu-atmosphere.theme-shop{background:#05080d}
+.menu-atmosphere.theme-shop .menu-atmosphere-image{
+  background-size:cover;
+  background-position:58% center;
+  filter:saturate(1.1) contrast(1.08) brightness(.88);
+  animation:shop-vault-breathe 9s ease-in-out infinite alternate;
+}
+.menu-atmosphere.theme-shop .menu-atmosphere-shade{
+  background:linear-gradient(90deg,rgba(2,7,10,.96) 0%,rgba(3,9,12,.88) 27%,rgba(3,8,11,.58) 55%,rgba(3,6,9,.18) 78%,rgba(2,5,8,.42) 100%),linear-gradient(180deg,rgba(1,4,7,.12),rgba(2,6,9,.7));
+}
+.shop-vault-orbit{position:absolute;z-index:1;border:1px solid rgba(119,228,255,.32);border-radius:50%;pointer-events:none;mix-blend-mode:screen;filter:drop-shadow(0 0 13px rgba(78,207,255,.48));animation:shop-orbit-spin 16s linear infinite}
+.shop-vault-orbit::before,.shop-vault-orbit::after{content:"";position:absolute;inset:12%;border:1px solid rgba(255,205,95,.28);border-radius:50%;transform:rotate(64deg)}
+.shop-vault-orbit::after{inset:29%;border-color:rgba(157,94,255,.35);transform:rotate(-42deg)}
+.shop-vault-orbit.one{width:min(35vw,540px);height:min(35vw,540px);left:47%;top:2%;transform:perspective(700px) rotateX(67deg)}
+.shop-vault-orbit.two{width:min(18vw,280px);height:min(18vw,280px);right:5%;top:6%;animation-duration:11s;animation-direction:reverse;opacity:.55}
+.shop-vault-counterglow{position:absolute;right:-5%;bottom:-8%;width:58%;height:32%;background:radial-gradient(ellipse at 55% 80%,rgba(255,181,58,.3),transparent 54%),linear-gradient(108deg,transparent 18%,rgba(91,225,255,.12) 46%,transparent 68%);filter:blur(20px);mix-blend-mode:screen;animation:shop-counter-pulse 3.4s ease-in-out infinite}
+@keyframes shop-vault-breathe{from{filter:saturate(1.04) contrast(1.07) brightness(.84)}to{filter:saturate(1.16) contrast(1.1) brightness(.94)}}
+@keyframes shop-orbit-spin{to{rotate:360deg}}
+@keyframes shop-counter-pulse{0%,100%{opacity:.45;transform:scale(.94)}50%{opacity:1;transform:scale(1.04)}}
+
+body.on-home .menu-card,
+.multiplayer-mode,
+.booster-product-card,
+.onboarding-card,
+.menu-main .options-card:not(.booster-product-card),
+.menu-main .terrain-card,
+.menu-main .chapter,
+.profile,
+.profile-cloud-save,
+.faction-unlock-section,
+.deck-menu-row,
+.matchmaking-card,
+.signin-gate-card,
+.tutorial-offer,
+.archetype-identity,
+.rank-card,
+.profile-frame-product,
+.battle-pass-panel{
+  --generated-frame:var(--frame-panel-nexus);
+  position:relative!important;
+  isolation:isolate;
+  overflow:visible!important;
+  border:0!important;
+  border-radius:12px!important;
+  clip-path:none!important;
+  background:linear-gradient(150deg,rgba(10,25,28,.97),rgba(4,11,16,.96))!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.045),0 18px 38px rgba(0,0,0,.34)!important;
+  filter:none!important;
+  transition:filter .18s ease,box-shadow .18s ease!important;
+}
+
+body.on-home .menu-card::before,
+.multiplayer-mode::before,
+.booster-product-card::before,
+.onboarding-card::before,
+.menu-main .options-card:not(.booster-product-card)::before,
+.menu-main .terrain-card::before,
+.menu-main .chapter::before,
+.profile::before,
+.profile-cloud-save::before,
+.faction-unlock-section::before,
+.deck-menu-row::before,
+.matchmaking-card::before,
+.signin-gate-card::before,
+.tutorial-offer::before,
+.archetype-identity::before,
+.rank-card::before,
+.profile-frame-product::before,
+.battle-pass-panel::before{
+  content:""!important;
+  position:absolute!important;
+  inset:-16px!important;
+  z-index:6!important;
+  display:block!important;
+  pointer-events:none!important;
+  opacity:1!important;
+  border:36px solid transparent!important;
+  border-image-source:var(--generated-frame)!important;
+  border-image-slice:var(--generated-frame-slice)!important;
+  border-image-width:var(--generated-frame-width)!important;
+  border-image-outset:var(--generated-frame-outset)!important;
+  border-image-repeat:stretch!important;
+  border-radius:0!important;
+  clip-path:none!important;
+  background:none!important;
+  box-shadow:none!important;
+  filter:drop-shadow(0 13px 13px rgba(0,0,0,.55))!important;
+  transform:none!important;
+  transition:none!important;
+}
+
+body.on-home .menu-card>*,
+.multiplayer-mode>*,
+.booster-product-card>*,
+.onboarding-card>*,
+.menu-main .options-card:not(.booster-product-card)>*,
+.menu-main .terrain-card>*,
+.menu-main .chapter>*,
+.profile>*,
+.profile-cloud-save>*,
+.faction-unlock-section>*,
+.deck-menu-row>*,
+.matchmaking-card>*,
+.signin-gate-card>*,
+.tutorial-offer>*,
+.archetype-identity>*,
+.rank-card>*,
+.profile-frame-product>*,
+.battle-pass-panel>*{position:relative;z-index:2}
+
+body.on-home .menu-card::after,
+.multiplayer-mode::after,
+.booster-product-card::after,
+.onboarding-card:not(.locked-by-progression)::after{
+  content:none!important;
+  display:none!important;
+}
+
+.booster-frame-meute,.onboarding-card:first-child{--generated-frame:var(--frame-panel-meute)}
+.booster-frame-chevalier,.onboarding-card:nth-child(2),.multiplayer-mode.ranked{--generated-frame:var(--frame-panel-chevalier)}
+.booster-frame-orc{--generated-frame:var(--frame-panel-orc)}
+.booster-frame-dragon{--generated-frame:var(--frame-panel-dragon)}
+.booster-frame-gobelin{--generated-frame:var(--frame-panel-gobelin)}
+.booster-frame-squelette{--generated-frame:var(--frame-panel-squelette)}
+
+.booster-product-card{
+  --generated-frame-width:56px;
+  --generated-frame-outset:8px;
+  padding:28px!important;
+  background:radial-gradient(circle at 50% 18%,rgba(71,164,151,.12),transparent 38%),linear-gradient(165deg,rgba(9,23,27,.99),rgba(3,9,13,.99))!important;
+}
+.booster-frame-chevalier{background:radial-gradient(circle at 50% 18%,rgba(240,196,87,.12),transparent 38%),linear-gradient(165deg,#241d10,#080b0e 74%)!important}
+.booster-frame-orc{background:radial-gradient(circle at 50% 18%,rgba(120,157,68,.13),transparent 38%),linear-gradient(165deg,#172016,#070b0c 74%)!important}
+.booster-frame-dragon{background:radial-gradient(circle at 50% 18%,rgba(255,91,32,.14),transparent 38%),linear-gradient(165deg,#21110e,#07090b 74%)!important}
+.booster-frame-gobelin{background:radial-gradient(circle at 50% 18%,rgba(112,207,61,.12),transparent 38%),linear-gradient(165deg,#1b2011,#070b0b 74%)!important}
+.booster-frame-squelette{background:radial-gradient(circle at 50% 18%,rgba(153,99,225,.14),transparent 38%),linear-gradient(165deg,#191321,#07090c 74%)!important}
+
+body.on-home .menu-card:hover,
+.multiplayer-mode:hover,
+.booster-product-card:hover,
+.onboarding-card:hover,
+.menu-main .options-card:hover,
+.menu-main .terrain-card:hover,
+.menu-main .chapter:not(.locked):hover,
+.profile-frame-product:hover{
+  transform:none!important;
+  filter:none!important;
+  border-color:transparent!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.07),0 20px 42px rgba(0,0,0,.4)!important;
+}
+.booster-product-card:hover .booster-shop-art{transform:none!important;filter:drop-shadow(0 22px 28px rgba(0,0,0,.58))!important}
+
+/* Real generated compact button plate. */
+.primary,.secondary,.faction-button,.install-button,.subtab,.cinematic-skip,.story-next,.story-choices button,.battle-pass-premium,.chapter button,.faction-unlock-list button,.terrain-card button{
+  border:0!important;
+  border-radius:0!important;
+  clip-path:none!important;
+  min-height:44px;
+  padding:12px 25px!important;
+  color:#f2fff9!important;
+  background-color:transparent!important;
+  background-image:var(--frame-button-nexus),linear-gradient(90deg,rgba(44,153,127,.95),rgba(14,75,68,.96))!important;
+  background-position:center,center!important;
+  background-size:100% 100%,calc(100% - 30px) calc(100% - 17px)!important;
+  background-repeat:no-repeat!important;
+  box-shadow:none!important;
+  filter:drop-shadow(0 6px 7px rgba(0,0,0,.46))!important;
+  text-shadow:0 1px 3px rgba(0,0,0,.75);
+  transition:filter .14s ease!important;
+}
+.secondary,.faction-button,.install-button,.subtab,.cinematic-skip,.story-choices button{
+  background-image:var(--frame-button-nexus),linear-gradient(90deg,rgba(11,31,35,.98),rgba(8,20,26,.98))!important;
+  color:#bdf9e9!important;
+}
+.secondary.danger{
+  background-image:var(--frame-button-nexus),linear-gradient(90deg,rgba(88,27,29,.98),rgba(36,10,14,.98))!important;
+  color:#ffd1ca!important;
+}
+.primary:hover:not(:disabled),.secondary:hover:not(:disabled),.faction-button:hover:not(:disabled),.install-button:hover:not(:disabled),.subtab:hover:not(:disabled),.chapter button:hover:not(:disabled),.terrain-card button:hover:not(:disabled){
+  transform:none!important;
+  filter:brightness(1.1) drop-shadow(0 7px 8px rgba(0,0,0,.5))!important;
+}
+.primary:active:not(:disabled),.secondary:active:not(:disabled),.faction-button:active:not(:disabled){transform:none!important;filter:brightness(.94) drop-shadow(0 4px 5px rgba(0,0,0,.45))!important}
+
+/* Generated portrait reliquaries. */
+.profile-frame{
+  --portrait-size:57%;
+  position:relative!important;
+  display:grid!important;
+  place-items:center!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:50%!important;
+  clip-path:none!important;
+  overflow:visible!important;
+  isolation:isolate;
+  background:transparent!important;
+  box-shadow:none!important;
+  filter:drop-shadow(0 7px 8px rgba(0,0,0,.65))!important;
+}
+.profile-frame::before,.profile-frame::after{content:none!important;display:none!important}
+.profile-frame-portrait{
+  position:absolute!important;
+  z-index:1!important;
+  width:var(--portrait-size)!important;
+  height:var(--portrait-size)!important;
+  inset:auto!important;
+  display:grid!important;
+  place-items:center!important;
+  overflow:hidden!important;
+  border-radius:50%!important;
+  background:radial-gradient(circle at 38% 28%,#163536,#050b0e 74%)!important;
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.12),inset 0 0 15px rgba(0,0,0,.75)!important;
+}
+.profile-frame-portrait>img{width:100%!important;height:100%!important;object-fit:cover!important;border:0!important;border-radius:50%!important}
+.profile-frame-art{position:absolute;inset:0;z-index:4;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.48))}
+.profile-frame-vfx{position:absolute;inset:-10%;z-index:0;border-radius:50%;pointer-events:none;opacity:0;mix-blend-mode:screen}
+.profile-frame-vfx::before,.profile-frame-vfx::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none}
+
+.profile-frame-none{--portrait-size:55%}
+.profile-frame-moonsteel{--portrait-size:60%}
+.profile-frame-royal-gold{--portrait-size:54%}
+.profile-frame-dragonfire{--portrait-size:52%}
+.profile-frame-necropolis{--portrait-size:53%}
+.profile-frame-nexus-prismatic{--portrait-size:55%}
+
+/* Epic: restrained lunar storm. */
+.profile-frame-moonsteel .profile-frame-vfx{opacity:.82;background:conic-gradient(from 0deg,transparent 0 12%,rgba(94,218,255,.6) 15%,transparent 20% 48%,rgba(184,246,255,.45) 52%,transparent 58%);filter:blur(7px);animation:frame-vfx-spin 9s linear infinite}
+.profile-frame-moonsteel .profile-frame-vfx::after{inset:18%;box-shadow:0 -44px 9px -7px #bff7ff,34px 25px 8px -7px #77dfff,-35px 26px 9px -7px #e4fbff;animation:frame-spark-pulse 2.7s ease-in-out infinite}
+
+/* Legendary: material-specific large auras. */
+.profile-frame-royal-gold .profile-frame-vfx{opacity:.88;background:conic-gradient(from 20deg,transparent,rgba(255,218,92,.72),transparent 18% 48%,rgba(255,248,190,.54),transparent 66%);filter:blur(8px);animation:frame-vfx-spin 11s linear infinite}
+.profile-frame-royal-gold .profile-frame-vfx::after{inset:12%;box-shadow:0 0 25px 7px rgba(255,192,56,.62),0 -58px 14px -10px #fff0a5,50px 25px 12px -10px #ffd454,-48px 30px 12px -10px #fff7c9;animation:legendary-breathe 2.4s ease-in-out infinite}
+.profile-frame-dragonfire .profile-frame-vfx{opacity:.92;background:conic-gradient(from 0deg,transparent 0 8%,rgba(255,54,8,.72) 12%,rgba(255,178,40,.42) 17%,transparent 24% 52%,rgba(255,91,17,.72) 59%,transparent 68%);filter:blur(9px);animation:frame-vfx-spin 7s linear infinite reverse}
+.profile-frame-dragonfire .profile-frame-vfx::after{inset:16%;box-shadow:0 0 30px 9px rgba(255,68,12,.68),0 -54px 13px -8px #ffb52f,45px 28px 12px -9px #ff4d0b,-44px 30px 13px -9px #ffd15a;animation:legendary-breathe 1.8s ease-in-out infinite}
+.profile-frame-necropolis .profile-frame-vfx{opacity:.9;background:conic-gradient(from 20deg,transparent 0 9%,rgba(137,81,255,.75) 14%,rgba(74,226,255,.35) 20%,transparent 27% 52%,rgba(190,126,255,.68) 59%,transparent 67%);filter:blur(9px);animation:frame-vfx-spin 10s linear infinite}
+.profile-frame-necropolis .profile-frame-vfx::after{inset:14%;box-shadow:0 0 31px 8px rgba(143,74,255,.62),0 -55px 14px -9px #bdf7ff,48px 27px 12px -9px #a46cff,-46px 29px 12px -9px #e1c4ff;animation:legendary-breathe 2.8s ease-in-out infinite}
+
+/* Mythic: four-way Nexus convergence. */
+.profile-frame-nexus-prismatic .profile-frame-vfx{inset:-18%;opacity:1;background:conic-gradient(from 0deg,rgba(255,213,59,.1),rgba(72,229,255,.85),transparent 20%,rgba(58,255,153,.78),transparent 46%,rgba(255,184,42,.85),transparent 72%,rgba(244,249,255,.88),transparent);filter:blur(10px);animation:frame-vfx-spin 5.4s linear infinite}
+.profile-frame-nexus-prismatic .profile-frame-vfx::before{inset:10%;background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.85) 0 1deg,transparent 2deg 28deg);mask:radial-gradient(circle,transparent 0 54%,#000 65%,transparent 82%);animation:mythic-rays 2.6s ease-in-out infinite}
+.profile-frame-nexus-prismatic .profile-frame-vfx::after{inset:22%;box-shadow:0 -70px 16px -8px #fff8c4,65px 0 18px -9px #47eeff,0 68px 18px -8px #49ff9d,-64px 0 18px -9px #ffc53e,0 0 42px 15px rgba(87,235,255,.7);animation:mythic-burst 2.1s ease-in-out infinite}
+.profile-frame-nexus-prismatic .profile-frame-art{animation:mythic-art-breathe 2.1s ease-in-out infinite}
+
+.home-profile-avatar.profile-frame{width:62px!important;height:62px!important;flex:0 0 62px!important}
+.profile-avatar.profile-frame{width:176px!important;height:176px!important;flex:0 0 176px!important}
+.duel-profile-avatar.profile-frame{width:44px!important;height:44px!important;flex:0 0 44px!important}
+.profile-frame-choice-preview{width:92px!important;height:92px!important;flex:0 0 92px!important}
+.profile-frame-shop-preview{width:138px!important;height:138px!important;flex:0 0 138px!important}
+
+.profile-frame-selector{display:grid;grid-template-columns:repeat(auto-fit,minmax(142px,1fr));gap:18px;margin:18px 0 28px}
+.profile-frame-choice{display:flex;flex-direction:column;align-items:center;gap:8px;padding:13px;color:#dfece7;cursor:pointer;overflow:visible!important}
+.profile-frame-choice>span:last-child{font:700 11px "Space Grotesk";text-align:center}
+.profile-frame-choice.active{color:#8ff1d7;filter:none!important}
+
+.profile-frame-shop-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:26px;margin:22px 0 34px}
+.profile-frame-product{min-height:220px;padding:28px;display:grid;grid-template-columns:138px minmax(0,1fr);align-items:center;gap:18px}
+.profile-frame-product>div{display:grid;gap:4px}
+.profile-frame-product>div b{font:700 18px "Playfair Display";color:#f5e4ae}
+.profile-frame-product>div p{margin:4px 0 0;line-height:1.45}
+.profile-frame-product>button{grid-column:1/-1;margin:0;width:100%}
+.profile-frame-product::after{content:"";position:absolute;inset:-14px;z-index:0;pointer-events:none;border-radius:22px;opacity:0}
+.profile-frame-product[data-rarity="Épique"]::after{opacity:.35;background:radial-gradient(circle at 24% 36%,rgba(91,214,255,.48),transparent 38%);animation:product-aura 3s ease-in-out infinite}
+.profile-frame-product[data-rarity="Légendaire"]::after{opacity:.54;background:radial-gradient(circle at 22% 40%,rgba(255,191,55,.5),transparent 35%),linear-gradient(115deg,transparent 20%,rgba(255,246,194,.12) 44%,transparent 65%);animation:product-aura 2.4s ease-in-out infinite}
+.profile-frame-product[data-rarity="Mythique"]::after{opacity:.75;background:conic-gradient(from 0deg at 24% 43%,rgba(81,230,255,.34),rgba(64,255,156,.26),rgba(255,196,56,.36),rgba(255,255,255,.25),rgba(81,230,255,.34));filter:blur(13px);animation:frame-vfx-spin 7s linear infinite}
+.cosmetic-rarity{font:900 9px "DM Mono";letter-spacing:1.4px;text-transform:uppercase;color:#aebdb8}
+[data-rarity="Épique"] .cosmetic-rarity{color:#81ddff;text-shadow:0 0 10px rgba(68,200,255,.5)}
+[data-rarity="Légendaire"] .cosmetic-rarity{color:#ffd46d;text-shadow:0 0 12px rgba(255,184,45,.6)}
+[data-rarity="Mythique"] .cosmetic-rarity{color:#d9fbff;text-shadow:0 0 7px #55eaff,0 0 15px #62ffb4,0 0 23px #ffd45c}
+
+@keyframes frame-vfx-spin{to{transform:rotate(360deg)}}
+@keyframes frame-spark-pulse{0%,100%{opacity:.35;transform:scale(.9)}50%{opacity:1;transform:scale(1.08)}}
+@keyframes legendary-breathe{0%,100%{opacity:.5;transform:scale(.92)}50%{opacity:1;transform:scale(1.08)}}
+@keyframes mythic-rays{0%,100%{opacity:.35;transform:rotate(-3deg) scale(.92)}50%{opacity:1;transform:rotate(3deg) scale(1.08)}}
+@keyframes mythic-burst{0%,100%{opacity:.55;transform:scale(.84)}50%{opacity:1;transform:scale(1.12)}}
+@keyframes mythic-art-breathe{0%,100%{filter:drop-shadow(0 2px 2px rgba(0,0,0,.5)) brightness(1)}50%{filter:drop-shadow(0 0 12px rgba(114,238,255,.8)) brightness(1.18)}}
+@keyframes product-aura{0%,100%{opacity:.28;transform:scale(.96)}50%{opacity:.68;transform:scale(1.03)}}
+
+@media(max-width:900px){
+  :root{--generated-frame-width:33px;--generated-frame-outset:2px}
+  body.on-home .menu-card::before,.multiplayer-mode::before,.booster-product-card::before,.onboarding-card::before,.menu-main .options-card:not(.booster-product-card)::before,.menu-main .terrain-card::before,.menu-main .chapter::before,.profile::before,.profile-cloud-save::before,.faction-unlock-section::before,.deck-menu-row::before,.profile-frame-product::before{inset:-10px!important;border-width:27px!important;border-image-width:34px!important}
+  .booster-product-card{--generated-frame-width:38px;padding:20px!important}
+  .home-profile-avatar.profile-frame{width:54px!important;height:54px!important;flex-basis:54px!important}
+  .profile-avatar.profile-frame{width:128px!important;height:128px!important;flex-basis:128px!important}
+  .profile-frame-shop-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+  .profile-frame-product{grid-template-columns:96px 1fr;min-height:174px;padding:20px;gap:12px}
+  .profile-frame-shop-preview{width:96px!important;height:96px!important;flex-basis:96px!important}
+  .profile-frame-product>div b{font-size:14px}.profile-frame-product>div p{font-size:10px}
+}
+
+@media(max-width:560px){
+  .profile-frame-shop-grid{grid-template-columns:1fr}
+  .profile-frame-product{grid-template-columns:104px 1fr}
+  .profile-frame-shop-preview{width:104px!important;height:104px!important;flex-basis:104px!important}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .profile-frame-vfx,.profile-frame-vfx::before,.profile-frame-vfx::after,.profile-frame-art,.profile-frame-product::after{animation:none!important}
+}
+:root[data-animations="off"] .profile-frame-vfx,:root[data-animations="off"] .profile-frame-product::after{display:none!important}
+:root[data-animations="off"] .profile-frame-art{animation:none!important}
