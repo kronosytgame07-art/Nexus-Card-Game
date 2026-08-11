@@ -73,36 +73,25 @@
   -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2l5 5-2 11-3 4-3-4L7 7l5-5zm0 3.2L9.7 7.5l1.5 8.3.8 1.2.8-1.2 1.5-8.3L12 5.2z'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2l5 5-2 11-3 4-3-4L7 7l5-5zm0 3.2L9.7 7.5l1.5 8.3.8 1.2.8-1.2 1.5-8.3L12 5.2z'/%3E%3C/svg%3E");
 }
 
-/* Icônes explicites (Options / Multijoueur) : classes dédiées plutôt que nth-child,
-   pour ne pas dépendre de l'ordre/l'imbrication DOM (source du bug des ronds vides). */
-.icon-audio::before{
-  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.26 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z'/%3E%3C/svg%3E");
-  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.26 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z'/%3E%3C/svg%3E");
+/* --- Bespoke Nexus emblems: illustrated assets replace generic glyphs --- */
+.nav-link-icon::before,.menu-card-icon::before{content:none!important;display:none!important}
+.ui-emblem{
+  display:block;
+  width:100%;height:100%;
+  object-fit:contain;
+  pointer-events:none;
+  user-select:none;
+  transform:translateZ(0);
+  transition:transform .2s ease,filter .2s ease,opacity .2s ease;
+  filter:drop-shadow(0 3px 7px rgba(0,0,0,.58));
 }
-.icon-display::before{
-  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M4 4h16a1 1 0 011 1v11a1 1 0 01-1 1h-6l1 3H8l1-3H3a1 1 0 01-1-1V5a1 1 0 011-1zm0 2v9h16V6H4z'/%3E%3C/svg%3E");
-  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M4 4h16a1 1 0 011 1v11a1 1 0 01-1 1h-6l1 3H8l1-3H3a1 1 0 01-1-1V5a1 1 0 011-1zm0 2v9h16V6H4z'/%3E%3C/svg%3E");
-}
-.icon-language::before{
-  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm7.9 9h-3.2c-.1-1.9-.5-3.6-1.1-5 2.4.9 4.1 2.9 4.3 5zM12 4.1c.9 1.2 1.6 3.1 1.9 5.4l-3.8 0c.3-2.3 1-4.2 1.9-5.4zM8.3 6c-.6 1.4-1 3.1-1.1 5H4.1C4.3 8.9 6 6.9 8.3 6zM4.1 13h3.2c.1 1.9.5 3.6 1.1 5-2.3-.9-4-2.9-4.3-5zM12 19.9c-.9-1.2-1.6-3.1-1.9-5.4l3.8 0c-.3 2.3-1 4.2-1.9 5.4zM15.7 18c.6-1.4 1-3.1 1.1-5h3.2c-.3 2.1-2 4.1-4.3 5z'/%3E%3C/svg%3E");
-  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm7.9 9h-3.2c-.1-1.9-.5-3.6-1.1-5 2.4.9 4.1 2.9 4.3 5zM12 4.1c.9 1.2 1.6 3.1 1.9 5.4l-3.8 0c.3-2.3 1-4.2 1.9-5.4zM8.3 6c-.6 1.4-1 3.1-1.1 5H4.1C4.3 8.9 6 6.9 8.3 6zM4.1 13h3.2c.1 1.9.5 3.6 1.1 5-2.3-.9-4-2.9-4.3-5zM12 19.9c-.9-1.2-1.6-3.1-1.9-5.4l3.8 0c-.3 2.3-1 4.2-1.9 5.4zM15.7 18c.6-1.4 1-3.1 1.1-5h3.2c-.3 2.1-2 4.1-4.3 5z'/%3E%3C/svg%3E");
-}
-.icon-reset::before{
-  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 5V2L7 6l5 4V7a5 5 0 11-4.9 6H5a7 7 0 107-8z'/%3E%3C/svg%3E");
-  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 5V2L7 6l5 4V7a5 5 0 11-4.9 6H5a7 7 0 107-8z'/%3E%3C/svg%3E");
-}
-.icon-danger::before{
-  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2L1 21h22L12 2zm0 5.5L18.5 19h-13L12 7.5zM11 10v4h2v-4h-2zm0 5.5v2h2v-2h-2z'/%3E%3C/svg%3E");
-  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2L1 21h22L12 2zm0 5.5L18.5 19h-13L12 7.5zM11 10v4h2v-4h-2zm0 5.5v2h2v-2h-2z'/%3E%3C/svg%3E");
-}
-.icon-duel::before{
-  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M3 2l7 7-2 2-7-7V2h2zm18 0v2l-7 7-2-2 7-7h2zM7 13l2 2-5 5H2v-2l5-5zm10 0l5 5v2h-2l-5-5 2-2zM8.5 8.5l7 7-1.5 1.5-7-7L8.5 8.5zm7 0L17 10l-7 7-1.5-1.5 7-7z'/%3E%3C/svg%3E");
-  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M3 2l7 7-2 2-7-7V2h2zm18 0v2l-7 7-2-2 7-7h2zM7 13l2 2-5 5H2v-2l5-5zm10 0l5 5v2h-2l-5-5 2-2zM8.5 8.5l7 7-1.5 1.5-7-7L8.5 8.5zm7 0L17 10l-7 7-1.5-1.5 7-7z'/%3E%3C/svg%3E");
-}
-.icon-rank::before{
-  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z'/%3E%3C/svg%3E");
-  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z'/%3E%3C/svg%3E");
-}
+.nav-link-icon{padding:3px;overflow:visible!important}
+.nav-link-icon .ui-emblem{filter:drop-shadow(0 2px 5px rgba(0,0,0,.72)) saturate(.9)}
+.nav-link:hover .ui-emblem,.nav-link.active .ui-emblem{transform:scale(1.13);filter:drop-shadow(0 0 8px rgba(98,228,194,.42)) saturate(1.12)}
+.menu-card-icon{padding:5px;overflow:visible!important}
+.menu-card:hover .menu-card-icon .ui-emblem,.multiplayer-mode:hover .menu-card-icon .ui-emblem{transform:translateY(-2px) scale(1.08);filter:drop-shadow(0 7px 10px rgba(0,0,0,.66)) brightness(1.08)}
+.icon-button{display:inline-flex!important;align-items:center;justify-content:center;gap:8px}
+.ui-emblem.button-emblem{width:22px;height:22px;flex:0 0 22px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.55))}
 
 /* --- Play menu cards: one visual language, three identities --- */
 body.on-home .menu-cards{align-items:stretch!important}
@@ -126,9 +115,10 @@ body.on-home .menu-card-icon{
   width:70px!important;height:70px!important;border-radius:18px!important;
   background:linear-gradient(145deg,rgba(255,255,255,.10),rgba(255,255,255,.025))!important;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 0 28px -11px currentColor!important;
-  transform:rotate(45deg);
+  transform:none;
+  padding:6px;
 }
-body.on-home .menu-card-icon::before{width:52%;height:52%;transform:rotate(-45deg)}
+body.on-home .menu-card-icon::before{display:none!important}
 body.on-home .menu-card:nth-child(1) .menu-card-icon{color:var(--nexus-gold)!important}
 body.on-home .menu-card:nth-child(2) .menu-card-icon{color:var(--nexus-teal)!important}
 body.on-home .menu-card:nth-child(3) .menu-card-icon{color:var(--nexus-red)!important}
