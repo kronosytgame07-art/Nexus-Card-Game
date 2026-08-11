@@ -8,11 +8,23 @@ export type UiKey =
   | 'settings.display' | 'settings.quality' | 'settings.fpsLimit' | 'settings.uiScale' | 'settings.glow'
   | 'settings.shake' | 'settings.fpsCounter' | 'settings.battery' | 'settings.vibration' | 'settings.fullscreen'
   | 'settings.language' | 'settings.interfaceLanguage' | 'settings.reset' | 'settings.resetAll' | 'settings.danger'
+  | 'settings.musicHint' | 'settings.musicOn' | 'settings.musicOff' | 'settings.qualityHint' | 'settings.fpsLimitHint'
+  | 'settings.fpsShown' | 'settings.fpsHidden' | 'settings.batteryHint' | 'settings.fullscreenEnable' | 'settings.fullscreenExit'
+  | 'settings.languageHint' | 'settings.resetHint' | 'settings.resetConfirmPrompt' | 'settings.dangerHint'
+  | 'settings.hardResetButton' | 'settings.hardResetTitle' | 'settings.hardResetWarn1' | 'settings.hardResetWarn2'
+  | 'settings.hardResetTypePrompt' | 'settings.hardResetConfirmButton'
   | 'shop.title' | 'shop.open' | 'shop.open10' | 'shop.insufficientGold' | 'shop.avatars' | 'shop.terrains'
   | 'duel.yourTurn' | 'duel.enemyTurn' | 'duel.enemyDraw' | 'duel.draw' | 'duel.main' | 'duel.battle' | 'duel.end'
   | 'duel.grave' | 'duel.evosphere' | 'duel.deck' | 'duel.log' | 'duel.surrender' | 'duel.restart'
   | 'duel.resume' | 'duel.evolve' | 'duel.activate' | 'duel.close' | 'duel.cancel'
-  | 'rarity.common' | 'rarity.rare' | 'rarity.epic' | 'rarity.legendary' | 'rarity.mythic';
+  | 'rarity.common' | 'rarity.rare' | 'rarity.epic' | 'rarity.legendary' | 'rarity.mythic'
+  | 'multiplayer.title' | 'multiplayer.hintPvp' | 'multiplayer.hintBotOnly' | 'multiplayer.classic' | 'multiplayer.classicDesc'
+  | 'multiplayer.classicFallback' | 'multiplayer.ranked' | 'multiplayer.rankedDesc' | 'multiplayer.searchButton' | 'multiplayer.searching'
+  | 'multiplayer.rankedSearchButton' | 'multiplayer.rankedFallback'
+  | 'settings.on' | 'settings.off'
+  | 'settings.qualityEco' | 'settings.qualityBalanced' | 'settings.qualityHigh'
+  | 'settings.scaleSmall' | 'settings.scaleNormal' | 'settings.scaleLarge'
+  | 'settings.fpsFull' | 'settings.fpsReduced' | 'settings.fpsOff';
 
 type Dict = Record<UiKey, string>;
 
@@ -23,10 +35,34 @@ const fr: Dict = {
   'settings.display': 'Affichage & performance', 'settings.quality': 'Qualité visuelle', 'settings.fpsLimit': "Limite d'images/seconde", 'settings.uiScale': "Taille de l'interface", 'settings.glow': 'Effets lumineux',
   'settings.shake': "Tremblements d'écran", 'settings.fpsCounter': 'Compteur FPS', 'settings.battery': 'Mode batterie', 'settings.vibration': 'Vibration', 'settings.fullscreen': 'Plein écran',
   'settings.language': 'Langue', 'settings.interfaceLanguage': "Langue de l'interface", 'settings.reset': 'Réinitialisation', 'settings.resetAll': 'Réinitialiser les paramètres', 'settings.danger': 'Zone dangereuse',
+  'settings.musicHint': 'Thème du menu et musiques de duel.', 'settings.musicOn': 'Activée', 'settings.musicOff': 'Coupée',
+  'settings.qualityHint': 'Résolution des effets et du rendu des cartes.', 'settings.fpsLimitHint': "Réduit les animations pour économiser la batterie sur mobile.",
+  'settings.fpsShown': 'Affiché', 'settings.fpsHidden': 'Masqué', 'settings.batteryHint': 'Coupe les vidéos et animations non essentielles.',
+  'settings.fullscreenEnable': 'Activer', 'settings.fullscreenExit': 'Quitter',
+  'settings.languageHint': 'Interface multilingue active — les écrans principaux utilisent immédiatement la langue choisie.',
+  'settings.resetHint': 'Remet Audio / Affichage / Langue à leurs valeurs par défaut. Ne touche pas à ta progression (decks, cartes, XP).',
+  'settings.resetConfirmPrompt': 'Réinitialiser tous les paramètres (audio, affichage, langue) ?',
+  'settings.dangerHint': 'Efface définitivement toute ta progression : decks, cartes possédées, niveau, XP, victoires/défaites, campagne, pseudo et replays sauvegardés. Cette action est irréversible.',
+  'settings.hardResetButton': 'Recommencer le jeu à zéro', 'settings.hardResetTitle': 'Réinitialisation totale',
+  'settings.hardResetWarn1': "Tu es sur le point d'effacer définitivement toute ta progression : decks, cartes, niveau, XP, victoires, défaites, campagne et replays sauvegardés.",
+  'settings.hardResetWarn2': "Cette action est irréversible — il n'existe aucun moyen de récupérer ces données ensuite. Assure-toi d'être sûr à 100 % avant de continuer.",
+  'settings.hardResetTypePrompt': 'Pour confirmer, tape ci-dessous :', 'settings.hardResetConfirmButton': 'Tout supprimer définitivement',
   'shop.title': 'Boutique', 'shop.open': 'Ouvrir', 'shop.open10': 'Ouvrir ×10', 'shop.insufficientGold': 'Or insuffisant', 'shop.avatars': 'Images de profil', 'shop.terrains': 'Terrains',
   'duel.yourTurn': 'À TOI DE JOUER', 'duel.enemyTurn': "TOUR DE L'ADVERSAIRE", 'duel.enemyDraw': "L'ADVERSAIRE PIOCHE…", 'duel.draw': 'DRAW', 'duel.main': 'MAIN', 'duel.battle': 'BATTLE', 'duel.end': 'END',
   'duel.grave': 'FOSSE', 'duel.evosphere': 'ÉVOSPHÈRE', 'duel.deck': 'DECK', 'duel.log': 'JOURNAL', 'duel.surrender': 'Abandonner', 'duel.restart': 'Recommencer', 'duel.resume': 'Reprendre', 'duel.evolve': 'ÉVOLUER', 'duel.activate': 'Activer', 'duel.close': 'Fermer', 'duel.cancel': 'Annuler',
   'rarity.common': 'Commune', 'rarity.rare': 'Rare', 'rarity.epic': 'Épique', 'rarity.legendary': 'Légendaire', 'rarity.mythic': 'Mythique',
+  'multiplayer.title': 'Multijoueur',
+  'multiplayer.hintPvp': "Recherche un vrai adversaire en ligne ; si personne n'est trouvé après une courte recherche, un bot prend le relais — niveau aléatoire en Classique, niveau équivalent à ton rang en Classé.",
+  'multiplayer.hintBotOnly': "Aucun serveur de matchmaking temps réel n'est encore branché : un bot prend le relais — niveau aléatoire en Classique, niveau équivalent à ton rang en Classé.",
+  'multiplayer.classic': 'Classique', 'multiplayer.classicDesc': 'Duels sans impact sur le rang. Idéal pour tester un deck hybride, apprendre un nouvel archétype ou jouer entre amis.',
+  'multiplayer.classicFallback': "Repli automatique sur un bot de niveau aléatoire si personne n'est trouvé",
+  'multiplayer.ranked': 'Classé', 'multiplayer.rankedDesc': 'Les victoires et défaites font évoluer ton statut dans le Nexus.',
+  'multiplayer.searchButton': 'RECHERCHER UN ADVERSAIRE', 'multiplayer.searching': 'RECHERCHE…',
+  'multiplayer.rankedSearchButton': 'LANCER UN DUEL CLASSÉ', 'multiplayer.rankedFallback': "Repli automatique sur un bot de ton rang si personne n'est trouvé",
+  'settings.on': 'Activé', 'settings.off': 'Désactivé',
+  'settings.qualityEco': 'Économie', 'settings.qualityBalanced': 'Équilibrée', 'settings.qualityHigh': 'Élevée',
+  'settings.scaleSmall': 'Petite', 'settings.scaleNormal': 'Normale', 'settings.scaleLarge': 'Grande',
+  'settings.fpsFull': 'Illimité', 'settings.fpsReduced': '60 IPS', 'settings.fpsOff': '30 IPS (économie max.)',
 };
 
 const en: Dict = {
@@ -36,10 +72,34 @@ const en: Dict = {
   'settings.display': 'Display & performance', 'settings.quality': 'Visual quality', 'settings.fpsLimit': 'Frame-rate limit', 'settings.uiScale': 'Interface scale', 'settings.glow': 'Glow effects',
   'settings.shake': 'Screen shake', 'settings.fpsCounter': 'FPS counter', 'settings.battery': 'Battery saver', 'settings.vibration': 'Vibration', 'settings.fullscreen': 'Fullscreen',
   'settings.language': 'Language', 'settings.interfaceLanguage': 'Interface language', 'settings.reset': 'Reset', 'settings.resetAll': 'Reset settings', 'settings.danger': 'Danger zone',
+  'settings.musicHint': 'Menu theme and duel music.', 'settings.musicOn': 'On', 'settings.musicOff': 'Off',
+  'settings.qualityHint': 'Effect and card-render resolution.', 'settings.fpsLimitHint': 'Reduces animations to save battery on mobile.',
+  'settings.fpsShown': 'Shown', 'settings.fpsHidden': 'Hidden', 'settings.batteryHint': 'Disables non-essential videos and animations.',
+  'settings.fullscreenEnable': 'Enable', 'settings.fullscreenExit': 'Exit',
+  'settings.languageHint': 'Multilingual interface active — main screens immediately use the selected language.',
+  'settings.resetHint': 'Resets Audio / Display / Language to their defaults. Does not affect your progress (decks, cards, XP).',
+  'settings.resetConfirmPrompt': 'Reset all settings (audio, display, language)?',
+  'settings.dangerHint': 'Permanently erases all your progress: decks, owned cards, level, XP, wins/losses, campaign, name and saved replays. This action is irreversible.',
+  'settings.hardResetButton': 'Restart the game from scratch', 'settings.hardResetTitle': 'Full reset',
+  'settings.hardResetWarn1': "You're about to permanently erase all your progress: decks, cards, level, XP, wins, losses, campaign, and saved replays.",
+  'settings.hardResetWarn2': "This action is irreversible — there is no way to recover this data afterwards. Make sure you're 100% sure before continuing.",
+  'settings.hardResetTypePrompt': 'To confirm, type below:', 'settings.hardResetConfirmButton': 'Delete everything permanently',
   'shop.title': 'Shop', 'shop.open': 'Open', 'shop.open10': 'Open ×10', 'shop.insufficientGold': 'Not enough gold', 'shop.avatars': 'Profile pictures', 'shop.terrains': 'Arenas',
   'duel.yourTurn': 'YOUR TURN', 'duel.enemyTurn': "OPPONENT'S TURN", 'duel.enemyDraw': 'OPPONENT DRAWS…', 'duel.draw': 'DRAW', 'duel.main': 'MAIN', 'duel.battle': 'BATTLE', 'duel.end': 'END',
   'duel.grave': 'GRAVE', 'duel.evosphere': 'EVOSPHERE', 'duel.deck': 'DECK', 'duel.log': 'LOG', 'duel.surrender': 'Surrender', 'duel.restart': 'Restart', 'duel.resume': 'Resume', 'duel.evolve': 'EVOLVE', 'duel.activate': 'Activate', 'duel.close': 'Close', 'duel.cancel': 'Cancel',
   'rarity.common': 'Common', 'rarity.rare': 'Rare', 'rarity.epic': 'Epic', 'rarity.legendary': 'Legendary', 'rarity.mythic': 'Mythic',
+  'multiplayer.title': 'Multiplayer',
+  'multiplayer.hintPvp': "Looks for a real opponent online; if nobody is found after a short search, a bot takes over — random level in Casual, level matching your rank in Ranked.",
+  'multiplayer.hintBotOnly': "No real-time matchmaking server is wired up yet: a bot takes over — random level in Casual, level matching your rank in Ranked.",
+  'multiplayer.classic': 'Casual', 'multiplayer.classicDesc': "Duels with no impact on rank. Great for testing a hybrid deck, learning a new archetype, or playing with friends.",
+  'multiplayer.classicFallback': 'Automatically falls back to a random-level bot if nobody is found',
+  'multiplayer.ranked': 'Ranked', 'multiplayer.rankedDesc': 'Wins and losses shape your status in the Nexus.',
+  'multiplayer.searchButton': 'FIND AN OPPONENT', 'multiplayer.searching': 'SEARCHING…',
+  'multiplayer.rankedSearchButton': 'START A RANKED DUEL', 'multiplayer.rankedFallback': 'Automatically falls back to a bot matching your rank if nobody is found',
+  'settings.on': 'On', 'settings.off': 'Off',
+  'settings.qualityEco': 'Battery saver', 'settings.qualityBalanced': 'Balanced', 'settings.qualityHigh': 'High',
+  'settings.scaleSmall': 'Small', 'settings.scaleNormal': 'Normal', 'settings.scaleLarge': 'Large',
+  'settings.fpsFull': 'Uncapped', 'settings.fpsReduced': '60 FPS', 'settings.fpsOff': '30 FPS (max battery saving)',
 };
 
 const es: Dict = { ...en,

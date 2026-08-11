@@ -73,6 +73,37 @@
   -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2l5 5-2 11-3 4-3-4L7 7l5-5zm0 3.2L9.7 7.5l1.5 8.3.8 1.2.8-1.2 1.5-8.3L12 5.2z'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2l5 5-2 11-3 4-3-4L7 7l5-5zm0 3.2L9.7 7.5l1.5 8.3.8 1.2.8-1.2 1.5-8.3L12 5.2z'/%3E%3C/svg%3E");
 }
 
+/* Icônes explicites (Options / Multijoueur) : classes dédiées plutôt que nth-child,
+   pour ne pas dépendre de l'ordre/l'imbrication DOM (source du bug des ronds vides). */
+.icon-audio::before{
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.26 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z'/%3E%3C/svg%3E");
+  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.26 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z'/%3E%3C/svg%3E");
+}
+.icon-display::before{
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M4 4h16a1 1 0 011 1v11a1 1 0 01-1 1h-6l1 3H8l1-3H3a1 1 0 01-1-1V5a1 1 0 011-1zm0 2v9h16V6H4z'/%3E%3C/svg%3E");
+  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M4 4h16a1 1 0 011 1v11a1 1 0 01-1 1h-6l1 3H8l1-3H3a1 1 0 01-1-1V5a1 1 0 011-1zm0 2v9h16V6H4z'/%3E%3C/svg%3E");
+}
+.icon-language::before{
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm7.9 9h-3.2c-.1-1.9-.5-3.6-1.1-5 2.4.9 4.1 2.9 4.3 5zM12 4.1c.9 1.2 1.6 3.1 1.9 5.4l-3.8 0c.3-2.3 1-4.2 1.9-5.4zM8.3 6c-.6 1.4-1 3.1-1.1 5H4.1C4.3 8.9 6 6.9 8.3 6zM4.1 13h3.2c.1 1.9.5 3.6 1.1 5-2.3-.9-4-2.9-4.3-5zM12 19.9c-.9-1.2-1.6-3.1-1.9-5.4l3.8 0c-.3 2.3-1 4.2-1.9 5.4zM15.7 18c.6-1.4 1-3.1 1.1-5h3.2c-.3 2.1-2 4.1-4.3 5z'/%3E%3C/svg%3E");
+  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm7.9 9h-3.2c-.1-1.9-.5-3.6-1.1-5 2.4.9 4.1 2.9 4.3 5zM12 4.1c.9 1.2 1.6 3.1 1.9 5.4l-3.8 0c.3-2.3 1-4.2 1.9-5.4zM8.3 6c-.6 1.4-1 3.1-1.1 5H4.1C4.3 8.9 6 6.9 8.3 6zM4.1 13h3.2c.1 1.9.5 3.6 1.1 5-2.3-.9-4-2.9-4.3-5zM12 19.9c-.9-1.2-1.6-3.1-1.9-5.4l3.8 0c-.3 2.3-1 4.2-1.9 5.4zM15.7 18c.6-1.4 1-3.1 1.1-5h3.2c-.3 2.1-2 4.1-4.3 5z'/%3E%3C/svg%3E");
+}
+.icon-reset::before{
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 5V2L7 6l5 4V7a5 5 0 11-4.9 6H5a7 7 0 107-8z'/%3E%3C/svg%3E");
+  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 5V2L7 6l5 4V7a5 5 0 11-4.9 6H5a7 7 0 107-8z'/%3E%3C/svg%3E");
+}
+.icon-danger::before{
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2L1 21h22L12 2zm0 5.5L18.5 19h-13L12 7.5zM11 10v4h2v-4h-2zm0 5.5v2h2v-2h-2z'/%3E%3C/svg%3E");
+  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2L1 21h22L12 2zm0 5.5L18.5 19h-13L12 7.5zM11 10v4h2v-4h-2zm0 5.5v2h2v-2h-2z'/%3E%3C/svg%3E");
+}
+.icon-duel::before{
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M3 2l7 7-2 2-7-7V2h2zm18 0v2l-7 7-2-2 7-7h2zM7 13l2 2-5 5H2v-2l5-5zm10 0l5 5v2h-2l-5-5 2-2zM8.5 8.5l7 7-1.5 1.5-7-7L8.5 8.5zm7 0L17 10l-7 7-1.5-1.5 7-7z'/%3E%3C/svg%3E");
+  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M3 2l7 7-2 2-7-7V2h2zm18 0v2l-7 7-2-2 7-7h2zM7 13l2 2-5 5H2v-2l5-5zm10 0l5 5v2h-2l-5-5 2-2zM8.5 8.5l7 7-1.5 1.5-7-7L8.5 8.5zm7 0L17 10l-7 7-1.5-1.5 7-7z'/%3E%3C/svg%3E");
+}
+.icon-rank::before{
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z'/%3E%3C/svg%3E");
+  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z'/%3E%3C/svg%3E");
+}
+
 /* --- Play menu cards: one visual language, three identities --- */
 body.on-home .menu-cards{align-items:stretch!important}
 body.on-home .menu-card{
