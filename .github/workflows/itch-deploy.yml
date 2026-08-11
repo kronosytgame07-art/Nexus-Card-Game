@@ -13,6 +13,8 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -36,14 +38,14 @@ jobs:
 
       # Ne s'exécute que si le secret BUTLER_API_KEY est configuré (Settings > Secrets
       # and variables > Actions), pour ne pas faire échouer le workflow tant qu'il ne
-      # l'est pas encore.
+      # l'est pas encore. Le contexte "secrets" n'est pas utilisable directement dans
+      # un "if:" (non listé parmi les contextes disponibles pour les conditions) —
+      # d'où le passage par la variable d'environnement du job ci-dessus.
       - name: Publier sur itch.io
-        if: ${{ secrets.BUTLER_API_KEY != '' }}
-        env:
-          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        if: ${{ env.BUTLER_API_KEY != '' }}
         run: ./butler-bin/butler push dist-itch kronosttv/nexuscardarena:web --userversion "${{ github.sha }}"
 
       - name: Secret manquant
-        if: ${{ secrets.BUTLER_API_KEY == '' }}
+        if: ${{ env.BUTLER_API_KEY == '' }}
         run: |
           echo "::warning::BUTLER_API_KEY n'est pas configuré (Settings > Secrets and variables > Actions) — publication itch.io ignorée."
