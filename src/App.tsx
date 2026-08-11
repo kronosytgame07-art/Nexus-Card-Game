@@ -2688,29 +2688,32 @@ const LANGUAGE_LABELS: Record<Language, string> = {
   ko: '한국어',
   zh: '简体中文',
 };
-const QUALITY_LABELS: Record<VisualQuality, string> = {
-  eco: 'Économie',
-  balanced: 'Équilibrée',
-  high: 'Élevée',
+const QUALITY_KEYS: Record<VisualQuality, UiKey> = {
+  eco: 'settings.qualityEco',
+  balanced: 'settings.qualityBalanced',
+  high: 'settings.qualityHigh',
 };
-const SCALE_LABELS: Record<InterfaceScale, string> = {
-  small: 'Petite',
-  normal: 'Normale',
-  large: 'Grande',
+const SCALE_KEYS: Record<InterfaceScale, UiKey> = {
+  small: 'settings.scaleSmall',
+  normal: 'settings.scaleNormal',
+  large: 'settings.scaleLarge',
 };
-function Toggle({ on, onToggle, labelOn = 'Activé', labelOff = 'Désactivé' }: { on: boolean; onToggle: () => void; labelOn?: string; labelOff?: string }) {
+function Toggle({ on, onToggle, labelOn, labelOff }: { on: boolean; onToggle: () => void; labelOn?: string; labelOff?: string }) {
+  const language = useGame((state) => state.language);
+  const resolvedOn = labelOn ?? t(language, 'settings.on');
+  const resolvedOff = labelOff ?? t(language, 'settings.off');
   return (
     <button type="button" role="switch" aria-checked={on} className={'switch' + (on ? ' on' : '')} onClick={onToggle}>
       <span className="switch-thumb" />
-      <span className="switch-state">{on ? labelOn : labelOff}</span>
+      <span className="switch-state">{on ? resolvedOn : resolvedOff}</span>
     </button>
   );
 }
 
-const FRAMECAP_LABELS: Record<AnimationMode, string> = {
-  full: 'Illimité',
-  reduced: '60 IPS',
-  off: '30 IPS (économie max.)',
+const FRAMECAP_KEYS: Record<AnimationMode, UiKey> = {
+  full: 'settings.fpsFull',
+  reduced: 'settings.fpsReduced',
+  off: 'settings.fpsOff',
 };
 const RESET_CONFIRM_WORD = 'SUPPRIMER';
 function Options() {
@@ -2735,19 +2738,19 @@ function Options() {
       <div className="options-grid settings-grid">
         <article className="options-card settings-card">
           <div className="options-card-head">
-            <span className="menu-card-icon teal">🔊</span>
+            <span className="menu-card-icon teal icon-audio" />
             <b>{t(s.language, 'settings.audio')}</b>
           </div>
           <div className="option-row">
             <div className="option-row-text">
-              <b>Musique</b>
-              <small>Thème du menu et musiques de duel.</small>
+              <b>{t(s.language, 'settings.music')}</b>
+              <small>{t(s.language, 'settings.musicHint')}</small>
             </div>
-            <Toggle on={s.musicEnabled} onToggle={() => s.setMusicEnabled(!s.musicEnabled)} labelOn="Activée" labelOff="Coupée" />
+            <Toggle on={s.musicEnabled} onToggle={() => s.setMusicEnabled(!s.musicEnabled)} labelOn={t(s.language, 'settings.musicOn')} labelOff={t(s.language, 'settings.musicOff')} />
           </div>
           <div className="option-row">
             <div className="option-row-text">
-              <b>Volume musique</b>
+              <b>{t(s.language, 'settings.musicVolume')}</b>
             </div>
             <div className="option-row-slider">
               <input type="range" min={0} max={100} value={s.musicVolume} onChange={(e) => s.setMusicVolume(Number(e.target.value))} />
@@ -2756,7 +2759,7 @@ function Options() {
           </div>
           <div className="option-row">
             <div className="option-row-text">
-              <b>Volume effets</b>
+              <b>{t(s.language, 'settings.sfxVolume')}</b>
             </div>
             <div className="option-row-slider">
               <input type="range" min={0} max={100} value={s.sfxVolume} onChange={(e) => s.setSfxVolume(Number(e.target.value))} />
@@ -2766,76 +2769,76 @@ function Options() {
         </article>
         <article className="options-card settings-card">
           <div className="options-card-head">
-            <span className="menu-card-icon violet">🖥</span>
+            <span className="menu-card-icon violet icon-display" />
             <b>{t(s.language, 'settings.display')}</b>
           </div>
           <div className="option-row">
             <div className="option-row-text">
-              <b>Qualité visuelle</b>
-              <small>Résolution des effets et du rendu des cartes.</small>
+              <b>{t(s.language, 'settings.quality')}</b>
+              <small>{t(s.language, 'settings.qualityHint')}</small>
             </div>
             <select value={s.visualQuality} onChange={(e) => s.setVisualQuality(e.target.value as VisualQuality)}>
-              {(Object.keys(QUALITY_LABELS) as VisualQuality[]).map((value) => (
+              {(Object.keys(QUALITY_KEYS) as VisualQuality[]).map((value) => (
                 <option key={value} value={value}>
-                  {QUALITY_LABELS[value]}
+                  {t(s.language, QUALITY_KEYS[value])}
                 </option>
               ))}
             </select>
           </div>
           <div className="option-row">
             <div className="option-row-text">
-              <b>Limite d'images/seconde</b>
-              <small>Réduit les animations pour économiser la batterie sur mobile.</small>
+              <b>{t(s.language, 'settings.fpsLimit')}</b>
+              <small>{t(s.language, 'settings.fpsLimitHint')}</small>
             </div>
             <select value={s.animationMode} onChange={(e) => s.setAnimationMode(e.target.value as AnimationMode)}>
-              {(Object.keys(FRAMECAP_LABELS) as AnimationMode[]).map((value) => (
+              {(Object.keys(FRAMECAP_KEYS) as AnimationMode[]).map((value) => (
                 <option key={value} value={value}>
-                  {FRAMECAP_LABELS[value]}
+                  {t(s.language, FRAMECAP_KEYS[value])}
                 </option>
               ))}
             </select>
           </div>
           <div className="option-row">
             <div className="option-row-text">
-              <b>Taille de l'interface</b>
+              <b>{t(s.language, 'settings.uiScale')}</b>
             </div>
             <select value={s.interfaceScale} onChange={(e) => s.setInterfaceScale(e.target.value as InterfaceScale)}>
-              {(Object.keys(SCALE_LABELS) as InterfaceScale[]).map((value) => (
+              {(Object.keys(SCALE_KEYS) as InterfaceScale[]).map((value) => (
                 <option key={value} value={value}>
-                  {SCALE_LABELS[value]}
+                  {t(s.language, SCALE_KEYS[value])}
                 </option>
               ))}
             </select>
           </div>
           <div className="option-row">
             <div className="option-row-text">
-              <b>Effets lumineux</b>
+              <b>{t(s.language, 'settings.glow')}</b>
             </div>
             <Toggle on={s.glowEffects} onToggle={() => s.setGlowEffects(!s.glowEffects)} />
           </div>
           <div className="option-row">
             <div className="option-row-text">
-              <b>Tremblements d'écran</b>
+              <b>{t(s.language, 'settings.shake')}</b>
             </div>
             <Toggle on={s.screenShake} onToggle={() => s.setScreenShake(!s.screenShake)} />
           </div>
           <div className="option-row">
             <div className="option-row-text">
-              <b>Compteur FPS</b>
+              <b>{t(s.language, 'settings.fpsCounter')}</b>
             </div>
-            <Toggle on={s.showFps} onToggle={() => s.setShowFps(!s.showFps)} labelOn="Affiché" labelOff="Masqué" />
+            <Toggle on={s.showFps} onToggle={() => s.setShowFps(!s.showFps)} labelOn={t(s.language, 'settings.fpsShown')} labelOff={t(s.language, 'settings.fpsHidden')} />
           </div>
           <div className="option-row">
             <div className="option-row-text">
-              <b>Mode batterie</b>
-              <small>Coupe les vidéos et animations non essentielles.</small>
+              <b>{t(s.language, 'settings.battery')}</b>
+              <small>{t(s.language, 'settings.batteryHint')}</small>
             </div>
             <Toggle on={s.batterySaver} onToggle={() => s.setBatterySaver(!s.batterySaver)} />
           </div>
           {isCoarsePointer && (
             <div className="option-row">
               <div className="option-row-text">
-                <b>Vibration</b>
+                <b>{t(s.language, 'settings.vibration')}</b>
               </div>
               <Toggle on={s.vibrationEnabled} onToggle={() => s.setVibrationEnabled(!s.vibrationEnabled)} />
             </div>
@@ -2843,17 +2846,17 @@ function Options() {
           {!isCoarsePointer && (
             <div className="option-row">
               <div className="option-row-text">
-                <b>Plein écran</b>
+                <b>{t(s.language, 'settings.fullscreen')}</b>
               </div>
               <button className="secondary" onClick={toggleFullscreen}>
-                {fullscreenActive ? '⤡ Quitter' : '⛶ Activer'}
+                {fullscreenActive ? `⤡ ${t(s.language, 'settings.fullscreenExit')}` : `⛶ ${t(s.language, 'settings.fullscreenEnable')}`}
               </button>
             </div>
           )}
         </article>
         <article className="options-card settings-card">
           <div className="options-card-head">
-            <span className="menu-card-icon gold">🌐</span>
+            <span className="menu-card-icon gold icon-language" />
             <b>{t(s.language, 'settings.language')}</b>
           </div>
           <div className="option-row">
@@ -2868,54 +2871,50 @@ function Options() {
               ))}
             </select>
           </div>
-          <p className="hint">Interface multilingue active — les écrans principaux utilisent immédiatement la langue choisie.</p>
+          <p className="hint">{t(s.language, 'settings.languageHint')}</p>
         </article>
         <article className="options-card settings-card">
           <div className="options-card-head">
-            <span className="menu-card-icon teal">↺</span>
-            <b>Réinitialisation</b>
+            <span className="menu-card-icon teal icon-reset" />
+            <b>{t(s.language, 'settings.reset')}</b>
           </div>
-          <p className="hint">Remet Audio / Affichage / Langue à leurs valeurs par défaut. Ne touche pas à ta progression (decks, cartes, XP).</p>
+          <p className="hint">{t(s.language, 'settings.resetHint')}</p>
           <button
             className="secondary"
             onClick={() => {
-              if (window.confirm('Réinitialiser tous les paramètres (audio, affichage, langue) ?')) s.resetSettings();
+              if (window.confirm(t(s.language, 'settings.resetConfirmPrompt'))) s.resetSettings();
             }}
           >
-            ↺ Réinitialiser les paramètres
+            ↺ {t(s.language, 'settings.resetAll')}
           </button>
         </article>
         <article className="options-card settings-card danger">
           <div className="options-card-head">
-            <span className="menu-card-icon red">⚠</span>
-            <b>Zone dangereuse</b>
+            <span className="menu-card-icon red icon-danger" />
+            <b>{t(s.language, 'settings.danger')}</b>
           </div>
-          <p className="hint">Efface définitivement toute ta progression : decks, cartes possédées, niveau, XP, victoires/défaites, campagne, pseudo et replays sauvegardés. Cette action est irréversible.</p>
+          <p className="hint">{t(s.language, 'settings.dangerHint')}</p>
           <button className="secondary danger" onClick={() => setResetConfirmOpen(true)}>
-            🗑 Recommencer le jeu à zéro
+            🗑 {t(s.language, 'settings.hardResetButton')}
           </button>
         </article>
       </div>
       {resetConfirmOpen && (
         <div className="reset-confirm-overlay" role="dialog" aria-modal="true" onClick={closeResetConfirm}>
           <div className="reset-confirm" onClick={(e) => e.stopPropagation()}>
-            <b>⚠ Réinitialisation totale</b>
-            <p>
-              Tu es sur le point d'effacer <u>définitivement</u> toute ta progression : decks, cartes, niveau, XP, victoires, défaites, campagne et replays sauvegardés.
-            </p>
-            <p>
-              Cette action est <b>irréversible</b> — il n'existe aucun moyen de récupérer ces données ensuite. Assure-toi d'être sûr à 100 % avant de continuer.
-            </p>
+            <b>⚠ {t(s.language, 'settings.hardResetTitle')}</b>
+            <p>{t(s.language, 'settings.hardResetWarn1')}</p>
+            <p>{t(s.language, 'settings.hardResetWarn2')}</p>
             <p className="reset-confirm-hint">
-              Pour confirmer, tape <b>{RESET_CONFIRM_WORD}</b> ci-dessous :
+              {t(s.language, 'settings.hardResetTypePrompt')} <b>{RESET_CONFIRM_WORD}</b>
             </p>
             <input value={resetConfirmText} onChange={(e) => setResetConfirmText(e.target.value)} placeholder={RESET_CONFIRM_WORD} autoFocus />
             <div className="reset-confirm-actions">
               <button className="secondary" onClick={closeResetConfirm}>
-                Annuler
+                {t(s.language, 'duel.cancel')}
               </button>
               <button className="secondary danger" disabled={resetConfirmText.trim().toUpperCase() !== RESET_CONFIRM_WORD} onClick={doHardReset}>
-                Tout supprimer définitivement
+                {t(s.language, 'settings.hardResetConfirmButton')}
               </button>
             </div>
           </div>
@@ -3499,22 +3498,22 @@ function Multiplayer() {
   const botDifficultyHint = searching === 'ranked' ? `IA de niveau ${aiDifficultyForRating(currentRating) === 'maitre' ? 'Maître' : aiDifficultyForRating(currentRating) === 'veteran' ? 'Vétéran' : 'Novice'} (ton rang)` : 'IA de niveau aléatoire';
   return (
     <section className="multiplayer-page">
-      <h2>Multijoueur</h2>
-      <p className="hint">{pvpEnabled ? 'Recherche un vrai adversaire en ligne ; si personne n\'est trouvé après une courte recherche, un bot prend le relais — niveau aléatoire en Classique, niveau équivalent à ton rang en Classé.' : 'Aucun serveur de matchmaking temps réel n\'est encore branché : un bot prend le relais — niveau aléatoire en Classique, niveau équivalent à ton rang en Classé.'}</p>
+      <h2>{t(s.language, 'multiplayer.title')}</h2>
+      <p className="hint">{pvpEnabled ? t(s.language, 'multiplayer.hintPvp') : t(s.language, 'multiplayer.hintBotOnly')}</p>
       <div className="multiplayer-modes">
         <article className="multiplayer-mode">
-          <span className="menu-card-icon teal">⚔</span>
-          <h3>Classique</h3>
-          <p>Duels sans impact sur le rang. Idéal pour tester un deck hybride, apprendre un nouvel archétype ou jouer entre amis.</p>
+          <span className="menu-card-icon teal icon-duel" />
+          <h3>{t(s.language, 'multiplayer.classic')}</h3>
+          <p>{t(s.language, 'multiplayer.classicDesc')}</p>
           <button className="primary" disabled={searching !== null} onClick={() => startSearch('classic')}>
-            {searching === 'classic' ? 'RECHERCHE…' : 'RECHERCHER UN ADVERSAIRE'}
+            {searching === 'classic' ? t(s.language, 'multiplayer.searching') : t(s.language, 'multiplayer.searchButton')}
           </button>
-          <small>Repli automatique sur un bot de niveau aléatoire si personne n'est trouvé</small>
+          <small>{t(s.language, 'multiplayer.classicFallback')}</small>
         </article>
         <article className="multiplayer-mode ranked">
-          <span className="menu-card-icon gold">✦</span>
-          <h3>Classé</h3>
-          <p>Les victoires et défaites font évoluer ton statut dans le Nexus.</p>
+          <span className="menu-card-icon gold icon-rank" />
+          <h3>{t(s.language, 'multiplayer.ranked')}</h3>
+          <p>{t(s.language, 'multiplayer.rankedDesc')}</p>
           <div className="rank-card">
             <RankBadge tier={rank.tier} className="current-rank-badge" />
             <div className="rank-card-copy">
@@ -3526,9 +3525,9 @@ function Multiplayer() {
             </div>
           </div>
           <button className="primary" disabled={searching !== null} onClick={() => startSearch('ranked')}>
-            {searching === 'ranked' ? 'RECHERCHE…' : 'LANCER UN DUEL CLASSÉ'}
+            {searching === 'ranked' ? t(s.language, 'multiplayer.searching') : t(s.language, 'multiplayer.rankedSearchButton')}
           </button>
-          <small>Repli automatique sur un bot de ton rang si personne n'est trouvé</small>
+          <small>{t(s.language, 'multiplayer.rankedFallback')}</small>
         </article>
       </div>
       <h3>Rangs du Nexus</h3>
