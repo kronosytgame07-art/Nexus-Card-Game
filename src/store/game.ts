@@ -42,6 +42,16 @@ export const TERRAINS: { id: TerrainId; name: string; blurb: string }[] = [
   { id: 'spectral', name: 'Arène des Os Brisés', blurb: 'Terres maudites jonchées d\'os et de crânes, flammes vertes et bannières écarlates.' },
 ];
 
+export type ProfileFrameId = 'none' | 'moonsteel' | 'royal-gold' | 'dragonfire' | 'necropolis' | 'nexus-prismatic';
+export const PROFILE_FRAMES: { id: ProfileFrameId; name: string; blurb: string; price: number }[] = [
+  { id: 'none', name: 'Cercle originel', blurb: 'Un anneau discret fourni à tous les joueurs.', price: 0 },
+  { id: 'moonsteel', name: 'Acier lunaire', blurb: 'Argent froid, runes de givre et éclats de lune.', price: 60 },
+  { id: 'royal-gold', name: 'Couronne solaire', blurb: 'Or royal ciselé et cabochons de lumière.', price: 80 },
+  { id: 'dragonfire', name: 'Écaille du brasier', blurb: 'Obsidienne, griffes dorées et cœur incandescent.', price: 100 },
+  { id: 'necropolis', name: 'Reliquaire des os', blurb: 'Ivoire ancien serti d’une lueur nécromantique.', price: 100 },
+  { id: 'nexus-prismatic', name: 'Élu du Nexus', blurb: 'Le cadre prestige où convergent toutes les failles.', price: 140 },
+];
+
 export type Language = 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh';
 export type VisualQuality = 'eco' | 'balanced' | 'high';
 export type AnimationMode = 'full' | 'reduced' | 'off';
@@ -113,6 +123,10 @@ interface GameMeta {
   /** Ids des cartes d'évolution (niveau 2) débloquées comme image de profil,
       achetées en gemmes dans la Boutique — voir purchaseAvatar(). */
   purchasedAvatars: string[];
+  /** Cadres cosmétiques de portrait achetés en Boutique. */
+  purchasedProfileFrames: ProfileFrameId[];
+  /** Cadre actuellement affiché autour de l'avatar du joueur. */
+  selectedProfileFrame: ProfileFrameId;
   /** Terrains possédés — "default" toujours présent, les autres achetés en Boutique. */
   purchasedTerrains: TerrainId[];
   /** Terrain actuellement utilisé en duel — voir Combat() dans App.tsx. */
@@ -140,6 +154,8 @@ interface GameMeta {
   /** Débloque une carte d'évolution comme image de profil pour AVATAR_PRICE_GEMS
       gemmes. Ne fait rien si les gemmes sont insuffisantes ou déjà débloquée. */
   purchaseAvatar: (cardId: string) => void;
+  purchaseProfileFrame: (id: ProfileFrameId) => void;
+  selectProfileFrame: (id: ProfileFrameId) => void;
   /** Débloque un terrain pour TERRAIN_PRICE_GEMS gemmes. Ne fait rien si les
       gemmes sont insuffisantes ou déjà débloqué. */
   purchaseTerrain: (id: TerrainId) => void;
@@ -330,6 +346,8 @@ export const useGame = create<GameMeta>()(
       playerName: 'Chronos',
       avatarCardId: '',
       purchasedAvatars: [],
+      purchasedProfileFrames: ['none'],
+      selectedProfileFrame: 'none',
       purchasedTerrains: ['default'],
       selectedTerrain: 'default',
       visualQuality: 'balanced',
@@ -402,6 +420,18 @@ export const useGame = create<GameMeta>()(
           if (s.gems < AVATAR_PRICE_GEMS || s.purchasedAvatars.includes(cardId)) return {};
           return { gems: s.gems - AVATAR_PRICE_GEMS, purchasedAvatars: [...s.purchasedAvatars, cardId] };
         }),
+      purchaseProfileFrame: (id) =>
+        set((s) => {
+          const frame = PROFILE_FRAMES.find((entry) => entry.id === id);
+          if (!frame || s.purchasedProfileFrames.includes(id) || s.gems < frame.price) return {};
+          return {
+            gems: s.gems - frame.price,
+            purchasedProfileFrames: [...s.purchasedProfileFrames, id],
+            selectedProfileFrame: id,
+          };
+        }),
+      selectProfileFrame: (id) =>
+        set((s) => (s.purchasedProfileFrames.includes(id) ? { selectedProfileFrame: id } : {})),
       purchaseTerrain: (id) =>
         set((s) => {
           if (s.gems < TERRAIN_PRICE_GEMS || s.purchasedTerrains.includes(id)) return {};
@@ -581,6 +611,8 @@ export const useGame = create<GameMeta>()(
           playerName: 'Chronos',
           avatarCardId: '',
           purchasedAvatars: [],
+          purchasedProfileFrames: ['none'],
+          selectedProfileFrame: 'none',
           purchasedTerrains: ['default'],
           selectedTerrain: 'default',
           replays: [],
@@ -606,6 +638,8 @@ export const useGame = create<GameMeta>()(
       merge: (persistedState, currentState) => {
         const persisted = (persistedState ?? {}) as Partial<GameMeta>;
         const merged: GameMeta = { ...currentState, ...persisted };
+        merged.purchasedProfileFrames = Array.from(new Set<ProfileFrameId>(['none', ...(merged.purchasedProfileFrames ?? [])]));
+        if (!merged.purchasedProfileFrames.includes(merged.selectedProfileFrame)) merged.selectedProfileFrame = 'none';
 
         // Migration douce pour les joueurs qui avaient un unique deck avant l'ajout du
         // gestionnaire multi-decks : on l'enveloppe dans un SavedDeck plutôt que de le perdre.

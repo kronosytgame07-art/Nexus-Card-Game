@@ -1,7 +1,7 @@
 import { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ALL_CARDS, ALL_FACTIONS, AnimationMode, AVATAR_PRICE_GEMS, BOOSTER_PULL_COUNT, copiesInDeck, defaultAvatarFor, EVOSPHERE_MAX, FOIL_CRAFT_COST, InterfaceScale, Language, MAIN_DECK_MAX, MAIN_DECK_MIN, maxCopiesAllowed, purchasableAvatarCards, TERRAIN_PRICE_GEMS, TERRAINS, UNLOCK_SECOND_FACTION_AT, UNLOCK_THIRD_FACTION_AT, useGame, VisualQuality, WIN_GEMS_REWARD, XP_PER_LEVEL } from './store/game';
+import { ALL_CARDS, ALL_FACTIONS, AnimationMode, AVATAR_PRICE_GEMS, BOOSTER_PULL_COUNT, copiesInDeck, defaultAvatarFor, EVOSPHERE_MAX, FOIL_CRAFT_COST, InterfaceScale, Language, MAIN_DECK_MAX, MAIN_DECK_MIN, maxCopiesAllowed, PROFILE_FRAMES, purchasableAvatarCards, TERRAIN_PRICE_GEMS, TERRAINS, UNLOCK_SECOND_FACTION_AT, UNLOCK_THIRD_FACTION_AT, useGame, VisualQuality, WIN_GEMS_REWARD, XP_PER_LEVEL } from './store/game';
 import { cardsByFaction, getCard } from './engine/cards';
 import { CardDef, Faction, FieldUnit, GameState, MAX_MANA, Rarity, SupportCard } from './engine/types';
 import { DEFAULT_RANKED_RATING, RANKED_LADDER, aiDifficultyForRating, formatRank, rankForRating, rankedRatingDelta, type RankedTier } from './engine/ranked';
@@ -22,6 +22,7 @@ import AudioDirector from './components/AudioDirector';
 import { CodexPanel } from './components/CodexPanel';
 import { NarrativeCampaign } from './components/NarrativeCampaign';
 import { SecretDragonReward } from './components/SecretDragonReward';
+import { ProfileFrame } from './components/ProfileFrame';
 import { t, type UiKey } from './i18n';
 
 // Chargé à la demande : embarque le SDK Firebase (auth + firestore), inutile pour le reste
@@ -2042,7 +2043,7 @@ function Combat() {
       </div>
       <div className="profile-float player">
         <div className="duel-profile">
-          <span className="duel-profile-avatar">
+          <ProfileFrame frameId={s.selectedProfileFrame} className="duel-profile-avatar">
             {playerAvatarCard ? (
               <img
                 src={playerAvatarCard.image}
@@ -2055,7 +2056,7 @@ function Combat() {
             ) : (
               <b>✦</b>
             )}
-          </span>
+          </ProfileFrame>
           <div className="duel-profile-text">
             <b>{s.playerName}</b>
             <small>{activeDeckName}</small>
@@ -2607,7 +2608,7 @@ function Profile() {
         <GoogleAccountSection />
       </Suspense>
       <div className="profile profile-editor">
-        <div className="profile-avatar">
+        <ProfileFrame frameId={s.selectedProfileFrame} className="profile-avatar">
           {avatar ? (
             <img
               src={avatar.image}
@@ -2620,7 +2621,7 @@ function Profile() {
           ) : (
             <b>✦</b>
           )}
-        </div>
+        </ProfileFrame>
         <div className="profile-main">
           <label>
             Pseudo
@@ -2663,6 +2664,18 @@ function Profile() {
               }}
             />
             <span>{card.name}</span>
+          </button>
+        ))}
+      </div>
+      <h3>Choisir un cadre de profil</h3>
+      <p className="hint">Les cadres achetés en boutique apparaissent ici, sur l'accueil et pendant les duels.</p>
+      <div className="profile-frame-selector">
+        {PROFILE_FRAMES.filter((frame) => s.purchasedProfileFrames.includes(frame.id)).map((frame) => (
+          <button key={frame.id} className={'profile-frame-choice' + (s.selectedProfileFrame === frame.id ? ' active' : '')} onClick={() => s.selectProfileFrame(frame.id)}>
+            <ProfileFrame frameId={frame.id} className="profile-frame-choice-preview">
+              {avatar ? <img src={avatar.image} alt="" /> : <b>✦</b>}
+            </ProfileFrame>
+            <span>{frame.name}</span>
           </button>
         ))}
       </div>
@@ -3067,6 +3080,7 @@ const BOOSTERS: {
 
 function Shop() {
   const s = useGame();
+  const shopAvatar = ALL_CARDS.find((card) => card.id === s.avatarCardId) ?? ALL_CARDS.find((card) => card.id === defaultAvatarFor(s.faction));
   const [reveal, setReveal] = useState<{
     faction: Faction;
     packs: { cards: CardDef[]; isNew: boolean[] }[];
@@ -3194,7 +3208,7 @@ function Shop() {
           const available = booster.available !== false;
           const affordable = available && s.gold >= booster.price;
           return (
-            <article key={booster.id} className="options-card booster-product-card">
+            <article key={booster.id} className={`options-card booster-product-card booster-frame-${booster.id.toLowerCase()}`}>
               <img className={`booster-shop-art${booster.id === 'Squelette' ? ' booster-skeleton-art' : ''}`} src={boosterArtwork(booster.id)} alt={booster.name} loading="lazy" />
               <b className="booster-product-title">{booster.name}</b>
               <p className="hint">{booster.blurb}</p>
@@ -3260,6 +3274,32 @@ function Shop() {
               <span>{card.name}</span>
               <span className="hint avatar-price">{owned ? '✓ Débloqué' : <CurrencyAmount kind="gem" amount={AVATAR_PRICE_GEMS} />}</span>
             </button>
+          );
+        })}
+      </div>
+      <h3>Cadres de profil</h3>
+      <p className="hint">Des reliquaires cosmétiques gagnés avec les gemmes de jeu. Un cadre acheté est immédiatement équipé.</p>
+      <div className="profile-frame-shop-grid">
+        {PROFILE_FRAMES.map((frame) => {
+          const owned = s.purchasedProfileFrames.includes(frame.id);
+          const active = s.selectedProfileFrame === frame.id;
+          return (
+            <article key={frame.id} className={`profile-frame-product profile-frame-product-${frame.id}${active ? ' active' : ''}`}>
+              <ProfileFrame frameId={frame.id} className="profile-frame-shop-preview">
+                {shopAvatar ? <img src={shopAvatar.image} alt="" /> : <b>✦</b>}
+              </ProfileFrame>
+              <div>
+                <b>{frame.name}</b>
+                <p className="hint">{frame.blurb}</p>
+              </div>
+              {owned ? (
+                <button className="secondary" disabled={active} onClick={() => s.selectProfileFrame(frame.id)}>{active ? 'Équipé' : 'Équiper'}</button>
+              ) : (
+                <button className="primary" disabled={s.gems < frame.price} onClick={() => s.purchaseProfileFrame(frame.id)}>
+                  <span className="button-price"><CurrencyIcon kind="gem" />{frame.price}</span>
+                </button>
+              )}
+            </article>
           );
         })}
       </div>
@@ -3722,9 +3762,9 @@ function Replay() {
       </div>
       <div className="profile-float player">
         <div className="duel-profile">
-          <span className="duel-profile-avatar">
+          <ProfileFrame frameId={s.selectedProfileFrame} className="duel-profile-avatar">
             <b>✦</b>
-          </span>
+          </ProfileFrame>
           <div className="duel-profile-text">
             <b>{s.playerName}</b>
             <small>{playerFaction}</small>
