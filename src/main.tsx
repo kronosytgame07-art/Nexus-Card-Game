@@ -23,6 +23,17 @@ import './profile-account.css';
 import './battle-ui-polish.css';
 import './battle-polish.css';
 import './fantasy-frames.css';
+import './generated-frame-assets.css';
+
+const frameAsset = (name: string) => `url("${import.meta.env.BASE_URL}ui/frames/${name}.webp")`;
+document.documentElement.style.setProperty('--frame-panel-nexus', frameAsset('panel-nexus'));
+document.documentElement.style.setProperty('--frame-panel-meute', frameAsset('panel-meute'));
+document.documentElement.style.setProperty('--frame-panel-chevalier', frameAsset('panel-chevalier'));
+document.documentElement.style.setProperty('--frame-panel-orc', frameAsset('panel-orc'));
+document.documentElement.style.setProperty('--frame-panel-dragon', frameAsset('panel-dragon'));
+document.documentElement.style.setProperty('--frame-panel-gobelin', frameAsset('panel-gobelin'));
+document.documentElement.style.setProperty('--frame-panel-squelette', frameAsset('panel-squelette'));
+document.documentElement.style.setProperty('--frame-button-nexus', frameAsset('button-nexus'));
 
 const isInteractiveGameElement = (target: EventTarget | null) => target instanceof Element && Boolean(target.closest('#root button, #root a, #root .card, #root .field-card, #root .field-unit, #root .menu-card, #root .card-pile, #root img'));
 document.addEventListener('contextmenu',event=>{if(isInteractiveGameElement(event.target))event.preventDefault()});

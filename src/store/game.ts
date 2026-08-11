@@ -43,13 +43,14 @@ export const TERRAINS: { id: TerrainId; name: string; blurb: string }[] = [
 ];
 
 export type ProfileFrameId = 'none' | 'moonsteel' | 'royal-gold' | 'dragonfire' | 'necropolis' | 'nexus-prismatic';
-export const PROFILE_FRAMES: { id: ProfileFrameId; name: string; blurb: string; price: number }[] = [
-  { id: 'none', name: 'Cercle originel', blurb: 'Un anneau discret fourni à tous les joueurs.', price: 0 },
-  { id: 'moonsteel', name: 'Acier lunaire', blurb: 'Argent froid, runes de givre et éclats de lune.', price: 60 },
-  { id: 'royal-gold', name: 'Couronne solaire', blurb: 'Or royal ciselé et cabochons de lumière.', price: 80 },
-  { id: 'dragonfire', name: 'Écaille du brasier', blurb: 'Obsidienne, griffes dorées et cœur incandescent.', price: 100 },
-  { id: 'necropolis', name: 'Reliquaire des os', blurb: 'Ivoire ancien serti d’une lueur nécromantique.', price: 100 },
-  { id: 'nexus-prismatic', name: 'Élu du Nexus', blurb: 'Le cadre prestige où convergent toutes les failles.', price: 140 },
+export type ProfileFrameRarity = 'Standard' | 'Épique' | 'Légendaire' | 'Mythique';
+export const PROFILE_FRAMES: { id: ProfileFrameId; name: string; blurb: string; price: number; rarity: ProfileFrameRarity }[] = [
+  { id: 'none', name: 'Cercle originel', blurb: 'Un anneau discret fourni à tous les joueurs.', price: 0, rarity: 'Standard' },
+  { id: 'moonsteel', name: 'Acier lunaire', blurb: 'Argent froid, runes de givre et éclats de lune.', price: 60, rarity: 'Épique' },
+  { id: 'royal-gold', name: 'Couronne solaire', blurb: 'Or royal ciselé et cabochons de lumière.', price: 80, rarity: 'Légendaire' },
+  { id: 'dragonfire', name: 'Écaille du brasier', blurb: 'Obsidienne, griffes dorées et cœur incandescent.', price: 100, rarity: 'Légendaire' },
+  { id: 'necropolis', name: 'Reliquaire des os', blurb: 'Ivoire ancien serti d’une lueur nécromantique.', price: 100, rarity: 'Légendaire' },
+  { id: 'nexus-prismatic', name: 'Élu du Nexus', blurb: 'Le cadre prestige où convergent toutes les failles.', price: 140, rarity: 'Mythique' },
 ];
 
 export type Language = 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh';

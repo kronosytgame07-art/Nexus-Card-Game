@@ -332,14 +332,7 @@ function menuThemeForPath(pathname: string): MenuTheme | null {
 function MenuAtmosphere({ theme }: { theme: MenuTheme | null }) {
   const animationMode = useGame((state) => state.animationMode);
   const batterySaver = useGame((state) => state.batterySaver);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const paused = animationMode === 'off' || batterySaver;
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (paused) video.pause();
-    else video.play().catch(() => {});
-  }, [paused, theme]);
   useEffect(() => {
     if (!theme || paused) return;
     const move = (event: PointerEvent) => {
@@ -352,17 +345,22 @@ function MenuAtmosphere({ theme }: { theme: MenuTheme | null }) {
     return () => window.removeEventListener('pointermove', move);
   }, [paused, theme]);
   if (!theme) return null;
-  const background = theme === 'campaign' ? `${import.meta.env.BASE_URL}story/chapter-1/scene-01-nexus-fragment.webp` : theme === 'ranked' ? `${import.meta.env.BASE_URL}backgrounds/ranked-hall.webp` : `${import.meta.env.BASE_URL}backgrounds/collection-archive.webp`;
+  const background = theme === 'campaign'
+    ? `${import.meta.env.BASE_URL}story/chapter-1/scene-01-nexus-fragment.webp`
+    : theme === 'ranked'
+      ? `${import.meta.env.BASE_URL}backgrounds/ranked-hall.webp`
+      : theme === 'shop'
+        ? `${import.meta.env.BASE_URL}backgrounds/shop-nexus-vault-v2.png`
+        : `${import.meta.env.BASE_URL}backgrounds/collection-archive.webp`;
   return (
     <div className={`menu-atmosphere theme-${theme}`} aria-hidden="true">
-      {theme === 'shop' ? (
-        <video ref={videoRef} className="menu-atmosphere-media" autoPlay={!paused} loop muted playsInline poster={`${import.meta.env.BASE_URL}backgrounds/shop-merchant-frame-a.webp`}>
-          <source src={`${import.meta.env.BASE_URL}backgrounds/shop-merchant-loop.mp4`} type="video/mp4" />
-        </video>
-      ) : (
-        <div className="menu-atmosphere-media menu-atmosphere-image" style={{ backgroundImage: `url(${background})` }} />
-      )}
+      <div className="menu-atmosphere-media menu-atmosphere-image" style={{ backgroundImage: `url(${background})` }} />
       <div className="menu-atmosphere-shade" />
+      {theme === 'shop' && <>
+        <div className="shop-vault-orbit one" />
+        <div className="shop-vault-orbit two" />
+        <div className="shop-vault-counterglow" />
+      </>}
       <div className="menu-atmosphere-depth back" />
       <div className="menu-atmosphere-depth front" />
       <div className="menu-atmosphere-lantern one" />
@@ -3284,11 +3282,12 @@ function Shop() {
           const owned = s.purchasedProfileFrames.includes(frame.id);
           const active = s.selectedProfileFrame === frame.id;
           return (
-            <article key={frame.id} className={`profile-frame-product profile-frame-product-${frame.id}${active ? ' active' : ''}`}>
+            <article key={frame.id} className={`profile-frame-product profile-frame-product-${frame.id}${active ? ' active' : ''}`} data-rarity={frame.rarity}>
               <ProfileFrame frameId={frame.id} className="profile-frame-shop-preview">
                 {shopAvatar ? <img src={shopAvatar.image} alt="" /> : <b>✦</b>}
               </ProfileFrame>
               <div>
+                <small className="cosmetic-rarity">{frame.rarity}</small>
                 <b>{frame.name}</b>
                 <p className="hint">{frame.blurb}</p>
               </div>
