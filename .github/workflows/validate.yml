@@ -35,15 +35,15 @@ jobs:
           set -euo pipefail
           test -f dist/index.html
           test -f dist/sw.js
-          test -f dist/cards/louve-veilleuse.png
-          test -f dist/cards/evo-louve-veilleuse.png
-          test -f dist/cards/eclaireuse-des-crocs.png
-          test -f dist/cards/mythique-loup-du-nexus.png
-          test -f dist/boosters/meute.png
-          test -f dist/boosters/chevalier.png
-          test -f dist/boosters/orc.png
-          test -f dist/boosters/dragon.png
-          test -f dist/boosters/gobelin.png
+          test -f dist/cards/louve-veilleuse.webp
+          test -f dist/cards/evo-louve-veilleuse.webp
+          test -f dist/cards/eclaireuse-des-crocs.webp
+          test -f dist/cards/mythique-loup-du-nexus.webp
+          test -f dist/boosters/meute.webp
+          test -f dist/boosters/chevalier.webp
+          test -f dist/boosters/orc.webp
+          test -f dist/boosters/dragon.webp
+          test -f dist/boosters/gobelin.webp
           grep -q "nexus-arena-v20" dist/sw.js
 
       - name: Capacitor build and sync
@@ -56,17 +56,17 @@ jobs:
           import hashlib
 
           checks = [
-              ('public/cards/louve-veilleuse.png', [
-                  'android/app/src/main/assets/public/cards/louve-veilleuse.png',
-                  'ios/App/App/public/cards/louve-veilleuse.png',
+              ('public/cards/louve-veilleuse.webp', [
+                  'android/app/src/main/assets/public/cards/louve-veilleuse.webp',
+                  'ios/App/App/public/cards/louve-veilleuse.webp',
               ]),
-              ('public/cards/mythique-loup-du-nexus.png', [
-                  'android/app/src/main/assets/public/cards/mythique-loup-du-nexus.png',
-                  'ios/App/App/public/cards/mythique-loup-du-nexus.png',
+              ('public/cards/mythique-loup-du-nexus.webp', [
+                  'android/app/src/main/assets/public/cards/mythique-loup-du-nexus.webp',
+                  'ios/App/App/public/cards/mythique-loup-du-nexus.webp',
               ]),
-              ('public/boosters/meute.png', [
-                  'android/app/src/main/assets/public/boosters/meute.png',
-                  'ios/App/App/public/boosters/meute.png',
+              ('public/boosters/meute.webp', [
+                  'android/app/src/main/assets/public/boosters/meute.webp',
+                  'ios/App/App/public/boosters/meute.webp',
               ]),
           ]
 

@@ -37,9 +37,9 @@ jobs:
       # écrasait les nouvelles illustrations Meute avec les assets du 5 août.
       - name: Vérifier les nouveaux assets Nexus
         run: |
-          test -f dist/cards/louve-veilleuse.png
-          test -f dist/cards/mythique-loup-du-nexus.png
-          test -f dist/boosters/meute.png
+          test -f dist/cards/louve-veilleuse.webp
+          test -f dist/cards/mythique-loup-du-nexus.webp
+          test -f dist/boosters/meute.webp
           echo "Nouvelles illustrations présentes dans le build."
       - name: Déployer sur la branche gh-pages
         uses: peaceiris/actions-gh-pages@v3
