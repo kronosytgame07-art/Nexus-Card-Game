@@ -51,5 +51,29 @@ service cloud.firestore {
     match /saves/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
+
+    // pvp_queue/{uid} et pvp_matches/{matchId} — multijoueur temps réel (voir src/pvp.ts).
+    // Comme pour trades/ ci-dessus, ce n'est pas une garantie anti-triche à 100 % :
+    // le client qui "réclame" un adversaire dans la file doit pouvoir supprimer le
+    // document de CET AUTRE joueur (pas de fonction serveur ici pour le faire à sa
+    // place), et les deux participants d'un match peuvent tous deux écrire l'état —
+    // rien n'empêche côté règles qu'un client pousse un état invalide. Acceptable pour
+    // un jeu occasionnel sans enjeu réel, à durcir si un vrai mode compétitif arrive.
+    match /pvp_queue/{uid} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && uid == request.auth.uid;
+      allow delete: if request.auth != null;
+      allow update: if false;
+    }
+
+    match /pvp_matches/{matchId} {
+      allow create: if request.auth != null
+        && request.resource.data.hostUid == request.auth.uid;
+      allow read, update: if request.auth != null
+        && (resource.data.hostUid == request.auth.uid || resource.data.guestUid == request.auth.uid);
+      allow delete: if false;
+    }
   }
 }

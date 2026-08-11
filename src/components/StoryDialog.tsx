@@ -114,7 +114,7 @@ export function StoryDialog({ sceneId, lines, playerName, onComplete, onClose }:
       </AnimatePresence>
 
       <div className="story-scene-label" aria-hidden="true"><span>NEXUS ARENA</span><b>CHRONIQUES D'ELYNDRA</b></div>
-      {character && <motion.aside className={`cinematic-portrait portrait-${side}`} key={`${character.id}-${index}`} initial={{ opacity: 0, x: side === 'left' ? -42 : 42, scale: .92 }} animate={{ opacity: 1, x: 0, scale: 1 }} transition={{ delay: .2, duration: .42, ease: 'easeOut' }}><img src={character.portrait} alt="" onError={(event)=>{event.currentTarget.style.display='none'}}/><span>{character.role}</span></motion.aside>}
+      {character && <motion.aside className={`cinematic-portrait portrait-${side}`} key={`${character.id}-${index}`} initial={{ opacity: 0, x: side === 'left' ? -42 : 42, scale: .92 }} animate={{ opacity: 1, x: 0, scale: 1 }} transition={{ delay: .2, duration: .42, ease: 'easeOut' }}><img src={character.portrait} alt="" style={character.portraitPosition ? { objectPosition: character.portraitPosition } : undefined} onError={(event)=>{event.currentTarget.style.display='none'}}/><span>{character.role}</span></motion.aside>}
       {onClose && <button className="story-close" type="button" aria-label="Quitter la scène" onClick={onClose}>×</button>}
       <button className="cinematic-skip" type="button" onClick={onComplete}>PASSER LA CINÉMATIQUE</button>
 

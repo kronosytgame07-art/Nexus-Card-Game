@@ -6,7 +6,7 @@ export type CombatTrigger = 'first_summon' | 'first_damage' | 'big_damage' | 'pl
 export type CinematicCamera = 'push' | 'pull' | 'pan-left' | 'pan-right' | 'rise' | 'fall' | 'still';
 export type CinematicAtmosphere = 'none' | 'embers' | 'storm' | 'mist' | 'necrotic' | 'nexus';
 
-export interface StoryCharacter { id: StoryCharacterId; name: string; faction: Faction; role: string; description: string; portrait: string; }
+export interface StoryCharacter { id: StoryCharacterId; name: string; faction: Faction; role: string; description: string; portrait: string; portraitPosition?: string; }
 export interface DialogueChoice { id: string; text: string; tone: DialogueTone; affinity?: Partial<Record<StoryCharacterId, number>>; }
 export interface CinematicDirection {
   camera?: CinematicCamera;
