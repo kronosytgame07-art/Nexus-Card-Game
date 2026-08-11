@@ -201,7 +201,7 @@ function useFullscreen() {
 function FullscreenButton() {
   const { active, toggle } = useFullscreen();
   return (
-    <button className="fullscreen-toggle" onClick={toggle} title={active ? 'Quitter le plein écran' : 'Plein écran'}>
+    <button className={'fullscreen-toggle' + (active ? ' active' : '')} onClick={toggle} title={active ? 'Quitter le plein écran' : 'Plein écran'}>
       {active ? '⤡' : '⛶'}
     </button>
   );
@@ -275,7 +275,7 @@ function MusicToggle() {
     if (audio) next ? (audio.load(), audio.play().catch(() => {})) : audio.pause();
   };
   return (
-    <button className="music-toggle" onClick={onClick} title={enabled ? 'Couper la musique' : 'Activer la musique du menu'}>
+    <button className={'music-toggle' + (enabled ? '' : ' muted')} onClick={onClick} title={enabled ? 'Couper la musique' : 'Activer la musique du menu'}>
       {enabled ? '🔊' : '🔈'}
     </button>
   );
