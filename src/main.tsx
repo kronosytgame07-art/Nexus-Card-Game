@@ -1,6 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, useLocation } from 'react-router-dom';
+import { BrowserRouter, HashRouter, useLocation } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import App from './App';
 import { FactionUnlockShop } from './components/FactionUnlockShop';
@@ -29,5 +29,7 @@ document.addEventListener('dragstart',event=>{if(isInteractiveGameElement(event.
 document.addEventListener('selectstart',event=>{const target=event.target;if(!(target instanceof Element))return;if(target.closest('input, textarea, [contenteditable="true"]'))return;if(target.closest('#root'))event.preventDefault()});
 function PlayBattlePass(){const location=useLocation();return location.pathname==='/'?<BattlePass/>:null}
 installFactionUnlockRules();
-createRoot(document.getElementById('root')!).render(<React.StrictMode><BrowserRouter basename={import.meta.env.BASE_URL}><App/><FactionUnlockShop/><HomeProfileBadge/><BattleQuickSettings/><FirstRunTutorial/><CombatPlaylistController/><PlayBattlePass/></BrowserRouter></React.StrictMode>);
+const Router = __USE_HASH_ROUTER__ ? HashRouter : BrowserRouter;
+const routerProps = __USE_HASH_ROUTER__ ? {} : { basename: import.meta.env.BASE_URL };
+createRoot(document.getElementById('root')!).render(<React.StrictMode><Router {...routerProps}><App/><FactionUnlockShop/><HomeProfileBadge/><BattleQuickSettings/><FirstRunTutorial/><CombatPlaylistController/><PlayBattlePass/></Router></React.StrictMode>);
 if('serviceWorker'in navigator&&!Capacitor.isNativePlatform())window.addEventListener('load',()=>{navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(()=>{})});
