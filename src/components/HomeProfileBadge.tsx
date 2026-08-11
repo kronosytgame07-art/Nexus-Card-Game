@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { ALL_CARDS, useGame } from '../store/game';
+import { ProfileFrame } from './ProfileFrame';
 
 const GEM_ICON = `${import.meta.env.BASE_URL}ui/nexus-gem.webp`;
 const COIN_ICON = `${import.meta.env.BASE_URL}ui/nexus-coin.webp`;
@@ -12,9 +13,9 @@ export default function HomeProfileBadge() {
   const avatar = ALL_CARDS.find((card) => card.id === state.avatarCardId);
   return (
     <Link to="/profil" className="home-profile-badge" aria-label="Ouvrir le profil">
-      <span className="home-profile-avatar">
+      <ProfileFrame frameId={state.selectedProfileFrame} className="home-profile-avatar">
         {avatar?.image ? <img src={avatar.image} alt="" draggable={false} /> : <span className="home-profile-avatar-fallback" aria-hidden="true" />}
-      </span>
+      </ProfileFrame>
       <span className="home-profile-main">
         <b>{state.playerName}</b>
         <small>Niveau {state.level}</small>

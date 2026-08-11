@@ -1,0 +1,388 @@
+/* Sculpted fantasy frames for Nexus Arena.
+   Large interactive blocks use faction-specific metals; compact controls inherit
+   the same chamfered language without sacrificing their hit area. */
+
+:root{
+  --nexus-frame-shape:polygon(22px 0,calc(50% - 18px) 0,50% 8px,calc(50% + 18px) 0,calc(100% - 22px) 0,100% 22px,calc(100% - 7px) 50%,100% calc(100% - 22px),calc(100% - 22px) 100%,calc(50% + 18px) 100%,50% calc(100% - 8px),calc(50% - 18px) 100%,22px 100%,0 calc(100% - 22px),7px 50%,0 22px);
+  --nexus-button-shape:polygon(10px 0,calc(100% - 10px) 0,100% 9px,calc(100% - 3px) 50%,100% calc(100% - 9px),calc(100% - 10px) 100%,10px 100%,0 calc(100% - 9px),3px 50%,0 9px);
+}
+
+/* Main Play blocks: three silhouettes, three forged materials. */
+body.on-home .menu-card,
+.multiplayer-mode,
+.booster-product-card,
+.onboarding-card{
+  --frame-accent:#e8c66f;
+  --frame-accent-rgb:232,198,111;
+  --frame-bright:#fff1b0;
+  --frame-dark:#705823;
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  border:2px solid transparent!important;
+  border-radius:0!important;
+  clip-path:var(--nexus-frame-shape);
+  filter:drop-shadow(0 18px 22px rgba(0,0,0,.38));
+}
+
+body.on-home .menu-card{
+  background:
+    radial-gradient(circle at 50% -12%,rgba(var(--frame-accent-rgb),.2),transparent 45%) padding-box,
+    linear-gradient(160deg,rgba(16,33,37,.98),rgba(5,11,16,.98)) padding-box,
+    linear-gradient(122deg,var(--frame-bright),var(--frame-dark) 19%,#172628 38%,var(--frame-accent) 52%,#182829 72%,var(--frame-bright)) border-box!important;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.72),inset 0 1px 0 rgba(255,255,255,.12)!important;
+}
+body.on-home .menu-card:nth-child(1){--frame-accent:#e8c66f;--frame-accent-rgb:232,198,111;--frame-bright:#fff1b0;--frame-dark:#765b22}
+body.on-home .menu-card:nth-child(2){--frame-accent:#5fe3c2;--frame-accent-rgb:95,227,194;--frame-bright:#c8fff2;--frame-dark:#176758}
+body.on-home .menu-card:nth-child(3){--frame-accent:#df766c;--frame-accent-rgb:223,118,108;--frame-bright:#ffd1a6;--frame-dark:#742c2b}
+
+body.on-home .menu-card::before,
+.multiplayer-mode::before,
+.booster-product-card::before,
+.onboarding-card::before{
+  content:"";
+  position:absolute;
+  inset:7px;
+  z-index:1;
+  pointer-events:none;
+  transform:none!important;
+  clip-path:polygon(14px 0,calc(50% - 12px) 0,50% 5px,calc(50% + 12px) 0,calc(100% - 14px) 0,100% 14px,calc(100% - 4px) 50%,100% calc(100% - 14px),calc(100% - 14px) 100%,calc(50% + 12px) 100%,50% calc(100% - 5px),calc(50% - 12px) 100%,14px 100%,0 calc(100% - 14px),4px 50%,0 14px);
+  border:1px solid rgba(var(--frame-accent-rgb),.34);
+  background:
+    linear-gradient(135deg,var(--frame-accent) 0 2px,transparent 2.5px) top left/30px 30px no-repeat,
+    linear-gradient(225deg,var(--frame-accent) 0 2px,transparent 2.5px) top right/30px 30px no-repeat,
+    linear-gradient(45deg,var(--frame-accent) 0 2px,transparent 2.5px) bottom left/30px 30px no-repeat,
+    linear-gradient(315deg,var(--frame-accent) 0 2px,transparent 2.5px) bottom right/30px 30px no-repeat;
+  opacity:.82;
+  transition:opacity .22s ease,filter .22s ease;
+}
+
+body.on-home .menu-card::after,
+.multiplayer-mode::after,
+.booster-product-card::after,
+.onboarding-card:not(.locked-by-progression)::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:3;
+  pointer-events:none;
+  transform:none!important;
+  border-radius:0!important;
+  background:
+    linear-gradient(90deg,transparent,var(--frame-bright),transparent) 50% 5px/34% 1px no-repeat,
+    linear-gradient(90deg,transparent,var(--frame-accent),transparent) 50% calc(100% - 5px)/34% 1px no-repeat,
+    radial-gradient(circle at 17px 17px,#fff6d5 0 1px,var(--frame-accent) 1.5px 3px,#1a1208 3.5px 5px,transparent 5.5px),
+    radial-gradient(circle at calc(100% - 17px) 17px,#fff6d5 0 1px,var(--frame-accent) 1.5px 3px,#1a1208 3.5px 5px,transparent 5.5px),
+    radial-gradient(circle at 17px calc(100% - 17px),#fff6d5 0 1px,var(--frame-accent) 1.5px 3px,#1a1208 3.5px 5px,transparent 5.5px),
+    radial-gradient(circle at calc(100% - 17px) calc(100% - 17px),#fff6d5 0 1px,var(--frame-accent) 1.5px 3px,#1a1208 3.5px 5px,transparent 5.5px);
+  opacity:.76;
+  transition:opacity .22s ease,filter .22s ease;
+}
+
+body.on-home .menu-card>* ,
+.multiplayer-mode>* ,
+.booster-product-card>* ,
+.onboarding-card>*{position:relative;z-index:2}
+
+body.on-home .menu-card:hover::before,
+body.on-home .menu-card:hover::after,
+.multiplayer-mode:hover::before,
+.multiplayer-mode:hover::after,
+.booster-product-card:hover::before,
+.booster-product-card:hover::after,
+.onboarding-card:hover::before,
+.onboarding-card:hover::after{
+  opacity:1;
+  filter:drop-shadow(0 0 7px rgba(var(--frame-accent-rgb),.5));
+}
+body.on-home .menu-card:hover{filter:drop-shadow(0 24px 28px rgba(0,0,0,.5)) drop-shadow(0 0 13px rgba(var(--frame-accent-rgb),.2))}
+
+/* Multiplayer: cold forged steel for Classic, ceremonial gold for Ranked. */
+.multiplayer-mode{
+  --frame-accent:#67dcc4;--frame-accent-rgb:103,220,196;--frame-bright:#c8fff3;--frame-dark:#1a665b;
+  background:
+    radial-gradient(circle at 20% 0,rgba(var(--frame-accent-rgb),.16),transparent 42%) padding-box,
+    linear-gradient(145deg,#0b1a1dee,#050d12fa) padding-box,
+    linear-gradient(125deg,var(--frame-bright),#315e59 20%,#10191b 38%,var(--frame-accent) 55%,#142426 76%,var(--frame-bright)) border-box!important;
+}
+.multiplayer-mode.ranked{
+  --frame-accent:#e6bd63;--frame-accent-rgb:230,189,99;--frame-bright:#fff0a8;--frame-dark:#73531c;
+  background:
+    radial-gradient(circle at 80% 0,rgba(var(--frame-accent-rgb),.18),transparent 44%) padding-box,
+    linear-gradient(145deg,#241b0dee,#080d10fa) padding-box,
+    linear-gradient(125deg,var(--frame-bright),#715522 20%,#18150f 39%,var(--frame-accent) 55%,#2d2514 76%,var(--frame-bright)) border-box!important;
+}
+
+/* Booster reliquaries: each faction owns a distinct alloy and magical inlay. */
+.booster-product-card{
+  --frame-accent:#d7be78;--frame-accent-rgb:215,190,120;--frame-bright:#fff1b0;--frame-dark:#5f512d;
+  background:
+    radial-gradient(circle at 50% 18%,rgba(var(--frame-accent-rgb),.18),transparent 38%) padding-box,
+    linear-gradient(165deg,rgba(12,27,30,.98),rgba(4,10,14,.98)) padding-box,
+    linear-gradient(130deg,var(--frame-bright),var(--frame-dark) 16%,#151d20 31%,var(--frame-accent) 48%,#0e171a 68%,var(--frame-dark) 84%,var(--frame-bright)) border-box!important;
+  box-shadow:inset 0 0 32px rgba(var(--frame-accent-rgb),.055),0 18px 38px rgba(0,0,0,.36)!important;
+  transition:transform .22s ease,filter .22s ease,box-shadow .22s ease!important;
+}
+.booster-frame-meute{--frame-accent:#83cbea;--frame-accent-rgb:131,203,234;--frame-bright:#e1f7ff;--frame-dark:#315a70}
+.booster-frame-chevalier{--frame-accent:#e8ca74;--frame-accent-rgb:232,202,116;--frame-bright:#fff4bd;--frame-dark:#78612a}
+.booster-frame-orc{--frame-accent:#8bac62;--frame-accent-rgb:139,172,98;--frame-bright:#d9e9a2;--frame-dark:#3e5427}
+.booster-frame-dragon{--frame-accent:#dd6b48;--frame-accent-rgb:221,107,72;--frame-bright:#ffd08a;--frame-dark:#70271e}
+.booster-frame-gobelin{--frame-accent:#c6a54a;--frame-accent-rgb:198,165,74;--frame-bright:#efe38d;--frame-dark:#5b5a1c}
+.booster-frame-squelette{--frame-accent:#aa8bd5;--frame-accent-rgb:170,139,213;--frame-bright:#efe1ff;--frame-dark:#50406d}
+.booster-product-card:hover{
+  transform:translateY(-7px)!important;
+  filter:drop-shadow(0 26px 30px rgba(0,0,0,.52)) drop-shadow(0 0 16px rgba(var(--frame-accent-rgb),.22));
+}
+.booster-product-card .booster-product-title{color:var(--frame-bright);text-shadow:0 0 16px rgba(var(--frame-accent-rgb),.38)}
+.booster-product-card .booster-shop-art{filter:drop-shadow(0 18px 24px rgba(0,0,0,.5)) drop-shadow(0 0 10px rgba(var(--frame-accent-rgb),.14))}
+.booster-product-card:hover .booster-shop-art{filter:drop-shadow(0 24px 30px rgba(0,0,0,.58)) drop-shadow(0 0 15px rgba(var(--frame-accent-rgb),.28))}
+
+/* First oath cards: moon-silver versus royal gold. */
+.onboarding-card{
+  --frame-accent:#7fcce9;--frame-accent-rgb:127,204,233;--frame-bright:#ddf7ff;--frame-dark:#315c70;
+  background:
+    radial-gradient(circle at 50% 12%,rgba(var(--frame-accent-rgb),.16),transparent 42%) padding-box,
+    linear-gradient(155deg,#102328,#061012) padding-box,
+    linear-gradient(125deg,var(--frame-bright),var(--frame-dark) 24%,#142224 48%,var(--frame-accent) 72%,var(--frame-bright)) border-box!important;
+}
+.onboarding-card:nth-child(2){--frame-accent:#e8c66f;--frame-accent-rgb:232,198,111;--frame-bright:#fff1b0;--frame-dark:#735925}
+
+/* Compact controls: metal bevel, cut corners, full hit box preserved. */
+.primary,.secondary,.faction-button,.install-button,.subtab,.cinematic-skip,.story-next,.story-choices button,.battle-pass-premium{
+  border:1px solid transparent!important;
+  border-radius:0!important;
+  clip-path:var(--nexus-button-shape);
+  background:
+    linear-gradient(145deg,#69e5c5,#2e9b80) padding-box,
+    linear-gradient(120deg,#fff0ad,#87692e 25%,#d5b85f 52%,#3f775f 76%,#fff0ad) border-box!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -2px 0 rgba(0,0,0,.3),0 7px 16px rgba(0,0,0,.32)!important;
+  filter:drop-shadow(0 2px 1px rgba(0,0,0,.3));
+}
+.secondary,.faction-button,.install-button,.subtab,.cinematic-skip,.story-choices button{
+  color:#8ff1d7!important;
+  background:
+    linear-gradient(145deg,rgba(17,42,43,.98),rgba(6,18,22,.98)) padding-box,
+    linear-gradient(120deg,#d9c37d,#564c31 24%,#58bda5 52%,#344a45 76%,#d9c37d) border-box!important;
+}
+.secondary.danger{
+  color:#ffd0c8!important;
+  background:
+    linear-gradient(145deg,rgba(66,20,23,.98),rgba(25,8,12,.98)) padding-box,
+    linear-gradient(120deg,#ffd19c,#742b2e 24%,#df766c 52%,#4e2024 76%,#ffd19c) border-box!important;
+}
+.primary:hover:not(:disabled),.secondary:hover:not(:disabled),.faction-button:hover:not(:disabled),.install-button:hover:not(:disabled),.subtab:hover:not(:disabled){
+  filter:brightness(1.08) drop-shadow(0 8px 9px rgba(0,0,0,.38))!important;
+}
+.primary:active:not(:disabled),.secondary:active:not(:disabled),.faction-button:active:not(:disabled){
+  transform:translateY(1px)!important;
+  filter:brightness(.96) drop-shadow(0 3px 4px rgba(0,0,0,.34))!important;
+}
+.primary:disabled,.secondary:disabled,.faction-button:disabled,.battle-pass-premium:disabled{filter:saturate(.45);opacity:.48}
+.booster-product-card .primary,.booster-product-card .secondary{
+  background:
+    linear-gradient(145deg,rgba(22,54,51,.98),rgba(6,20,23,.98)) padding-box,
+    linear-gradient(120deg,var(--frame-bright),var(--frame-dark) 25%,var(--frame-accent) 52%,#263b37 76%,var(--frame-bright)) border-box!important;
+  color:var(--frame-bright)!important;
+}
+
+/* Sidebar tabs echo the same angular craft at a quieter scale. */
+.nav-link{
+  border-radius:0!important;
+  clip-path:var(--nexus-button-shape);
+}
+.nav-link.active{
+  border-color:transparent!important;
+  background:
+    linear-gradient(90deg,rgba(22,69,62,.82),rgba(6,20,24,.72)) padding-box,
+    linear-gradient(120deg,#e9d590,#4b695f 32%,#62e4c2 60%,#6b5830) border-box!important;
+}
+
+/* Every framed menu surface now uses cut stone/metal edges rather than soft web cards. */
+.menu-main .options-card:not(.booster-product-card),
+.menu-main .terrain-card,
+.menu-main .chapter,
+.profile,
+.account-section,
+.profile-cloud-save,
+.faction-unlock-section,
+.deck-menu-row,
+.matchmaking-card,
+.signin-gate-card,
+.tutorial-offer,
+.archetype-identity,
+.rank-card{
+  border:1px solid transparent!important;
+  border-radius:0!important;
+  clip-path:polygon(13px 0,calc(100% - 13px) 0,100% 13px,calc(100% - 4px) 50%,100% calc(100% - 13px),calc(100% - 13px) 100%,13px 100%,0 calc(100% - 13px),4px 50%,0 13px);
+  background:
+    linear-gradient(150deg,rgba(12,29,32,.96),rgba(5,13,17,.94)) padding-box,
+    linear-gradient(125deg,#d9c47f,#4e4a38 22%,#2b7164 48%,#927b43 72%,#e7d28e) border-box!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.035),0 12px 30px rgba(0,0,0,.25)!important;
+}
+.home-profile-badge,
+.shop-wallet,
+.battle-pass-widget,
+.battle-pass-panel{
+  border:1px solid transparent!important;
+  border-radius:0!important;
+  clip-path:var(--nexus-button-shape);
+  background:
+    linear-gradient(145deg,rgba(9,25,29,.97),rgba(12,14,27,.96)) padding-box,
+    linear-gradient(120deg,#f0dc98,#65552d 23%,#55bca6 52%,#53442a 78%,#f5df99) border-box!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 12px 30px rgba(0,0,0,.32)!important;
+}
+.battle-pass-widget,.battle-pass-panel{
+  background:
+    linear-gradient(145deg,rgba(14,18,30,.98),rgba(36,21,54,.97)) padding-box,
+    linear-gradient(120deg,#fff0ad,#71562a 25%,#d9bd69 52%,#604786 77%,#fff0ad) border-box!important;
+}
+.faction-unlock-list article,.battle-pass-track article button,.battle-pass-terrain-bar{
+  border-radius:0!important;
+  clip-path:var(--nexus-button-shape);
+}
+.options-card.danger{
+  background:
+    linear-gradient(150deg,rgba(49,18,22,.96),rgba(18,7,12,.94)) padding-box,
+    linear-gradient(125deg,#ffd19c,#692b30 24%,#dc7168 50%,#472026 75%,#ffd19c) border-box!important;
+}
+.terrain-card.active,.avatar-choice.active,.profile-frame-choice.active{
+  filter:drop-shadow(0 0 9px rgba(92,225,194,.3));
+}
+.avatar-choice,.profile-frame-choice,.deck-row{
+  border:1px solid transparent!important;
+  border-radius:0!important;
+  clip-path:var(--nexus-button-shape);
+  background:
+    linear-gradient(150deg,rgba(15,36,38,.96),rgba(6,17,21,.96)) padding-box,
+    linear-gradient(125deg,#cabd86,#44483d 28%,#4c9d8b 55%,#5d4e2f 78%,#d9c98e) border-box!important;
+}
+
+/* Round avatar reliquaries — owned/equipped cosmetics rendered everywhere. */
+.profile-frame{
+  --pf-ring:6px;
+  --pf-metal:conic-gradient(from -18deg,#8c8f91,#e5e8e7 11%,#646b70 23%,#b9c5c7 38%,#4b555a 51%,#eff5f3 64%,#6c7478 79%,#c9d0ce 91%,#8c8f91);
+  --pf-glow:rgba(210,225,226,.28);
+  --pf-gem:#dce9e8;
+  position:relative;
+  display:grid!important;
+  place-items:center;
+  padding:var(--pf-ring)!important;
+  border:0!important;
+  border-radius:50%!important;
+  overflow:visible!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  isolation:isolate;
+  filter:drop-shadow(0 5px 8px rgba(0,0,0,.55)) drop-shadow(0 0 8px var(--pf-glow));
+}
+.profile-frame-portrait{
+  position:relative;
+  z-index:1;
+  display:grid;
+  place-items:center;
+  width:100%;height:100%;
+  min-width:0;min-height:0;
+  overflow:hidden;
+  border-radius:50%;
+  background:radial-gradient(circle at 38% 28%,#163536,#060d10 72%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.18),inset 0 0 12px rgba(0,0,0,.72);
+}
+.profile-frame-portrait>img{width:100%!important;height:100%!important;object-fit:cover!important;border:0!important;border-radius:50%!important}
+.profile-frame::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:2;
+  border-radius:50%;
+  pointer-events:none;
+  background:var(--pf-metal);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - var(--pf-ring) - 1px),#000 calc(100% - var(--pf-ring)),#000 99%,transparent 100%);
+  mask:radial-gradient(farthest-side,transparent calc(100% - var(--pf-ring) - 1px),#000 calc(100% - var(--pf-ring)),#000 99%,transparent 100%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);
+}
+.profile-frame::after{
+  content:"";
+  position:absolute;
+  inset:-4%;
+  z-index:3;
+  border-radius:50%;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 50% 1%,#fff 0 1.5%,var(--pf-gem) 2% 4%,#21170b 4.5% 6%,transparent 6.5%),
+    radial-gradient(circle at 99% 50%,#fff 0 1.5%,var(--pf-gem) 2% 4%,#21170b 4.5% 6%,transparent 6.5%),
+    radial-gradient(circle at 50% 99%,#fff 0 1.5%,var(--pf-gem) 2% 4%,#21170b 4.5% 6%,transparent 6.5%),
+    radial-gradient(circle at 1% 50%,#fff 0 1.5%,var(--pf-gem) 2% 4%,#21170b 4.5% 6%,transparent 6.5%);
+  opacity:.9;
+}
+.profile-frame-none{--pf-ring:3px;--pf-metal:conic-gradient(#6f7b78,#c9d0c8,#4b5654,#aeb8b3,#6f7b78);--pf-glow:transparent;--pf-gem:#8fa29c}
+.profile-frame-none::after{display:none}
+.profile-frame-moonsteel{--pf-metal:conic-gradient(from 15deg,#304f62,#dff8ff 10%,#5188a0 24%,#f2fdff 37%,#31556d 53%,#a9e8f6 67%,#385e73 83%,#e7fbff);--pf-glow:rgba(105,215,255,.5);--pf-gem:#72ddff}
+.profile-frame-royal-gold{--pf-metal:conic-gradient(from -12deg,#6c4c12,#fff0a2 10%,#b17d21 23%,#fff5bd 37%,#765015 52%,#e8bd54 68%,#8c651c 82%,#fff1a8);--pf-glow:rgba(255,207,84,.5);--pf-gem:#ffe373}
+.profile-frame-dragonfire{--pf-metal:conic-gradient(from 8deg,#1b1715,#ffb24d 9%,#78251f 21%,#e75c2d 34%,#130f0e 49%,#ff8b34 63%,#5d1c19 80%,#ffd075);--pf-glow:rgba(255,78,37,.58);--pf-gem:#ff4a27}
+.profile-frame-necropolis{--pf-metal:conic-gradient(from -8deg,#51474a,#f0e2c7 11%,#735b85 23%,#fff3d9 38%,#4b3c57 53%,#c9b6dd 68%,#665270 82%,#f4ead3);--pf-glow:rgba(177,119,255,.48);--pf-gem:#b879ff}
+.profile-frame-nexus-prismatic{--pf-metal:conic-gradient(from 0deg,#ffe78b,#54efd0 14%,#759aff 28%,#db83ff 42%,#ffb55d 57%,#65f0d4 72%,#fff0a0 88%,#ffe78b);--pf-glow:rgba(100,239,210,.58);--pf-gem:#fff4a4;animation:profile-frame-prism 5s linear infinite}
+@keyframes profile-frame-prism{to{filter:drop-shadow(0 5px 8px rgba(0,0,0,.55)) drop-shadow(0 0 12px var(--pf-glow)) hue-rotate(360deg)}}
+
+.home-profile-avatar.profile-frame{--pf-ring:4px;padding:4px!important}
+.profile-avatar.profile-frame{--pf-ring:7px;padding:7px!important}
+.duel-profile-avatar.profile-frame{--pf-ring:2px;padding:2px!important}
+.profile-frame-choice-preview{width:66px;height:66px;flex:0 0 66px}
+.profile-frame-shop-preview{width:108px;height:108px;flex:0 0 108px}
+
+.profile-frame-selector{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:12px;margin:14px 0 24px}
+.profile-frame-choice{display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px;color:#dfece7;cursor:pointer}
+.profile-frame-choice>span:last-child{font:700 11px "Space Grotesk";text-align:center}
+.profile-frame-choice.active{color:#8ff1d7}
+
+.profile-frame-shop-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:14px 0 26px}
+.profile-frame-product{
+  --frame-accent:#d8c47e;
+  position:relative;
+  display:grid;
+  grid-template-columns:auto 1fr;
+  align-items:center;
+  gap:14px;
+  min-height:170px;
+  padding:20px;
+  border:2px solid transparent;
+  clip-path:var(--nexus-frame-shape);
+  background:
+    radial-gradient(circle at 18% 50%,color-mix(in srgb,var(--frame-accent) 15%,transparent),transparent 38%) padding-box,
+    linear-gradient(150deg,rgba(12,28,31,.98),rgba(5,12,16,.98)) padding-box,
+    linear-gradient(125deg,#fff0b0,#5b5133 20%,var(--frame-accent) 48%,#263a36 72%,#f4dea0) border-box;
+  filter:drop-shadow(0 14px 20px rgba(0,0,0,.34));
+}
+.profile-frame-product>div b{font:700 17px "Playfair Display";color:#f2dfaa}
+.profile-frame-product>div p{margin:5px 0 0;line-height:1.45}
+.profile-frame-product>button{grid-column:1/-1;margin:0;width:100%}
+.profile-frame-product.active{--frame-accent:#62e4c2;filter:drop-shadow(0 16px 22px rgba(0,0,0,.4)) drop-shadow(0 0 10px rgba(98,228,194,.28))}
+.profile-frame-product-moonsteel{--frame-accent:#83cbea}
+.profile-frame-product-royal-gold{--frame-accent:#e8ca74}
+.profile-frame-product-dragonfire{--frame-accent:#dd6b48}
+.profile-frame-product-necropolis{--frame-accent:#aa8bd5}
+.profile-frame-product-nexus-prismatic{--frame-accent:#67e1cf}
+
+@media(max-width:900px){
+  :root{--nexus-frame-shape:polygon(15px 0,calc(50% - 11px) 0,50% 5px,calc(50% + 11px) 0,calc(100% - 15px) 0,100% 15px,calc(100% - 4px) 50%,100% calc(100% - 15px),calc(100% - 15px) 100%,calc(50% + 11px) 100%,50% calc(100% - 5px),calc(50% - 11px) 100%,15px 100%,0 calc(100% - 15px),4px 50%,0 15px)}
+  body.on-home .menu-card::before,.multiplayer-mode::before,.booster-product-card::before,.onboarding-card::before{inset:5px}
+  body.on-home .menu-card::after,.multiplayer-mode::after,.booster-product-card::after,.onboarding-card:not(.locked-by-progression)::after{
+    background:
+      linear-gradient(90deg,transparent,var(--frame-bright),transparent) 50% 4px/30% 1px no-repeat,
+      linear-gradient(90deg,transparent,var(--frame-accent),transparent) 50% calc(100% - 4px)/30% 1px no-repeat,
+      radial-gradient(circle at 11px 11px,var(--frame-accent) 0 2px,#17110a 2.5px 4px,transparent 4.5px),
+      radial-gradient(circle at calc(100% - 11px) 11px,var(--frame-accent) 0 2px,#17110a 2.5px 4px,transparent 4.5px),
+      radial-gradient(circle at 11px calc(100% - 11px),var(--frame-accent) 0 2px,#17110a 2.5px 4px,transparent 4.5px),
+      radial-gradient(circle at calc(100% - 11px) calc(100% - 11px),var(--frame-accent) 0 2px,#17110a 2.5px 4px,transparent 4.5px);
+  }
+  .profile-frame-shop-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .profile-frame-product{grid-template-columns:72px 1fr;min-height:132px;padding:13px;gap:10px}
+  .profile-frame-shop-preview{width:72px;height:72px;flex-basis:72px}
+  .profile-frame-product>div b{font-size:13px}.profile-frame-product>div p{font-size:9px}
+}
+
+@media(max-width:560px){.profile-frame-shop-grid{grid-template-columns:1fr}}
+
+@media(prefers-reduced-motion:reduce){
+  body.on-home .menu-card,.multiplayer-mode,.booster-product-card,.onboarding-card,.primary,.secondary{transition:none!important}
+  .profile-frame-nexus-prismatic{animation:none}
+}

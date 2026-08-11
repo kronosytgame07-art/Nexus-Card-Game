@@ -22,6 +22,7 @@ import './visual-overhaul.css';
 import './profile-account.css';
 import './battle-ui-polish.css';
 import './battle-polish.css';
+import './fantasy-frames.css';
 
 const isInteractiveGameElement = (target: EventTarget | null) => target instanceof Element && Boolean(target.closest('#root button, #root a, #root .card, #root .field-card, #root .field-unit, #root .menu-card, #root .card-pile, #root img'));
 document.addEventListener('contextmenu',event=>{if(isInteractiveGameElement(event.target))event.preventDefault()});
