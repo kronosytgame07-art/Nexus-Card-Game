@@ -69,9 +69,9 @@ const NAV_SECTIONS: {
 ];
 
 const UI_ASSET = {
-  coin: `${import.meta.env.BASE_URL}ui/nexus-coin.png`,
-  gem: `${import.meta.env.BASE_URL}ui/nexus-gem.png`,
-  mana: `${import.meta.env.BASE_URL}ui/mana-rune.png`,
+  coin: `${import.meta.env.BASE_URL}ui/nexus-coin.webp`,
+  gem: `${import.meta.env.BASE_URL}ui/nexus-gem.webp`,
+  mana: `${import.meta.env.BASE_URL}ui/mana-rune.webp`,
 } as const;
 
 const RANK_BADGES: Record<RankedTier, string> = {
@@ -99,7 +99,7 @@ function CurrencyAmount({ kind, amount, label }: { kind: keyof typeof UI_ASSET; 
 }
 
 function RankBadge({ tier, className = '' }: { tier: RankedTier; className?: string }) {
-  return <img className={`rank-badge ${className}`} src={`${import.meta.env.BASE_URL}ranks/${RANK_BADGES[tier]}.png`} alt={`Médaille ${tier}`} />;
+  return <img className={`rank-badge ${className}`} src={`${import.meta.env.BASE_URL}ranks/${RANK_BADGES[tier]}.webp`} alt={`Médaille ${tier}`} />;
 }
 
 function RuneMeter({ mana, maxMana, enemy = false }: { mana: number; maxMana: number; enemy?: boolean }) {
@@ -133,7 +133,7 @@ function isSectionActive(section: (typeof NAV_SECTIONS)[number], pathname: strin
   const p2 = decodedPathname(pathname);
   return section.matchPaths.some((p) => (p === '/' ? p2 === '/' : p2 === p || p2.startsWith(p + '/')));
 }
-const CARD_BACK_URL = `${import.meta.env.BASE_URL}cards/card-back.jpg`;
+const CARD_BACK_URL = `${import.meta.env.BASE_URL}cards/card-back.webp`;
 const LOGO_URL = `${import.meta.env.BASE_URL}icons/logo-mark.png`;
 
 /** Faction adverse pour un duel rapide : rotation stable (pas aléatoire, pour
@@ -327,11 +327,11 @@ function MenuAtmosphere({ theme }: { theme: MenuTheme | null }) {
     return () => window.removeEventListener('pointermove', move);
   }, [paused, theme]);
   if (!theme) return null;
-  const background = theme === 'campaign' ? `${import.meta.env.BASE_URL}story/chapter-1/scene-01-nexus-fragment.png` : theme === 'ranked' ? `${import.meta.env.BASE_URL}backgrounds/ranked-hall.png` : `${import.meta.env.BASE_URL}backgrounds/collection-archive.png`;
+  const background = theme === 'campaign' ? `${import.meta.env.BASE_URL}story/chapter-1/scene-01-nexus-fragment.webp` : theme === 'ranked' ? `${import.meta.env.BASE_URL}backgrounds/ranked-hall.webp` : `${import.meta.env.BASE_URL}backgrounds/collection-archive.webp`;
   return (
     <div className={`menu-atmosphere theme-${theme}`} aria-hidden="true">
       {theme === 'shop' ? (
-        <video ref={videoRef} className="menu-atmosphere-media" autoPlay={!paused} loop muted playsInline poster={`${import.meta.env.BASE_URL}backgrounds/shop-merchant-frame-a.png`}>
+        <video ref={videoRef} className="menu-atmosphere-media" autoPlay={!paused} loop muted playsInline poster={`${import.meta.env.BASE_URL}backgrounds/shop-merchant-frame-a.webp`}>
           <source src={`${import.meta.env.BASE_URL}backgrounds/shop-merchant-loop.mp4`} type="video/mp4" />
         </video>
       ) : (
@@ -491,7 +491,7 @@ function Home() {
   const s = useGame();
   const { available: canInstall, install } = useInstallPrompt();
   const opponentFaction: Faction = rivalFactionFor(s.faction);
-  const heroBg = `${import.meta.env.BASE_URL}backgrounds/home-hero.jpg`;
+  const heroBg = `${import.meta.env.BASE_URL}backgrounds/home-hero.webp`;
   const heroVideo = `${import.meta.env.BASE_URL}backgrounds/home-hero.mp4`;
   const reduceMotion = s.animationMode !== 'full';
   const fadeUp = (delay: number) =>
@@ -2986,7 +2986,7 @@ function Tutorial() {
 }
 
 function boosterArtwork(faction: Faction): string {
-  return `${import.meta.env.BASE_URL}boosters/${faction.toLowerCase()}.png`;
+  return `${import.meta.env.BASE_URL}boosters/${faction.toLowerCase()}.webp`;
 }
 
 function rarityAuraClass(rarity: Rarity): string {
@@ -3777,7 +3777,7 @@ function Replay() {
 
 function FactionOnboarding() {
   const s = useGame();
-  const wolfArt = `${import.meta.env.BASE_URL}cards/evo-loup-de-givre.png`;
+  const wolfArt = `${import.meta.env.BASE_URL}cards/evo-loup-de-givre.webp`;
   const knightArt = getCard('capitaine-du-royaume').image;
   // Seules Meute et Chevalier se choisissent au départ — l'Orc se débloque
   // plus tard dans la campagne (voir UNLOCK_THIRD_FACTION_AT), donc ce

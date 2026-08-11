@@ -1,6 +1,6 @@
 import type { StoryCharacter } from './types';
 
-const chapterPortrait = (name: string) => `${import.meta.env.BASE_URL}story/chapter-1/${name}.png`;
+const chapterPortrait = (name: string) => `${import.meta.env.BASE_URL}story/chapter-1/${name}.webp`;
 const cinematicPortrait = (name: string) => `${import.meta.env.BASE_URL}story/cinematics/${name}.svg`;
 
 // Ces portraits réutilisent les illustrations panoramiques des scènes (pas de gros
