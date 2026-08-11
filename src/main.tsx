@@ -9,7 +9,6 @@ import HomeProfileBadge from './components/HomeProfileBadge';
 import BattleQuickSettings from './components/BattleQuickSettings';
 import FirstRunTutorial from './components/FirstRunTutorial';
 import CombatPlaylistController from './components/CombatPlaylistController';
-import GoogleOptionsPortal from './components/GoogleOptionsPortal';
 import { installFactionUnlockRules } from './progression/faction-unlocks';
 import './styles.css';
 import './arena.css';
@@ -30,5 +29,5 @@ document.addEventListener('dragstart',event=>{if(isInteractiveGameElement(event.
 document.addEventListener('selectstart',event=>{const target=event.target;if(!(target instanceof Element))return;if(target.closest('input, textarea, [contenteditable="true"]'))return;if(target.closest('#root'))event.preventDefault()});
 function PlayBattlePass(){const location=useLocation();return location.pathname==='/'?<BattlePass/>:null}
 installFactionUnlockRules();
-createRoot(document.getElementById('root')!).render(<React.StrictMode><BrowserRouter basename={import.meta.env.BASE_URL}><App/><FactionUnlockShop/><HomeProfileBadge/><BattleQuickSettings/><FirstRunTutorial/><CombatPlaylistController/><GoogleOptionsPortal/><PlayBattlePass/></BrowserRouter></React.StrictMode>);
+createRoot(document.getElementById('root')!).render(<React.StrictMode><BrowserRouter basename={import.meta.env.BASE_URL}><App/><FactionUnlockShop/><HomeProfileBadge/><BattleQuickSettings/><FirstRunTutorial/><CombatPlaylistController/><PlayBattlePass/></BrowserRouter></React.StrictMode>);
 if('serviceWorker'in navigator&&!Capacitor.isNativePlatform())window.addEventListener('load',()=>{navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(()=>{})});
