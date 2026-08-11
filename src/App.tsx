@@ -9,6 +9,11 @@ import { CHAPTERS, chapterById } from './engine/campaign';
 import { activateSupportCard, activateUnitEffect, aiDrawPhase, aiEndPhase, aiMainPhase, aiPrepareBattlePlan, aiResolveOneAttack, availableReactionSupportIds, declareAttack, evolveUnit, MAX_FIELD_UNITS, MAX_SUPPORT, newGame, passReactionWindow, playCard } from './engine/engine';
 import { canFightTarget } from './engine/combat-rules';
 import { archetypeIdentity } from './engine/archetypes';
+// Firebase (~540 Ko) ne doit jamais rejoindre le bundle principal : chargé
+// à la demande uniquement, comme GoogleAccount/Trades (voir imports dynamiques
+// dans Multiplayer()/Combat() plus bas).
+import type { PvpPlayerInfo } from './pvp';
+const pvpEnabled = Boolean(import.meta.env.VITE_FIREBASE_API_KEY && import.meta.env.VITE_FIREBASE_PROJECT_ID && import.meta.env.VITE_FIREBASE_APP_ID);
 import cardBack from './assets/cards/nexus-card-back.jpg';
 import ArenaBackground, { ArenaBackgroundHandle } from './components/ArenaBackground';
 import VfxLayer, { DashTone, VfxHandle } from './components/VfxLayer';
@@ -1091,11 +1096,18 @@ function Combat() {
   const arenaBgPaused = s.animationMode === 'off' || s.batterySaver;
   const routeState = location.state as {
     chapterId?: number;
-    onlineMode?: 'classic' | 'ranked';
+    onlineMode?: 'classic' | 'ranked' | 'pvp';
+    matchId?: string;
+    isHost?: boolean;
+    pvpMode?: 'classic' | 'ranked';
   } | null;
   const chapterId = routeState?.chapterId;
   const chapter = chapterId !== undefined ? chapterById(chapterId) : undefined;
   const onlineMode = chapter ? undefined : routeState?.onlineMode;
+  const isPvp = onlineMode === 'pvp' && !!routeState?.matchId;
+  const pvpMatchId = routeState?.matchId;
+  const pvpIsHost = routeState?.isHost ?? true;
+  const isRankedMatch = onlineMode === 'ranked' || (isPvp && routeState?.pvpMode === 'ranked');
   const opponentFaction = chapter ? chapter.opponentFaction : rivalFactionFor(s.faction);
   const opponentAvatarImage = getCard(defaultAvatarFor(opponentFaction)).image;
   const playerAvatarCard = ALL_CARDS.find((c) => c.id === s.avatarCardId) ?? ALL_CARDS.find((c) => c.type === 'unit' && c.level === 1 && c.faction === s.faction);
@@ -1123,6 +1135,11 @@ function Combat() {
       customEvosphere && customEvosphere.length ? customEvosphere : undefined
     );
   const [match, setMatch] = useState<GameState>(startMatch);
+  const [pvpReady, setPvpReady] = useState(!isPvp);
+  const [pvpOpponentGone, setPvpOpponentGone] = useState(false);
+  const [pvpWaiting, setPvpWaiting] = useState(false);
+  const [pvpOpponentName, setPvpOpponentName] = useState<string | null>(null);
+  const pvpUidRef = useRef<string | null>(null);
   const [selectedAttacker, setSelectedAttacker] = useState<string | null>(null);
   const [reported, setReported] = useState(false);
   const [effectHint, setEffectHint] = useState('');
@@ -1270,6 +1287,48 @@ function Combat() {
   useEffect(() => {
     replaySnapshots.current = [stripForReplay(match)];
   }, []);
+  // Multijoueur réel : reçoit l'état poussé par l'adversaire (ou l'état initial
+  // construit par l'hôte) et l'applique tel quel — jamais mes propres échos
+  // d'écriture, pour ne pas écraser une action locale en cours avec ma
+  // propre dernière valeur poussée.
+  useEffect(() => {
+    if (!isPvp || !pvpMatchId) return;
+    let firstSnapshotApplied = false;
+    let cancelled = false;
+    let unsub: (() => void) | null = null;
+    Promise.all([import('./firebase'), import('./pvp')]).then(([{ ensureSignedIn }, { subscribeMatch }]) => {
+      if (cancelled) return;
+      ensureSignedIn().then((user) => {
+        if (!cancelled) pvpUidRef.current = user.uid;
+      });
+      unsub = subscribeMatch(
+        pvpMatchId,
+        pvpIsHost,
+        (incoming, raw) => {
+          const isEcho = firstSnapshotApplied && raw.lastWriterUid === pvpUidRef.current;
+          firstSnapshotApplied = true;
+          if (isEcho) return;
+          if (raw.status === 'finished' && !incoming.winner) {
+            setMatch({ ...incoming, winner: 'player' });
+          } else {
+            setMatch(incoming);
+          }
+          setPvpReady(true);
+          setPvpWaiting(false);
+          setPvpOpponentName(pvpIsHost ? raw.guestName : raw.hostName);
+          setSelectedAttacker(null);
+          setHandOpen(false);
+          setPreviewCardId(null);
+          // Chaque mise à jour non-écho reçue correspond, par construction du
+          // modèle "un push par tour terminé", au tout début de mon nouveau tour.
+          setPhase('draw');
+          setDrawStage(!incoming.winner ? 'prompt' : 'idle');
+        },
+        () => { if (!cancelled) setPvpOpponentGone(true); }
+      );
+    });
+    return () => { cancelled = true; unsub?.(); };
+  }, [isPvp, pvpMatchId, pvpIsHost]);
   const [replaySaved, setReplaySaved] = useState(false);
   const registerCardRef = (id: string, el: HTMLElement | null) => {
     cardRefs.current[id] = el;
@@ -1323,10 +1382,18 @@ function Combat() {
       s.addGems(WIN_GEMS_REWARD);
       if (chapter) s.completeChapter(chapter.id);
     }
-    if (onlineMode === 'ranked') s.recordRanked(won);
+    if (isRankedMatch) s.recordRanked(won);
+    // Si la victoire/défaite survient EN COURS de mon tour (frappe fatale
+    // avant la End Phase), nextTurn() ne sera jamais appelé pour prévenir
+    // l'adversaire — on pousse donc le résultat final ici, une seule fois.
+    if (isPvp && pvpMatchId && pvpUidRef.current) {
+      const uid = pvpUidRef.current;
+      const finalState = match;
+      import('./pvp').then(({ pushMatchState }) => pushMatchState(pvpMatchId, uid, pvpIsHost, finalState)).catch(() => {});
+    }
     setReported(true);
-  }, [match.winner, reported, reward, chapter, onlineMode, s]);
-  const rankedDelta = onlineMode === 'ranked' ? rankedRatingDelta(match.winner === 'player', ratingBeforeMatch) : undefined;
+  }, [match.winner, reported, reward, chapter, isRankedMatch, isPvp, pvpMatchId, pvpIsHost, match, s]);
+  const rankedDelta = isRankedMatch ? rankedRatingDelta(match.winner === 'player', ratingBeforeMatch) : undefined;
   const showHint = (message: string, duration = 2000) => {
     setEffectHint(message);
     window.setTimeout(() => setEffectHint(''), duration);
@@ -1658,6 +1725,18 @@ function Combat() {
     setSelectedAttacker(null);
     setPhase('draw');
     triggerFx(null);
+    if (isPvp) {
+      // Multijoueur réel : pas de simulation locale du tour adverse. On
+      // prépare son tour (pioche + mana, mécanique et déterministe — aucune
+      // décision n'est prise ici) et on pousse l'état ; son propre client
+      // prendra le relais avec ses vraies actions.
+      const afterMyTurn = aiDrawPhase(match);
+      updateMatch(afterMyTurn);
+      setPvpWaiting(true);
+      const uid = pvpUidRef.current;
+      if (pvpMatchId && uid) import('./pvp').then(({ pushMatchState }) => pushMatchState(pvpMatchId, uid, pvpIsHost, afterMyTurn)).catch(() => {});
+      return;
+    }
     const token = ++turnTokenRef.current;
     const beforeDraw = match;
     const afterDraw = aiDrawPhase(match);
@@ -1739,6 +1818,7 @@ function Combat() {
   const forfeitMatch = () => {
     if (!window.confirm('Abandonner cette partie ? Elle comptera comme une défaite.')) return;
     if (!match.winner) s.record(false);
+    if (isPvp && pvpMatchId) import('./pvp').then(({ leaveMatch }) => leaveMatch(pvpMatchId)).catch(() => {});
     go('/');
   };
   const saveReplay = () => {
@@ -1786,6 +1866,33 @@ function Combat() {
       <button className="battle-pause-btn" type="button" aria-label="Menu de la partie" onClick={() => setPauseOpen(true)}>
         ☰
       </button>
+      {isPvp && !pvpReady && (
+        <div className="matchmaking-overlay" role="dialog" aria-modal="true">
+          <div className="matchmaking-card">
+            <span className="matchmaking-spinner" aria-hidden="true" />
+            <b>Connexion à la partie…</b>
+          </div>
+        </div>
+      )}
+      {isPvp && pvpReady && pvpWaiting && !match.winner && (
+        <div className="matchmaking-overlay" role="dialog" aria-modal="true">
+          <div className="matchmaking-card">
+            <span className="matchmaking-spinner" aria-hidden="true" />
+            <b>En attente de l'adversaire…</b>
+          </div>
+        </div>
+      )}
+      {isPvp && pvpOpponentGone && !match.winner && (
+        <div className="matchmaking-overlay" role="dialog" aria-modal="true">
+          <div className="matchmaking-card">
+            <b>La partie n'est plus disponible.</b>
+            <small>L'adversaire a peut-être quitté la partie.</small>
+            <button className="secondary" onClick={() => go('/multijoueur')}>
+              Retour au multijoueur
+            </button>
+          </div>
+        </div>
+      )}
       {aiTurnStage !== 'idle' && <div className="ai-turn-lock" aria-hidden="true" />}
       <div
         className="profile-float enemy"
@@ -1796,8 +1903,8 @@ function Combat() {
         <div className="duel-profile">
           <span className="duel-profile-avatar">
             <img
-              src={opponentAvatarImage}
-              alt={opponentFaction}
+              src={isPvp ? getCard(defaultAvatarFor(match.enemy.faction)).image : opponentAvatarImage}
+              alt={isPvp ? match.enemy.faction : opponentFaction}
               onError={(event) => {
                 event.currentTarget.onerror = null;
                 event.currentTarget.src = cardBack;
@@ -1805,10 +1912,10 @@ function Combat() {
             />
           </span>
           <div className="duel-profile-text">
-            <b>{chapter ? chapter.title : onlineMode === 'ranked' ? 'Bot classé' : onlineMode === 'classic' ? 'Bot en ligne' : 'Rival Nexus'}</b>
+            <b>{chapter ? chapter.title : isPvp ? pvpOpponentName ?? 'Adversaire' : onlineMode === 'ranked' ? 'Bot classé' : onlineMode === 'classic' ? 'Bot en ligne' : 'Rival Nexus'}</b>
             <small>
-              {opponentFaction}
-              {onlineMode ? ` · IA ${match.aiDifficulty === 'maitre' ? 'Maître' : match.aiDifficulty === 'veteran' ? 'Vétéran' : 'Novice'}` : ''}
+              {isPvp ? match.enemy.faction : opponentFaction}
+              {onlineMode && !isPvp ? ` · IA ${match.aiDifficulty === 'maitre' ? 'Maître' : match.aiDifficulty === 'veteran' ? 'Vétéran' : 'Novice'}` : ''}
             </small>
           </div>
         </div>
@@ -2387,9 +2494,15 @@ function Combat() {
             <button className="primary" onClick={() => go(chapter ? '/campagne' : '/')}>
               {chapter ? 'Retour à la campagne' : 'Retour au menu'}
             </button>
-            <button className="secondary" onClick={restart}>
-              {chapter ? 'Rejouer ce chapitre' : 'Nouveau duel'}
-            </button>
+            {isPvp ? (
+              <button className="secondary" onClick={() => go('/multijoueur')}>
+                Chercher un nouvel adversaire
+              </button>
+            ) : (
+              <button className="secondary" onClick={restart}>
+                {chapter ? 'Rejouer ce chapitre' : 'Nouveau duel'}
+              </button>
+            )}
             <button className="secondary" disabled={replaySaved} onClick={saveReplay}>
               {replaySaved ? '✓ Replay sauvegardé' : '💾 Sauvegarder le replay'}
             </button>
@@ -2403,9 +2516,11 @@ function Combat() {
             <button className="secondary" onClick={() => setPauseOpen(false)}>
               Reprendre
             </button>
-            <button className="secondary" onClick={restart}>
-              ↺ Recommencer
-            </button>
+            {!isPvp && (
+              <button className="secondary" onClick={restart}>
+                ↺ Recommencer
+              </button>
+            )}
             <button className="secondary danger" onClick={forfeitMatch}>
               Abandonner
             </button>
@@ -3328,25 +3443,64 @@ function Multiplayer() {
   const next = RANKED_LADDER.find((entry) => entry.minRating > currentRating);
   const [searching, setSearching] = useState<'classic' | 'ranked' | null>(null);
   const searchTimer = useRef<number | null>(null);
+  const cancelPvpSearch = useRef<(() => void) | null>(null);
+  const searchToken = useRef(0);
   useEffect(
     () => () => {
       if (searchTimer.current) window.clearTimeout(searchTimer.current);
+      cancelPvpSearch.current?.();
     },
     []
   );
   const startSearch = (mode: 'classic' | 'ranked') => {
     setSearching(mode);
-    searchTimer.current = window.setTimeout(() => go('/combat', { state: { onlineMode: mode } }), MATCHMAKING_SEARCH_MS);
+    const token = ++searchToken.current;
+    searchTimer.current = window.setTimeout(() => {
+      if (searchToken.current !== token) return;
+      cancelPvpSearch.current?.();
+      cancelPvpSearch.current = null;
+      go('/combat', { state: { onlineMode: mode } });
+    }, MATCHMAKING_SEARCH_MS);
+    if (pvpEnabled) {
+      const activeDeck = s.decks.find((d) => d.id === s.activeDeckId);
+      const me: PvpPlayerInfo = {
+        uid: '',
+        name: s.playerName,
+        faction: s.faction,
+        deck: s.deck.filter((id) => s.owned.includes(id)),
+        evosphere: activeDeck?.evosphere?.filter((id) => s.owned.includes(getCard(id).evolvesFrom ?? id)) ?? [],
+        rating: currentRating,
+      };
+      Promise.all([import('./firebase'), import('./pvp')])
+        .then(([{ ensureSignedIn }, { searchForMatch }]) => ensureSignedIn().then((user) => ({ user, searchForMatch })))
+        .then(({ user, searchForMatch }) => {
+          if (searchToken.current !== token) return;
+          cancelPvpSearch.current = searchForMatch(
+            mode === 'ranked' ? 'ranked' : 'classic',
+            { ...me, uid: user.uid },
+            (matchId, isHost) => {
+              if (searchToken.current !== token) return;
+              if (searchTimer.current) window.clearTimeout(searchTimer.current);
+              go('/combat', { state: { onlineMode: 'pvp', matchId, isHost, pvpMode: mode } });
+            },
+            () => {} // recherche réelle indisponible : le repli sur bot fera son travail au bout du délai.
+          );
+        })
+        .catch(() => {});
+    }
   };
   const cancelSearch = () => {
+    searchToken.current++;
     if (searchTimer.current) window.clearTimeout(searchTimer.current);
+    cancelPvpSearch.current?.();
+    cancelPvpSearch.current = null;
     setSearching(null);
   };
   const botDifficultyHint = searching === 'ranked' ? `IA de niveau ${aiDifficultyForRating(currentRating) === 'maitre' ? 'Maître' : aiDifficultyForRating(currentRating) === 'veteran' ? 'Vétéran' : 'Novice'} (ton rang)` : 'IA de niveau aléatoire';
   return (
     <section className="multiplayer-page">
       <h2>Multijoueur</h2>
-      <p className="hint">Aucun serveur de matchmaking temps réel n'est encore branché : si aucun joueur n'est trouvé après une courte recherche, un bot prend le relais — niveau aléatoire en Classique, niveau équivalent à ton rang en Classé.</p>
+      <p className="hint">{pvpEnabled ? 'Recherche un vrai adversaire en ligne ; si personne n\'est trouvé après une courte recherche, un bot prend le relais — niveau aléatoire en Classique, niveau équivalent à ton rang en Classé.' : 'Aucun serveur de matchmaking temps réel n\'est encore branché : un bot prend le relais — niveau aléatoire en Classique, niveau équivalent à ton rang en Classé.'}</p>
       <div className="multiplayer-modes">
         <article className="multiplayer-mode">
           <span className="menu-card-icon teal">⚔</span>

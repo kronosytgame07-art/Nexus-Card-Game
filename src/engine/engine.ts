@@ -90,6 +90,55 @@ export function newGame(
   return state;
 }
 
+/** Variante multijoueur réel : les deux côtés utilisent un vrai deck de joueur,
+ * il n'y a pas d'IA. Le calcul se fait toujours du point de vue de "player" —
+ * c'est à qui héberge la partie de lancer ce constructeur, l'autre client
+ * applique flipPerspective() sur l'état reçu pour se voir comme "player". */
+export function newPvpGame(
+  playerFaction: Faction,
+  playerDeck: string[],
+  playerEvosphere: string[] | undefined,
+  enemyFaction: Faction,
+  enemyDeck: string[],
+  enemyEvosphere: string[] | undefined
+): GameState {
+  const state: GameState = {
+    turn: 1,
+    activePlayer: 'player',
+    phase: 'main',
+    player: makePlayer('player', playerFaction, playerDeck, 0, playerEvosphere),
+    enemy: makePlayer('enemy', enemyFaction, enemyDeck, 0, enemyEvosphere),
+    log: ['La partie commence. À toi de jouer.'],
+    aiDifficulty: 'novice',
+  };
+  drawOne(state, 'player');
+  pushLog(state, 'Tu pioches ta première carte.');
+  return state;
+}
+
+/** Un match multijoueur est stocké une seule fois, du point de vue de celui
+ * qui vient d'agir. L'autre client applique cette fonction pour se voir
+ * comme "player" : elle échange intégralement les deux côtés symétriques
+ * de l'état (y compris à l'intérieur d'une fenêtre de réaction en cours). */
+export function flipPerspective(state: GameState): GameState {
+  const flipped = clone(state);
+  const tmp = flipped.player;
+  flipped.player = flipped.enemy;
+  flipped.enemy = tmp;
+  flipped.player.id = 'player';
+  flipped.enemy.id = 'enemy';
+  flipped.activePlayer = other(state.activePlayer);
+  if (flipped.winner) flipped.winner = other(state.winner!);
+  if (flipped.reactionWindow) {
+    flipped.reactionWindow = {
+      ...flipped.reactionWindow,
+      actingPlayer: other(state.reactionWindow!.actingPlayer),
+      respondingPlayer: other(state.reactionWindow!.respondingPlayer),
+    };
+  }
+  return flipped;
+}
+
 export { MIN_PLAYABLE_DECK };
 
 function other(id: PlayerId): PlayerId {
