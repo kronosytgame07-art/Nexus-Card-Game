@@ -1,5 +1,5 @@
 import type { StoryCharacter } from './types';
-const portrait = (id: string) => `${import.meta.env.BASE_URL}portraits/${id}.png`;
+const portrait = (id: string) => `${import.meta.env.BASE_URL}portraits/${id}.webp`;
 const expressions = (id: string) => ({
   neutral: portrait(id),
   angry: portrait(`${id}-angry`),

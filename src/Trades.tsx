@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type SyntheticEvent } from 'react';
 import {
   addDoc,
   collection,
@@ -40,6 +40,7 @@ interface MarketDoc {
 }
 
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const CARD_BACK_URL = `${import.meta.env.BASE_URL}cards/card-back.webp`;
 function randomCode(): string {
   let code = '';
   for (let i = 0; i < 6; i++) code += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
@@ -52,24 +53,65 @@ function entriesToMap(entries: TradeEntry[]): Record<string, number> {
 }
 function cardById(id: string): CardDef | undefined { return ALL_CARDS.find((c) => c.id === id); }
 function cardName(id: string): string { return cardById(id)?.name ?? id; }
+function onArtError(e: SyntheticEvent<HTMLImageElement>) { e.currentTarget.onerror = null; e.currentTarget.src = CARD_BACK_URL; }
+
+function CardThumb({ card, className = '' }: { card: CardDef; className?: string }) {
+  return <img className={`trade-thumb ${card.rarity} ${className}`} src={card.image} alt={card.name} loading="lazy" onError={onArtError} />;
+}
+
+function CardChip({ cardId, count }: { cardId: string; count?: number }) {
+  const c = cardById(cardId);
+  if (!c) return <span className="trade-chip"><b>{cardId}</b></span>;
+  return <span className="trade-chip"><CardThumb card={c} />{c.name}{count ? <i>×{count}</i> : null}</span>;
+}
 
 function CardQtyPicker({ cards, quantities, onChange, maxFor }: { cards: CardDef[]; quantities: Record<string, number>; onChange: (id: string, qty: number) => void; maxFor: (id: string) => number }) {
   return <div className="trade-card-list">{cards.map((c) => {
     const qty = quantities[c.id] ?? 0;
     const max = maxFor(c.id);
     if (max <= 0 && qty <= 0) return null;
-    return <div key={c.id} className="trade-card-row"><span>{c.name}</span><div className="trade-qty-stepper"><button type="button" disabled={qty <= 0} onClick={() => onChange(c.id, Math.max(0, qty - 1))}>−</button><b>{qty}</b><button type="button" disabled={qty >= max} onClick={() => onChange(c.id, Math.min(max, qty + 1))}>+</button></div></div>;
+    return <div key={c.id} className={'trade-card-row ' + c.rarity}><span className="trade-row-main"><CardThumb card={c} /><span>{c.name}</span></span><div className="trade-qty-stepper"><button type="button" disabled={qty <= 0} onClick={() => onChange(c.id, Math.max(0, qty - 1))}>−</button><b>{qty}</b><button type="button" disabled={qty >= max} onClick={() => onChange(c.id, Math.min(max, qty + 1))}>+</button></div></div>;
   })}</div>;
 }
 
+function CardPickerGrid({ cards, selectedId, onSelect, emptyText }: { cards: CardDef[]; selectedId: string; onSelect: (id: string) => void; emptyText?: string }) {
+  if (cards.length === 0) return <p className="hint trade-picker-empty">{emptyText ?? 'Aucune carte disponible.'}</p>;
+  return <div className="trade-picker-grid">{cards.map((c) => (
+    <button type="button" key={c.id} className={'trade-picker-item ' + c.rarity + (selectedId === c.id ? ' selected' : '')} onClick={() => onSelect(c.id)}>
+      <img src={c.image} alt={c.name} loading="lazy" onError={onArtError} />
+      <span>{c.name}</span>
+    </button>
+  ))}</div>;
+}
+
 function TradeCard({ trade, mine, onAccept, onDecline, onCancel }: { trade: TradeDoc; mine: boolean; onAccept?: () => void; onDecline?: () => void; onCancel?: () => void }) {
-  return <article className="options-card trade-offer"><b>{mine ? `À ${trade.toCode}` : `De ${trade.fromCode}`}</b><p className="hint">Il/elle donne : {trade.offer.map((e) => `${e.count}× ${cardName(e.cardId)}`).join(', ') || '—'}</p><p className="hint">Il/elle demande : {trade.request.map((e) => `${e.count}× ${cardName(e.cardId)}`).join(', ') || '—'}</p><p className="hint">Statut : {trade.status}</p>{trade.status === 'pending' && !mine && <div className="deck-menu-actions"><button className="primary" onClick={onAccept}>Accepter</button><button className="secondary" onClick={onDecline}>Refuser</button></div>}{trade.status === 'pending' && mine && <button className="secondary danger" onClick={onCancel}>Annuler</button>}</article>;
+  return <article className="options-card trade-offer">
+    <div className="options-card-head"><b>{mine ? `À ${trade.toCode}` : `De ${trade.fromCode}`}</b><span className={'trade-status trade-status-' + trade.status}>{trade.status}</span></div>
+    <p className="hint">Il/elle donne :</p>
+    <div className="trade-chip-row">{trade.offer.length ? trade.offer.map((e) => <CardChip key={e.cardId} cardId={e.cardId} count={e.count} />) : <span className="hint">—</span>}</div>
+    <p className="hint">Il/elle demande :</p>
+    <div className="trade-chip-row">{trade.request.length ? trade.request.map((e) => <CardChip key={e.cardId} cardId={e.cardId} count={e.count} />) : <span className="hint">—</span>}</div>
+    {trade.status === 'pending' && !mine && <div className="deck-menu-actions"><button className="primary" onClick={onAccept}>Accepter</button><button className="secondary" onClick={onDecline}>Refuser</button></div>}
+    {trade.status === 'pending' && mine && <button className="secondary danger" onClick={onCancel}>Annuler</button>}
+  </article>;
 }
 
 function MarketCard({ listing, mine, canAccept, onAccept, onCancel }: { listing: MarketDoc; mine: boolean; canAccept: boolean; onAccept?: () => void; onCancel?: () => void }) {
   const offer = cardById(listing.offerCardId);
   const request = cardById(listing.requestCardId);
-  return <article className="options-card trade-offer"><b>{offer?.name ?? listing.offerCardId}</b><p className="hint">Proposé par {mine ? 'toi' : listing.sellerCode}</p><p className="hint">Recherche : {request?.name ?? listing.requestCardId}</p><p className="hint">Rareté imposée : <strong>{listing.rarity}</strong></p>{listing.status === 'open' && mine && <button className="secondary danger" onClick={onCancel}>Retirer du marché</button>}{listing.status === 'open' && !mine && <button className="primary" disabled={!canAccept} onClick={onAccept}>{canAccept ? 'Échanger' : `Il te manque ${request?.name ?? 'la carte demandée'}`}</button>}{listing.status !== 'open' && <p className="hint">Annonce terminée</p>}</article>;
+  return <article className="options-card trade-offer market-offer">
+    <div className="trade-market-swap">
+      {offer ? <CardThumb card={offer} className="lg" /> : <img className="trade-thumb lg" src={CARD_BACK_URL} alt="" />}
+      <span className="trade-market-arrow">⇄</span>
+      {request ? <CardThumb card={request} className="lg" /> : <img className="trade-thumb lg" src={CARD_BACK_URL} alt="" />}
+    </div>
+    <b>{offer?.name ?? listing.offerCardId}</b>
+    <p className="hint">Proposé par {mine ? 'toi' : listing.sellerCode} — recherche <strong>{request?.name ?? listing.requestCardId}</strong></p>
+    <p className="hint">Rareté imposée : <strong>{listing.rarity}</strong></p>
+    {listing.status === 'open' && mine && <button className="secondary danger" onClick={onCancel}>Retirer du marché</button>}
+    {listing.status === 'open' && !mine && <button className="primary" disabled={!canAccept} onClick={onAccept}>{canAccept ? 'Échanger' : `Il te manque ${request?.name ?? 'la carte demandée'}`}</button>}
+    {listing.status !== 'open' && <p className="hint">Annonce terminée</p>}
+  </article>;
 }
 
 export default function Trades() {
@@ -214,19 +256,24 @@ export default function Trades() {
 
   if (!firebaseReady) return <section><h2>Échanges</h2><p className="hint">L'échange entre joueurs n'est pas encore configuré sur cette instance du jeu (aucun projet Firebase renseigné). Voir la section « Configurer Firebase pour les échanges » du README.</p></section>;
 
-  return <section><h2>Échanges</h2>{status === 'connecting' && <p className="hint">Connexion…</p>}{status === 'error' && <p className="hint deck-count danger">{error}</p>}{status === 'ready' && <>
-    <p className="hint">Ton code ami : <b>{s.friendCode}</b></p>
+  const copyFriendCode = () => { if (s.friendCode) navigator.clipboard?.writeText(s.friendCode).catch(() => {}); };
+
+  return <section className="trades-section"><h2>Échanges</h2>{status === 'connecting' && <p className="hint">Connexion…</p>}{status === 'error' && <p className="hint deck-count danger">{error}</p>}{status === 'ready' && <>
+    <div className="trade-friend-code"><span>Ton code ami</span><b>{s.friendCode}</b><button type="button" onClick={copyFriendCode} title="Copier le code">Copier</button></div>
 
     <h3>Marché général</h3>
     <p className="hint">Une annonce publique échange exactement 1 carte contre 1 carte de <strong>même rareté</strong>. Les échanges entre amis restent libres.</p>
-    <div className="builder"><div><h4>Carte proposée</h4><select value={marketOffer} onChange={(e) => { setMarketOffer(e.target.value); setMarketRequest(''); }}><option value="">Choisir…</option>{ownedMarketCards.map((c) => <option key={c.id} value={c.id}>{c.name} — {c.rarity}</option>)}</select></div><div><h4>Carte demandée</h4><select value={marketRequest} disabled={!selectedOffer} onChange={(e) => setMarketRequest(e.target.value)}><option value="">Choisir…</option>{sameRarityRequests.map((c) => <option key={c.id} value={c.id}>{c.name} — {c.rarity}</option>)}</select></div></div>
+    <div className="builder">
+      <div><h4>Carte proposée</h4><CardPickerGrid cards={ownedMarketCards} selectedId={marketOffer} onSelect={(id) => { setMarketOffer(id); setMarketRequest(''); }} emptyText="Tu ne possèdes aucune carte à proposer pour l'instant." /></div>
+      <div><h4>Carte demandée</h4>{selectedOffer ? <CardPickerGrid cards={sameRarityRequests} selectedId={marketRequest} onSelect={setMarketRequest} emptyText="Aucune autre carte de cette rareté." /> : <p className="hint trade-picker-empty">Choisis d'abord une carte à proposer.</p>}</div>
+    </div>
     {marketError && <p className="hint deck-count danger">{marketError}</p>}
     <button className="primary" onClick={postMarket}>Publier sur le marché</button>
     <div className="options-grid">{market.length === 0 && <p className="hint">Aucune annonce publique pour le moment.</p>}{market.map((listing) => <MarketCard key={listing.id} listing={listing} mine={listing.sellerUid === uid} canAccept={(s.inventory[listing.requestCardId] ?? 0) > 0} onAccept={() => acceptMarket(listing)} onCancel={() => cancelMarket(listing)} />)}</div>
 
     <h3>Échanges entre amis</h3>
     <p className="hint">Entre amis, aucune restriction de rareté : vous décidez librement de la valeur de l'échange.</p>
-    <input placeholder="Code ami du destinataire (ex. NEXUS-7F2K)" value={targetCode} onChange={(e) => setTargetCode(e.target.value)} />
+    <input className="trade-friend-input" placeholder="Code ami du destinataire (ex. NEXUS-7F2K)" value={targetCode} onChange={(e) => setTargetCode(e.target.value)} />
     <div className="builder"><div><h4>Tu offres</h4><CardQtyPicker cards={cardPool} quantities={offerQty} onChange={setOfferFor} maxFor={(id) => s.inventory[id] ?? 0} /></div><div><h4>Tu demandes</h4><CardQtyPicker cards={cardPool} quantities={requestQty} onChange={setRequestFor} maxFor={() => 3} /></div></div>
     {formError && <p className="hint deck-count danger">{formError}</p>}<button className="primary" onClick={submitTrade}>Envoyer la proposition</button>
 

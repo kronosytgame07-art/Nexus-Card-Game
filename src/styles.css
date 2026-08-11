@@ -812,3 +812,65 @@ html[data-animations='off'] .booster-pack-animation:before,html[data-animations=
   .booster-card-fan{padding:4px 14px;gap:6px}.booster-pull-card{width:clamp(72px,14vw,118px)}
   .booster-opening-footer{min-height:58px;padding:4px 10px 7px}.booster-opening-footer b{font-size:9px}.reveal-progress i{width:22px}
 }
+
+/* Écran Échanges : miniatures d'art, grille de sélection visuelle, entrées stylées */
+.trade-thumb{width:38px;height:52px;object-fit:cover;border-radius:6px;border:1px solid #e5c36c55;background:#0c2224;flex:0 0 auto}
+.trade-thumb.lg{width:64px;height:88px;border-radius:8px}
+.trade-thumb.Rare{border-color:#5398da}
+.trade-thumb.Épique{border-color:#a167ed}
+.trade-thumb.Légendaire{border-color:#edbd57}
+.trade-thumb.Mythique{border-color:#ed667b}
+
+.trade-card-row{gap:10px}
+.trade-card-row.Rare{box-shadow:inset 3px 0 0 #5398da55}
+.trade-card-row.Épique{box-shadow:inset 3px 0 0 #a167ed55}
+.trade-card-row.Légendaire{box-shadow:inset 3px 0 0 #edbd5766}
+.trade-card-row.Mythique{box-shadow:inset 3px 0 0 #ed667b66}
+.trade-row-main{display:flex;align-items:center;gap:10px;overflow:hidden}
+.trade-row-main span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.trade-picker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px;max-height:280px;overflow-y:auto;padding:4px 4px 4px 0}
+.trade-picker-empty{padding:12px 0}
+.trade-picker-item{display:flex;flex-direction:column;align-items:center;gap:5px;padding:7px;border:1px solid #ffffff1e;border-radius:10px;background:#ffffff08;cursor:pointer;color:inherit;text-align:center;transition:transform .12s,border-color .12s,box-shadow .12s}
+.trade-picker-item:hover{transform:translateY(-2px);border-color:#ffffff40}
+.trade-picker-item img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:6px}
+.trade-picker-item span{font-size:10px;line-height:1.25;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.trade-picker-item.Rare{box-shadow:0 0 12px #5398da2a}
+.trade-picker-item.Épique{box-shadow:0 0 12px #a167ed2a}
+.trade-picker-item.Légendaire{box-shadow:0 0 14px #edbd572a}
+.trade-picker-item.Mythique{box-shadow:0 0 16px #ed667b30}
+.trade-picker-item.selected{border-color:#5ae0be;box-shadow:0 0 0 2px #5ae0be66,0 10px 24px rgba(0,0,0,.4)!important}
+
+.trade-chip-row{display:flex;flex-wrap:wrap;gap:2px 0;margin-bottom:4px}
+.trade-chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 3px;border-radius:20px;background:#ffffff0d;border:1px solid #ffffff1a;margin:2px 6px 2px 0;font-size:11px}
+.trade-chip .trade-thumb{width:22px;height:30px;border-radius:4px}
+.trade-chip i{font-style:normal;color:#5ae0be;font-weight:700;margin-left:2px}
+
+.trade-status{font:700 10px "Space Grotesk";letter-spacing:.5px;text-transform:uppercase;padding:3px 8px;border-radius:20px;background:#ffffff10}
+.trade-status-pending{color:#ecc970;background:#ecc97022}
+.trade-status-accepted{color:#5ae0be;background:#5ae0be22}
+.trade-status-declined,.trade-status-cancelled{color:#e88888;background:#e8888822}
+
+.trade-market-swap{display:flex;align-items:center;gap:10px;margin-bottom:2px}
+.trade-market-arrow{font-size:18px;color:#5ae0be}
+
+.trade-friend-code{display:inline-flex;align-items:center;gap:12px;padding:10px 16px;border-radius:10px;background:linear-gradient(145deg,#1d4140,#0c2224);border:1px solid #e5c36c55;margin-bottom:8px}
+.trade-friend-code span{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#8fb0a8}
+.trade-friend-code b{font:700 16px "Space Grotesk";letter-spacing:.5px}
+.trade-friend-code button{border:1px solid #ffffff2a;background:#ffffff10;color:inherit;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:11px}
+.trade-friend-code button:hover{background:#ffffff1c}
+
+.trades-section input.trade-friend-input{background:#ffffff0e;border:1px solid #ffffff2a;border-radius:8px;padding:11px 13px;color:white;font:600 13px "Space Grotesk";width:100%;box-sizing:border-box;margin:8px 0}
+.trades-section input.trade-friend-input:focus{outline:none;border-color:#5ae0be88}
+
+@media (max-width: 720px) {
+  .trade-picker-grid{grid-template-columns:repeat(auto-fill,minmax(72px,1fr))}
+}
+
+/* Boutique : les boutons ×1/×10 des boosters débordaient de leur carte — flex
+   items ne rétrécissent pas sous leur contenu non enroulé par défaut, ce qui
+   forçait toute la colonne de grille (et donc la carte) à s'élargir. */
+.booster-buy-row{flex-wrap:wrap}
+.booster-buy-row button{min-width:0;padding:10px 8px;font-size:10px;white-space:normal;text-align:center;line-height:1.3}
+.booster-buy-row .button-price{flex-wrap:wrap;row-gap:2px}
+.booster-buy-row .button-price .currency-icon{width:14px;height:14px}

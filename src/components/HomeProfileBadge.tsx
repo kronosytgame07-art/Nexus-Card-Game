@@ -1,8 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
 import { ALL_CARDS, useGame } from '../store/game';
 
-const GEM_ICON = `${import.meta.env.BASE_URL}ui/nexus-gem.png`;
-const COIN_ICON = `${import.meta.env.BASE_URL}ui/nexus-coin.png`;
+const GEM_ICON = `${import.meta.env.BASE_URL}ui/nexus-gem.webp`;
+const COIN_ICON = `${import.meta.env.BASE_URL}ui/nexus-coin.webp`;
 
 export default function HomeProfileBadge() {
   const location = useLocation();

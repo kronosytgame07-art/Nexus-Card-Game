@@ -1,7 +1,7 @@
 import type { StoryDuel } from './types';
 
-const panel = (name: string) => `${import.meta.env.BASE_URL}story/chapter-1/${name}.png`;
-const chapterPanel = (chapter: number, name: string) => `${import.meta.env.BASE_URL}story/chapter-${chapter}/${name}.png`;
+const panel = (name: string) => `${import.meta.env.BASE_URL}story/chapter-1/${name}.webp`;
+const chapterPanel = (chapter: number, name: string) => `${import.meta.env.BASE_URL}story/chapter-${chapter}/${name}.webp`;
 
 export const CHAPTER_ONE: StoryDuel[] = [
   {
