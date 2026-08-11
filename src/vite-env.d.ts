@@ -14,3 +14,7 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+/** Injecté par vite.config.ts (define) : true uniquement pour le build itch.io,
+    dont le sous-dossier de diffusion est inconnu à l'avance (voir vite.config.ts). */
+declare const __USE_HASH_ROUTER__: boolean;
